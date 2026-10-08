@@ -4,11 +4,14 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { extractYoutubeId } from '@/lib/utils';
+import { requireAuth } from '@/lib/require-auth';
 
 // ==========================================
 // BULK GENERATE — Level 1 se N tak
 // ==========================================
 export async function bulkGenerateLevels(gameId: string, formData: FormData) {
+  await requireAuth();
+
   const from = parseInt(formData.get('from') as string, 10);
   const to = parseInt(formData.get('to') as string, 10);
   const defaultYoutubeUrl = (formData.get('default_youtube_url') as string) || '';
@@ -71,6 +74,8 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
 // CREATE SINGLE LEVEL
 // ==========================================
 export async function createLevel(gameId: string, formData: FormData) {
+  await requireAuth();
+
   const level_number = parseInt(formData.get('level_number') as string, 10);
   const title = (formData.get('title') as string) || `Level ${level_number}`;
   const youtube_url = formData.get('youtube_url') as string;
@@ -121,6 +126,8 @@ export async function createLevel(gameId: string, formData: FormData) {
 // UPDATE LEVEL
 // ==========================================
 export async function updateLevel(levelId: string, gameId: string, formData: FormData) {
+  await requireAuth();
+
   const title = formData.get('title') as string;
   const youtube_url = formData.get('youtube_url') as string;
   const description = (formData.get('description') as string) || null;
@@ -163,6 +170,8 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
 // DELETE LEVEL
 // ==========================================
 export async function deleteLevel(levelId: string, gameId: string) {
+  await requireAuth();
+
   const { error } = await supabaseAdmin.from('levels').delete().eq('id', levelId);
 
   if (error) {

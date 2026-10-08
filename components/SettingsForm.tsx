@@ -11,7 +11,7 @@ export default function SettingsForm({ action, settings }: Props) {
   return (
     <form action={action as never} className="space-y-6">
       {/* ================= SITE INFO ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Site Info</h2>
 
         <div className="grid md:grid-cols-2 gap-5">
@@ -62,7 +62,7 @@ export default function SettingsForm({ action, settings }: Props) {
       </div>
 
       {/* ================= YOUTUBE BUTTON ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">YouTube</h2>
 
         <div>
@@ -88,7 +88,7 @@ export default function SettingsForm({ action, settings }: Props) {
       </div>
 
       {/* ================= ADSENSE ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">
           💰 AdSense Codes
         </h2>
@@ -145,7 +145,7 @@ export default function SettingsForm({ action, settings }: Props) {
       </div>
 
       {/* ================= ANALYTICS ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">📊 Analytics</h2>
 
         <div>
@@ -176,7 +176,7 @@ export default function SettingsForm({ action, settings }: Props) {
       </div>
 
       {/* ================= SOCIAL LINKS ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">🔗 Social Links</h2>
 
         <div className="grid md:grid-cols-2 gap-5">
@@ -230,7 +230,7 @@ export default function SettingsForm({ action, settings }: Props) {
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+          className="btn btn-primary"
         >
           💾 Save Settings
         </button>

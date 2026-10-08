@@ -28,78 +28,64 @@ export default async function AdminLevelsPage({ params }: Props) {
   const levelList = levels || [];
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          href="/admin/games"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back to Games
-        </Link>
-        <h1 className="text-3xl font-bold mt-2">{game.name} — Levels</h1>
-        <p className="text-gray-600 mt-1">
-          {levelList.length} levels ·{" "}
-          <Link
-            href={`/game/${game.slug}`}
-            target="_blank"
-            className="text-blue-600 hover:underline"
-          >
-            View public page →
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
+        <div>
+          <Link href="/admin/games" className="admin-back">
+            ← Back to games
           </Link>
-        </p>
+          <h1 className="admin-title mt-2">{game.name} — Levels</h1>
+          <p className="admin-sub">
+            {levelList.length} levels ·{' '}
+            <Link
+              href={`/game/${game.slug}`}
+              target="_blank"
+              className="font-bold"
+              style={{ color: 'var(--primary-dark)' }}
+            >
+              View public page →
+            </Link>
+          </p>
+        </div>
+        <Link href={`/admin/games/${id}/levels/new`} className="btn btn-primary btn-sm">
+          + Add single level
+        </Link>
       </div>
 
-      {/* Bulk Generate */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold mb-3">⚡ Bulk Generate Levels</h2>
-        <p className="text-sm text-gray-700 mb-4">
-          Quickly generate multiple level slots at once. Default YouTube URL optional
-          hai — baad me edit kar sakte ho.
+      <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+        <h2>⚡ Bulk generate levels</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
+          Create many level slots at once. The default YouTube URL is optional — you can edit each level later.
         </p>
         <BulkGenerateForm gameId={id} />
       </div>
 
-      {/* Add Single Level */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">All Levels</h2>
-        <Link
-          href={`/admin/games/${id}/levels/new`}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
-        >
-          + Add Single Level
-        </Link>
+      <div className="section-head" style={{ marginBottom: '1rem' }}>
+        <h2 className="section-title" style={{ fontSize: '1.3rem' }}>All levels</h2>
       </div>
 
-      {/* Levels List */}
       {levelList.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center text-gray-500">
-          <p>Abhi koi level nahi. Bulk generate use karo upar.</p>
+        <div className="empty-state">
+          <div className="emoji">🎯</div>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>
+            No levels yet. Use bulk generate above.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="admin-level-grid">
           {levelList.map((level) => (
-            <div
-              key={level.id}
-              className="bg-white border rounded-lg p-3 hover:shadow-md transition"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="text-xl font-bold text-blue-600">
-                  {level.level_number}
-                </div>
-                {!level.published && (
-                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                    Draft
-                  </span>
-                )}
+            <div key={level.id} className="card card-hover admin-level">
+              <div className="flex items-start justify-between">
+                <div className="num">{level.level_number}</div>
+                {!level.published && <span className="pill pill-gray">Draft</span>}
               </div>
-              <div className="text-xs text-gray-500 mb-3 truncate">
-                {level.youtube_id ? `🎥 ${level.youtube_id.slice(0, 8)}...` : "No video"}
+              <div className="vid">
+                {level.youtube_id ? `🎥 ${level.youtube_id.slice(0, 11)}` : 'No video'}
               </div>
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between gap-2">
                 <Link
                   href={`/admin/games/${id}/levels/${level.id}/edit`}
-                  className="text-blue-600 hover:underline"
+                  className="act act-edit"
                 >
                   Edit
                 </Link>

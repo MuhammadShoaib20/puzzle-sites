@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
+import BackgroundDecor from '@/components/BackgroundDecor';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,12 @@ export default async function AdminDashboardLayout({
   if (!session) redirect('/admin/login');
 
   return (
-    <div className="flex min-h-screen">
-      <AdminSidebar />
-      <main className="flex-1 bg-gray-50 overflow-x-auto">{children}</main>
-    </div>
+    <>
+      <BackgroundDecor />
+      <div className="admin-shell">
+        <AdminSidebar />
+        <main className="admin-main">{children}</main>
+      </div>
+    </>
   );
 }

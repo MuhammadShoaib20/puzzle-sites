@@ -4,8 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
+import { requireAuth } from '@/lib/require-auth';
 
 export async function createBlog(formData: FormData) {
+  await requireAuth();
+
   const title = formData.get('title') as string;
   const slug = (formData.get('slug') as string) || makeSlug(title);
   const game_id = (formData.get('game_id') as string) || null;
@@ -42,6 +45,8 @@ export async function createBlog(formData: FormData) {
 }
 
 export async function updateBlog(id: string, formData: FormData) {
+  await requireAuth();
+
   const title = formData.get('title') as string;
   const slug = formData.get('slug') as string;
   const game_id = (formData.get('game_id') as string) || null;
@@ -79,6 +84,8 @@ export async function updateBlog(id: string, formData: FormData) {
 }
 
 export async function deleteBlog(id: string) {
+  await requireAuth();
+
   const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
   if (error) return { error: error.message };
 

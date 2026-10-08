@@ -11,8 +11,9 @@ export default function DeleteGameButton({ id, name }: Props) {
 
   if (confirming) {
     return (
-      <span className="inline-flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => {
             startTransition(async () => {
               const res = await deleteGame(id);
@@ -20,14 +21,11 @@ export default function DeleteGameButton({ id, name }: Props) {
             });
           }}
           disabled={isPending}
-          className="text-sm text-red-600 font-semibold hover:underline disabled:opacity-50"
+          className="act act-del solid"
         >
-          {isPending ? 'Deleting...' : 'Confirm'}
+          {isPending ? 'Deleting…' : 'Confirm'}
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-sm text-gray-500 hover:underline"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="act act-ghost">
           Cancel
         </button>
       </span>
@@ -36,8 +34,9 @@ export default function DeleteGameButton({ id, name }: Props) {
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="text-sm text-red-600 hover:underline"
+      className="act act-del"
       title={`Delete ${name}`}
     >
       Delete

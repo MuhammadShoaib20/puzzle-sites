@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 export default function Error({
   error,
   reset,
@@ -7,14 +9,27 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error('Client error:', {
+      message: error.message,
+      digest: error.digest,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }, [error]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-      <h2 className="text-3xl font-bold text-red-600 mb-4">Something went wrong</h2>
-      <p className="text-gray-600 mb-6">{error.message}</p>
-      <button
-        onClick={reset}
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-      >
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+      <div className="tile stuck mb-6" style={{ width: 72, height: 72, fontSize: 32 }}>!</div>
+      <h2 className="page-title">Something went wrong</h2>
+      <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+        We hit an unexpected error. Try again — if it keeps happening, contact support.
+      </p>
+      {error.digest && (
+        <p className="text-xs mt-4 font-mono" style={{ color: 'var(--muted-light)' }}>
+          Error ID: {error.digest}
+        </p>
+      )}
+      <button onClick={reset} className="btn btn-primary mt-8">
         Try again
       </button>
     </div>

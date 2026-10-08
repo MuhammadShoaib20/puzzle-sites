@@ -1,16 +1,22 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCategoryBySlug, getAllGames } from '@/lib/db';
+import type { Metadata } from 'next';
+import { getCategoryBySlug, getGamesByCategory } from '@/lib/db';
+import Breadcrumb from '@/components/Breadcrumb';
+import GameCard from '@/components/GameCard';
+import EmptyState from '@/components/EmptyState';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return {};
   return {
     title: category.name,
-    description: category.description,
+    description:
+      category.description ||
+      `Browse all puzzle games in ${category.name} category.`,
+    alternates: { canonical: `/category/${category.slug}` },
   };
 }
 
@@ -19,31 +25,26 @@ export default async function CategoryPage({ params }: Props) {
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const allGames = await getAllGames();
-  const games = allGames.filter((g) => g.category_id === category.id);
+  const games = await getGamesByCategory(category.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <h1 className="text-4xl font-bold mb-3">{category.name}</h1>
-      {category.description && (
-        <p className="text-gray-600 mb-8">{category.description}</p>
-      )}
+    <div className="container-page py-8 md:py-14 animate-fade-in-up">
+      <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: category.name }]} />
+
+      <header className="mt-5 mb-8 md:mb-10">
+        <h1 className="page-title">{category.name}</h1>
+        {category.description && <p className="page-sub">{category.description}</p>}
+        <div className="mt-4">
+          <span className="badge badge-primary">{games.length} games</span>
+        </div>
+      </header>
 
       {games.length === 0 ? (
-        <div className="border-2 border-dashed rounded-xl p-10 text-center text-gray-500">
-          Is category me abhi koi game nahi.
-        </div>
+        <EmptyState emoji="🎮" text="No games in this category yet." />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {games.map((game) => (
-            <Link
-              key={game.id}
-              href={`/game/${game.slug}`}
-              className="border rounded-xl p-4 hover:shadow-lg transition"
-            >
-              <h3 className="font-semibold">{game.name}</h3>
-              <p className="text-xs text-gray-500 mt-1">{game.total_levels} levels</p>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {games.map((game, idx) => (
+            <GameCard key={game.id} game={game} index={idx} />
           ))}
         </div>
       )}

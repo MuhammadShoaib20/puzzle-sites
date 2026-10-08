@@ -21,57 +21,49 @@ export default async function DashboardPage() {
   const stats = await getStats();
 
   const cards = [
-    { label: 'Games', value: stats.games, icon: '🎮', href: '/admin/games', color: 'bg-blue-500' },
-    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/admin/games', color: 'bg-green-500' },
-    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/admin/blogs', color: 'bg-purple-500' },
+    { label: 'Games', value: stats.games, icon: '🎮', href: '/admin/games', bg: 'linear-gradient(180deg,#38BDF8,#0284C7)' },
+    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/admin/games', bg: 'linear-gradient(180deg,#A5B4FC,#6366F1)' },
+    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/admin/blogs', bg: 'linear-gradient(180deg,#FDBA74,#FB923C)' },
   ];
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back to your admin panel</p>
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
+        <div>
+          <h1 className="admin-title">Dashboard</h1>
+          <p className="admin-sub">Welcome back to your admin panel</p>
+        </div>
+        <Link href="/" target="_blank" className="btn btn-secondary btn-sm">
+          View site
+        </Link>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
+      <div className="admin-stats">
         {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition border"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-3xl">{card.icon}</span>
-              <span className={`${card.color} text-white text-xs px-2 py-1 rounded-full`}>
-                View
-              </span>
+          <Link key={card.label} href={card.href} className="card card-hover admin-stat">
+            <span className="admin-stat-icon" style={{ background: card.bg }} aria-hidden="true">
+              {card.icon}
+            </span>
+            <div>
+              <div className="admin-stat-num">{card.value}</div>
+              <div className="admin-stat-label">{card.label}</div>
             </div>
-            <div className="text-4xl font-bold mb-1">{card.value}</div>
-            <div className="text-sm text-gray-500">{card.label}</div>
+            <span className="admin-stat-go" aria-hidden="true">→</span>
           </Link>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/games/new"
-            className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-          >
-            + Add New Game
+      <div className="card admin-panel">
+        <h2>Quick actions</h2>
+        <div className="flex flex-wrap gap-4">
+          <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+            + Add game
           </Link>
-          <Link
-            href="/admin/blogs"
-            className="border border-gray-300 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            + Add Blog
+          <Link href="/admin/blogs/new" className="btn btn-accent btn-sm">
+            + Add blog
           </Link>
-          <Link
-            href="/admin/settings"
-            className="border border-gray-300 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            ⚙️ Site Settings
+          <Link href="/admin/settings" className="btn btn-secondary btn-sm">
+            ⚙️ Site settings
           </Link>
         </div>
       </div>

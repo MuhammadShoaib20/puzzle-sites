@@ -13,7 +13,7 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
   return (
     <form action={action as never} className="space-y-6">
       {/* ================= BASIC INFO ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Level Info</h2>
 
         <div className="grid md:grid-cols-2 gap-5">
@@ -68,7 +68,7 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
       </div>
 
       {/* ================= CONTENT ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Content</h2>
 
         <div>
@@ -113,7 +113,7 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
       </div>
 
       {/* ================= SEO ================= */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+      <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">SEO (Optional)</h2>
 
         <div>
@@ -158,13 +158,13 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+          className="btn btn-primary"
         >
           {submitLabel}
         </button>
         <Link
           href={level ? `../..` : `..`}
-          className="border border-gray-300 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+          className="btn btn-secondary"
         >
           Cancel
         </Link>

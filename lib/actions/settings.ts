@@ -2,8 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/require-auth';
 
 export async function updateSettings(formData: FormData) {
+  await requireAuth();
+
   const site_name = formData.get('site_name') as string;
   const site_url = formData.get('site_url') as string;
   const site_logo = (formData.get('site_logo') as string) || null;

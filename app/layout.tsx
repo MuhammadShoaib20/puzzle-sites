@@ -1,5 +1,19 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
 import './globals.css';
+
+const body = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-body',
+});
+
+const display = Sora({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-display',
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
@@ -58,7 +72,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2563eb',
+  themeColor: '#0EA5E9',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -66,7 +80,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${body.variable} ${display.variable}`}>
       <body>{children}</body>
     </html>
   );

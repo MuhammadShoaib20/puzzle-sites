@@ -1,6 +1,7 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { searchGames } from '@/lib/db';
+import GameCard from '@/components/GameCard';
+import EmptyState from '@/components/EmptyState';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -15,55 +16,70 @@ export default async function SearchPage({ searchParams }: Props) {
   const games = query ? await searchGames(query) : [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">🔍 Search</h1>
+    <div className="container-page py-10 md:py-16 animate-fade-in-up">
+      <div className="max-w-2xl mx-auto text-center mb-10">
+        <h1 className="page-title">Search</h1>
+        <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+          Find games and walkthroughs.
+        </p>
 
-      <form action="/search" method="get" className="mb-8">
-        <input
-          type="text"
-          name="q"
-          defaultValue={query}
-          placeholder="Search games..."
-          className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </form>
+        <form action="/search" method="get" className="search-wrap search-big mt-7">
+          <svg
+            className="search-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="text"
+            name="q"
+            defaultValue={query}
+            placeholder="Search games…"
+            aria-label="Search games"
+            autoFocus
+            className="search-input"
+          />
+          <button type="submit" className="btn btn-primary btn-sm search-submit">
+            Search
+          </button>
+        </form>
+      </div>
 
       {query && (
-        <p className="text-gray-600 mb-6">
+        <p className="text-center mb-6" style={{ color: 'var(--muted)' }}>
           {games.length} result{games.length === 1 ? '' : 's'} for{' '}
-          <span className="font-semibold">&quot;{query}&quot;</span>
+          <span className="font-bold" style={{ color: 'var(--ink)' }}>
+            &quot;{query}&quot;
+          </span>
         </p>
       )}
 
       {games.length > 0 && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {games.map((game) => (
-            <Link
-              key={game.id}
-              href={`/game/${game.slug}`}
-              className="border rounded-xl p-4 hover:shadow-lg transition"
-            >
-              <h3 className="font-semibold">{game.name}</h3>
-              {game.short_description && (
-                <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-                  {game.short_description}
-                </p>
-              )}
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {games.map((game, idx) => (
+            <GameCard key={game.id} game={game} index={idx} />
           ))}
         </div>
       )}
 
       {query && games.length === 0 && (
-        <div className="border-2 border-dashed rounded-xl p-10 text-center text-gray-500">
-          <p className="text-lg mb-2">Koi result nahi mila.</p>
-          <p className="text-sm">Try different keywords.</p>
+        <div className="max-w-lg mx-auto">
+          <EmptyState emoji="🔍" title="No results found" text="Try a different game name." />
         </div>
       )}
 
       {!query && (
-        <div className="border-2 border-dashed rounded-xl p-10 text-center text-gray-500">
-          <p>Type something above to search games.</p>
+        <div className="max-w-lg mx-auto">
+          <EmptyState emoji="🎮" text="Type a game name above to search." />
         </div>
       )}
     </div>

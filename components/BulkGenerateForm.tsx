@@ -25,58 +25,42 @@ export default function BulkGenerateForm({ gameId }: { gameId: string }) {
     });
   }
 
+  const field = 'w-full px-3 py-2.5 border rounded-xl outline-none';
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-[110px_110px_1fr_auto] gap-3 items-end">
         <div>
-          <label className="block text-sm font-medium mb-1">From</label>
-          <input
-            type="number"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            min="1"
-            required
-            className="w-24 px-3 py-2 border rounded-lg"
-          />
+          <label className="block text-sm font-semibold mb-1">From</label>
+          <input type="number" value={from} onChange={(e) => setFrom(e.target.value)} min="1" required className={field} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">To</label>
-          <input
-            type="number"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            min="1"
-            required
-            className="w-24 px-3 py-2 border rounded-lg"
-          />
+          <label className="block text-sm font-semibold mb-1">To</label>
+          <input type="number" value={to} onChange={(e) => setTo(e.target.value)} min="1" required className={field} />
         </div>
-        <div className="flex-1 min-w-64">
-          <label className="block text-sm font-medium mb-1">
-            Default YouTube URL (optional)
-          </label>
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-sm font-semibold mb-1">Default YouTube URL (optional)</label>
           <input
             type="url"
             value={defaultUrl}
             onChange={(e) => setDefaultUrl(e.target.value)}
             placeholder="https://youtu.be/..."
-            className="w-full px-3 py-2 border rounded-lg"
+            className={field}
           />
         </div>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {isPending ? 'Generating...' : '⚡ Generate'}
+        <button type="submit" disabled={isPending} className="btn btn-primary btn-sm col-span-2 sm:col-span-1">
+          {isPending ? 'Generating…' : '⚡ Generate'}
         </button>
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+        <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#FEF2F2', color: '#B91C1C' }}>
+          {error}
+        </p>
       )}
 
-      <p className="text-xs text-gray-500">
-        Example: From 1 To 50 → 50 blank levels ban jayenge.
+      <p className="text-xs" style={{ color: 'var(--muted)' }}>
+        Example: From 1 To 50 creates 50 blank levels.
       </p>
     </form>
   );

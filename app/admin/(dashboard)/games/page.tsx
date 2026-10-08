@@ -16,81 +16,62 @@ export default async function AdminGamesPage() {
   const games = await getGames();
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
         <div>
-          <h1 className="text-3xl font-bold">Games</h1>
-          <p className="text-gray-600 mt-1">{games.length} total games</p>
+          <h1 className="admin-title">Games</h1>
+          <p className="admin-sub">{games.length} total games</p>
         </div>
-        <Link
-          href="/admin/games/new"
-          className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-        >
-          + Add New Game
+        <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+          + Add game
         </Link>
       </div>
 
       {games.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center">
-          <p className="text-gray-500 mb-4">Abhi koi game nahi hai.</p>
-          <Link
-            href="/admin/games/new"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            + Create First Game
+        <div className="empty-state">
+          <div className="emoji">🎮</div>
+          <p className="font-bold mb-4">No games yet</p>
+          <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+            + Create first game
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr className="text-left text-sm text-gray-600">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">Levels</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+        <div className="card admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Levels</th>
+                <th>Status</th>
+                <th className="right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {games.map((game) => (
-                <tr key={game.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{game.name}</div>
+                <tr key={game.id}>
+                  <td className="name">{game.name}</td>
+                  <td className="mono">{game.slug}</td>
+                  <td>
+                    <span className="pill pill-blue">{game.total_levels || 0}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                    {game.slug}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
-                      {game.total_levels || 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  <td>
                     {game.published ? (
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Published
-                      </span>
+                      <span className="pill pill-green">Published</span>
                     ) : (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Draft
-                      </span>
+                      <span className="pill pill-gray">Draft</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Link
-                      href={`/admin/games/${game.id}/levels`}
-                      className="text-sm text-green-600 hover:underline"
-                    >
-                      Levels
-                    </Link>
-                    <Link
-                      href={`/admin/games/${game.id}/edit`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
-                    <DeleteGameButton id={game.id} name={game.name} />
+                  <td className="right">
+                    <span className="admin-actions">
+                      <Link href={`/admin/games/${game.id}/levels`} className="act act-levels">
+                        Levels
+                      </Link>
+                      <Link href={`/admin/games/${game.id}/edit`} className="act act-edit">
+                        Edit
+                      </Link>
+                      <DeleteGameButton id={game.id} name={game.name} />
+                    </span>
                   </td>
                 </tr>
               ))}

@@ -1,46 +1,116 @@
 import Link from 'next/link';
+import type { Category, Settings } from '@/types';
 
-export default function Footer() {
+type Props = {
+  settings: Settings | null;
+  categories: Category[];
+};
+
+function isSafeExternalUrl(value?: string): value is string {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+export default function Footer({ settings, categories }: Props) {
+  const siteName = settings?.site_name || 'PuzzleWalkthroughs';
+  const siteDescription =
+    settings?.site_description ||
+    'Complete video walkthroughs for all puzzle games.';
+  const social = settings?.social_links || {};
+  const socialLinks = [
+    { key: 'youtube', label: 'YouTube' },
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'twitter', label: 'Twitter / X' },
+    { key: 'instagram', label: 'Instagram' },
+  ].filter(({ key }) => isSafeExternalUrl(social[key]));
+  const visibleCategories = categories.slice(0, 6);
+
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-16">
-      <div className="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-8">
-        <div>
-          <h3 className="text-white font-bold mb-3">🧩 PuzzleWalkthroughs</h3>
-          <p className="text-sm">
-            Complete video walkthroughs for all puzzle games.
-          </p>
+    <footer className="site-footer">
+      <div className="container-page">
+        <div className={`footer-grid ${visibleCategories.length === 0 ? 'no-cat' : ''}`}>
+          {/* Brand */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <div className="brand" style={{ color: '#fff', marginBottom: '0.9rem' }}>
+              <span className="brand-mark" aria-hidden="true">🧩</span>
+              <span>{siteName}</span>
+            </div>
+            <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
+            {socialLinks.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-5">
+                {socialLinks.map(({ key, label }) => (
+                  <a
+                    key={key}
+                    href={social[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-pill"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick links */}
+          <div>
+            <div className="footer-title">Quick links</div>
+            <div className="footer-links">
+              <Link href="/" className="footer-link">Home</Link>
+              <Link href="/blog" className="footer-link">Blog</Link>
+              <Link href="/about" className="footer-link">About</Link>
+              <Link href="/contact" className="footer-link">Contact</Link>
+            </div>
+          </div>
+
+          {/* Categories */}
+          {visibleCategories.length > 0 && (
+            <div>
+              <div className="footer-title">Categories</div>
+              <div className="footer-links">
+                {visibleCategories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/category/${category.slug}`}
+                    className="footer-link"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Legal */}
+          <div>
+            <div className="footer-title">Legal</div>
+            <div className="footer-links">
+              <Link href="/privacy-policy" className="footer-link">Privacy policy</Link>
+              <Link href="/terms" className="footer-link">Terms of service</Link>
+            </div>
+          </div>
+
+          {/* Follow (only if no pills shown in brand block, keep a hint for admin) */}
+          <div>
+            <div className="footer-title">Stuck on a level?</div>
+            <p className="text-sm leading-relaxed mb-4">
+              Pick a game and open the exact level you need.
+            </p>
+            <Link href="/#all-games" className="btn btn-primary btn-sm">
+              Browse games
+            </Link>
+          </div>
         </div>
 
-        <div>
-          <h4 className="text-white font-bold mb-3">Quick Links</h4>
-          <ul className="space-y-2 text-sm">
-            <li><Link href="/" className="hover:text-white">Home</Link></li>
-            <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-            <li><Link href="/about" className="hover:text-white">About</Link></li>
-            <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-          </ul>
+        <div className="footer-bottom">
+          © {new Date().getFullYear()} {siteName}. All rights reserved.
         </div>
-
-        <div>
-          <h4 className="text-white font-bold mb-3">Legal</h4>
-          <ul className="space-y-2 text-sm">
-            <li><Link href="/privacy-policy" className="hover:text-white">Privacy Policy</Link></li>
-            <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-white font-bold mb-3">Follow</h4>
-          <ul className="space-y-2 text-sm">
-            <li><a href="https://youtube.com" target="_blank" rel="noopener" className="hover:text-white">YouTube</a></li>
-            <li><a href="https://facebook.com" target="_blank" rel="noopener" className="hover:text-white">Facebook</a></li>
-            <li><a href="https://twitter.com" target="_blank" rel="noopener" className="hover:text-white">Twitter</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="border-t border-gray-800 py-4 text-center text-sm">
-        © {new Date().getFullYear()} PuzzleWalkthroughs. All rights reserved.
       </div>
     </footer>
   );

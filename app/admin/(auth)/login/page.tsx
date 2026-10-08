@@ -37,52 +37,69 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #D4ECFF 0%, #F3F9FF 100%)' }}
+    >
+      <div className="hero-dots" />
+      <div className="hero-blob b1" />
+      <div className="hero-blob b2" />
+
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md"
+        className="card p-7 sm:p-9 w-full max-w-md relative animate-fade-in-up"
+        style={{ boxShadow: 'var(--shadow-lg)' }}
       >
-        <h1 className="text-2xl font-bold mb-2 text-center">Admin Login</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <div className="flex justify-center mb-5">
+          <span className="brand-mark" style={{ width: 56, height: 56, fontSize: 28, borderRadius: 18 }}>
+            🧩
+          </span>
+        </div>
+        <h1 className="text-2xl font-extrabold mb-1 text-center">Admin login</h1>
+        <p className="text-sm text-center mb-7" style={{ color: 'var(--muted)' }}>
           Sign in to manage your site
         </p>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+          <div
+            role="alert"
+            className="p-3 rounded-xl mb-5 text-sm font-medium"
+            style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+          >
             {error}
           </div>
         )}
 
         <label className="block mb-4">
-          <span className="text-sm font-medium text-gray-700">Email</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Email</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="email"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
             placeholder="admin@yoursite.com"
           />
         </label>
 
-        <label className="block mb-6">
-          <span className="text-sm font-medium text-gray-700">Password</span>
+        <label className="block mb-7">
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Password</span>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="current-password"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
             placeholder="••••••••"
           />
         </label>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {loading ? 'Logging in...' : 'Login'}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+          {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
     </div>

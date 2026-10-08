@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getBlogBySlug } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
+import ViewTracker from '@/components/ViewTracker';
+import Breadcrumb from '@/components/Breadcrumb';
+import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -39,33 +43,58 @@ export default async function BlogDetailPage({ params }: Props) {
   };
 
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10">
+    <article className="animate-fade-in-up">
+      <ViewTracker type="blog" id={blog.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <h1 className="text-4xl font-bold mb-3">{blog.title}</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Published {formatDate(blog.created_at)}
-      </p>
+      <div className="container-narrow pt-6">
+        <Breadcrumb
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Blog', href: '/blog' },
+            { label: blog.title },
+          ]}
+        />
+      </div>
 
-      {blog.cover_image && (
-        <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden mb-8 relative">
-          <Image
-            src={blog.cover_image}
-            alt={blog.title}
-            fill
-            className="object-cover"
-            priority
-          />
+      <div className="container-narrow pt-6 pb-4">
+        <h1 className="page-title mb-4">{blog.title}</h1>
+
+        <div
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm pb-6 mb-8"
+          style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
+        >
+          <span>Published {formatDate(blog.created_at)}</span>
+          <span aria-hidden="true">•</span>
+          <span>{blog.views} views</span>
         </div>
-      )}
 
-      <div
-        className="prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: blog.content || '' }}
-      />
+        {blog.cover_image && (
+          <div className="cover-frame mb-8 md:mb-10">
+            <Image
+              src={blog.cover_image}
+              alt={blog.title}
+              fill
+              priority
+              sizes="(max-width: 820px) 100vw, 820px"
+            />
+          </div>
+        )}
+
+        <div
+          className="prose max-w-none text-[16px]"
+          dangerouslySetInnerHTML={{ __html: sanitize(blog.content || '') }}
+        />
+
+        <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
+          <Link href="/blog" className="btn btn-secondary">
+            ← Back to all guides
+          </Link>
+        </div>
+      </div>
     </article>
   );
 }

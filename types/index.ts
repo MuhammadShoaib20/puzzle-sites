@@ -40,6 +40,7 @@ export interface Game {
   meta_title?: string;
   meta_description?: string;
   keywords?: string[];
+  operating_system?: string;
   total_levels: number;
   views: number;
   published: boolean;

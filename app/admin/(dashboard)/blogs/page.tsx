@@ -16,71 +16,57 @@ export default async function AdminBlogsPage() {
   const blogs = await getBlogs();
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
         <div>
-          <h1 className="text-3xl font-bold">Blogs</h1>
-          <p className="text-gray-600 mt-1">{blogs.length} total posts</p>
+          <h1 className="admin-title">Blogs</h1>
+          <p className="admin-sub">{blogs.length} total posts</p>
         </div>
-        <Link
-          href="/admin/blogs/new"
-          className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-        >
-          + Add New Blog
+        <Link href="/admin/blogs/new" className="btn btn-primary btn-sm">
+          + Add blog
         </Link>
       </div>
 
       {blogs.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center">
-          <p className="text-gray-500 mb-4">Abhi koi blog nahi hai.</p>
-          <Link
-            href="/admin/blogs/new"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            + Create First Blog
+        <div className="empty-state">
+          <div className="emoji">📝</div>
+          <p className="font-bold mb-4">No blogs yet</p>
+          <Link href="/admin/blogs/new" className="btn btn-primary btn-sm">
+            + Create first blog
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr className="text-left text-sm text-gray-600">
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">Views</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+        <div className="card admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Slug</th>
+                <th>Views</th>
+                <th>Status</th>
+                <th className="right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {blogs.map((blog) => (
-                <tr key={blog.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{blog.title}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                    {blog.slug}
-                  </td>
-                  <td className="px-4 py-3 text-sm">{blog.views || 0}</td>
-                  <td className="px-4 py-3">
+                <tr key={blog.id}>
+                  <td className="name">{blog.title}</td>
+                  <td className="mono">{blog.slug}</td>
+                  <td>{blog.views || 0}</td>
+                  <td>
                     {blog.published ? (
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Published
-                      </span>
+                      <span className="pill pill-green">Published</span>
                     ) : (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Draft
-                      </span>
+                      <span className="pill pill-gray">Draft</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Link
-                      href={`/admin/blogs/${blog.id}/edit`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
-                    <DeleteBlogButton id={blog.id} title={blog.title} />
+                  <td className="right">
+                    <span className="admin-actions">
+                      <Link href={`/admin/blogs/${blog.id}/edit`} className="act act-edit">
+                        Edit
+                      </Link>
+                      <DeleteBlogButton id={blog.id} title={blog.title} />
+                    </span>
                   </td>
                 </tr>
               ))}

@@ -23,18 +23,18 @@ export default async function AdminSettingsPage() {
   const settings = await getSettings();
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-2">Site Settings</h1>
-      <p className="text-gray-600 mb-8">
-        Manage site-wide configuration, AdSense codes, and social links.
-      </p>
+    <div className="admin-page animate-fade-in-up" style={{ maxWidth: 900 }}>
+      <div className="admin-head">
+        <div>
+          <h1 className="admin-title">Site settings</h1>
+          <p className="admin-sub">Manage site-wide configuration, AdSense codes and social links.</p>
+        </div>
+      </div>
 
       {!settings && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6 text-sm text-yellow-800">
-          ⚠️ Settings row nahi mili DB me. Supabase SQL Editor me yeh run karo:
-          <code className="block mt-2 bg-yellow-100 p-2 rounded">
-            INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
-          </code>
+        <div className="admin-alert">
+          ⚠️ Settings row not found in the database. Run this in the Supabase SQL Editor:
+          <code>INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;</code>
         </div>
       )}
 

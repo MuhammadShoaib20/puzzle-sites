@@ -11,8 +11,9 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
 
   if (confirming) {
     return (
-      <span className="inline-flex gap-1 text-xs">
+      <span className="inline-flex gap-1">
         <button
+          type="button"
           onClick={() => {
             startTransition(async () => {
               const res = await deleteLevel(levelId, gameId);
@@ -20,14 +21,11 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
             });
           }}
           disabled={isPending}
-          className="text-red-600 font-semibold hover:underline disabled:opacity-50"
+          className="act act-del solid"
         >
-          {isPending ? '...' : 'Yes'}
+          {isPending ? '…' : 'Yes'}
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-gray-500 hover:underline"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="act act-ghost">
           No
         </button>
       </span>
@@ -36,11 +34,12 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="text-red-600 hover:underline"
+      className="act act-del"
       title={`Delete Level ${levelNumber}`}
     >
-      Del
+      Delete
     </button>
   );
 }

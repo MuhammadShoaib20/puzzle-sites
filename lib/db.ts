@@ -57,6 +57,53 @@ export async function getLevelsByGame(gameId: string): Promise<Level[]> {
   return (data || []) as Level[];
 }
 
+export async function getAllPublishedLevelsForSitemap(): Promise<
+  { game_slug: string; level_number: number; created_at: string }[]
+> {
+  const pageSize = 1000;
+  const result: { game_slug: string; level_number: number; created_at: string }[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('levels')
+      .select(`
+        level_number,
+        created_at,
+        game:games!inner (slug, published)
+      `)
+      .eq('published', true)
+      .eq('game.published', true)
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error('getAllPublishedLevelsForSitemap error:', error.message);
+      return [];
+    }
+
+    type Row = {
+      level_number: number;
+      created_at: string;
+      game: { slug: string } | { slug: string }[] | null;
+    };
+
+    const rows = (data || []) as unknown as Row[];
+    for (const row of rows) {
+      const game = Array.isArray(row.game) ? row.game[0] : row.game;
+      if (!game?.slug) continue;
+      result.push({
+        game_slug: game.slug,
+        level_number: row.level_number,
+        created_at: row.created_at,
+      });
+    }
+
+    if (rows.length < pageSize) break;
+  }
+
+  return result;
+}
+
 export async function getLevelByNumber(
   gameId: string,
   levelNumber: number
@@ -73,16 +120,27 @@ export async function getLevelByNumber(
   return data as Level;
 }
 
-export async function getLatestLevels(limit = 12): Promise<Level[]> {
+export async function getLatestLevels(
+  limit = 12
+): Promise<(Level & { game: { id: string; name: string; slug: string } })[]> {
   const { data, error } = await supabase
     .from('levels')
-    .select('*')
+    .select(`
+      *,
+      game:games!inner (id, name, slug, published)
+    `)
     .eq('published', true)
+    .eq('game.published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (error) return [];
-  return (data || []) as Level[];
+  if (error) {
+    console.error('getLatestLevels error:', error.message);
+    return [];
+  }
+  return (data || []) as (Level & {
+    game: { id: string; name: string; slug: string };
+  })[];
 }
 
 // ==========================================
@@ -158,6 +216,18 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 
   if (error || !data) return null;
   return data as Category;
+}
+
+export async function getGamesByCategory(categoryId: string): Promise<Game[]> {
+  const { data, error } = await supabase
+    .from('games')
+    .select('*')
+    .eq('category_id', categoryId)
+    .eq('published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data || []) as Game[];
 }
 
 // ==========================================
