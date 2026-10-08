@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import NavbarSearch from './NavbarSearch';
@@ -30,8 +31,15 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         <div className="nav-inner">
           <Link href="/" className="brand" onClick={() => setOpen(false)}>
             {siteLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={siteLogo} alt={siteName} className="h-9 w-auto max-w-44 object-contain" />
+              <Image
+                src={siteLogo}
+                alt={siteName}
+                width={180}
+                height={48}
+                className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
+                priority
+                unoptimized
+              />
             ) : (
               <>
                 <span className="brand-mark" aria-hidden="true">🧩</span>

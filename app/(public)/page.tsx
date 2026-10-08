@@ -68,7 +68,7 @@ export default async function HomePage() {
           </div>
 
           <div
-            className="flex gap-4 justify-center flex-wrap mt-10 animate-fade-in-up"
+            className="flex gap-3 sm:gap-4 justify-center flex-wrap mt-8 sm:mt-10 animate-fade-in-up btn-stack"
             style={{ animationDelay: '260ms' }}
           >
             <Link href="#all-games" className="btn btn-primary btn-lg">
@@ -187,7 +187,7 @@ export default async function HomePage() {
         <div className="cta-band">
           <h2>Can&apos;t find your game?</h2>
           <p>Tell us which puzzle game you&apos;re stuck on and we&apos;ll add its walkthrough.</p>
-          <Link href="/contact" className="btn btn-accent btn-lg">
+          <Link href="/contact" className="btn btn-accent btn-lg btn-stack">
             Request a game
           </Link>
         </div>

@@ -83,6 +83,8 @@ app/
         page.tsx
       games/
         [id]/
+          edit/
+            page.tsx
           levels/
             [levelId]/
               edit/
@@ -114,19 +116,27 @@ app/
 components/
   AdminSidebar.tsx
   AdSlot.tsx
+  BackgroundDecor.tsx
+  BlogCard.tsx
   BlogForm.tsx
+  Breadcrumb.tsx
   BulkGenerateForm.tsx
   DeleteBlogButton.tsx
   DeleteGameButton.tsx
   DeleteLevelButton.tsx
+  EmptyState.tsx
   Footer.tsx
+  GameCard.tsx
   GameForm.tsx
   GoogleAnalytics.tsx
   LevelButtons.tsx
   LevelForm.tsx
   Navbar.tsx
+  NavbarClient.tsx
   NavbarSearch.tsx
+  PopularLevels.tsx
   SettingsForm.tsx
+  StaticPage.tsx
   ViewTracker.tsx
   YouTubeEmbed.tsx
 lib/
@@ -168,6 +178,7 @@ This section contains the contents of the repository's files.
 
 <file path="app/(public)/about/page.tsx">
 import type { Metadata } from 'next';
+import StaticPage from '@/components/StaticPage';
 
 export const metadata: Metadata = {
   title: 'About Us',
@@ -176,17 +187,17 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="container-narrow py-12 md:py-16 animate-fade-in-up">
-      <h1 className="text-3xl md:text-4xl font-bold mb-8" style={{ color: 'var(--tealdark)' }}>
-        About Us
-      </h1>
-      <div className="card p-6 md:p-8">
-        <div className="prose max-w-none text-[15px] md:text-[16px]">
-          <p>Welcome to Puzzle Walkthroughs — your one-stop destination for complete video guides on puzzle games.</p>
-          <p>We provide level-by-level walkthroughs, tips, and tricks to help you beat even the toughest puzzles.</p>
-        </div>
-      </div>
-    </div>
+    <StaticPage
+      title="About us"
+      subtitle="Complete video guides for puzzle games, one level at a time."
+    >
+      <p>
+        Welcome to Puzzle Walkthroughs — your one-stop destination for complete video guides on puzzle games.
+      </p>
+      <p>
+        We provide level-by-level walkthroughs, tips, and tricks to help you beat even the toughest puzzles.
+      </p>
+    </StaticPage>
   );
 }
 </file>
@@ -198,6 +209,7 @@ import Link from 'next/link';
 import { getBlogBySlug } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
 import ViewTracker from '@/components/ViewTracker';
+import Breadcrumb from '@/components/Breadcrumb';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -243,56 +255,45 @@ export default async function BlogDetailPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Breadcrumb */}
-      <div className="container-page pt-6 text-[13px]" style={{ color: 'var(--muted)' }}>
-        <Link href="/" className="hover:text-[var(--coral)] transition">Home</Link>
-        <span className="mx-2">/</span>
-        <Link href="/blog" className="hover:text-[var(--coral)] transition">Blog</Link>
+      <div className="container-narrow pt-6">
+        <Breadcrumb
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Blog', href: '/blog' },
+            { label: blog.title },
+          ]}
+        />
       </div>
 
-      <div className="container-narrow pt-6 pb-16">
-        {/* Title */}
-        <h1
-          className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
-          style={{ color: 'var(--tealdark)' }}
-        >
-          {blog.title}
-        </h1>
+      <div className="container-narrow pt-6 pb-4">
+        <h1 className="page-title mb-4">{blog.title}</h1>
 
-        {/* Meta */}
         <div
-          className="flex items-center gap-3 text-sm mb-8 pb-6"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm pb-6 mb-8"
           style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
         >
           <span>Published {formatDate(blog.created_at)}</span>
-          <span>·</span>
+          <span aria-hidden="true">•</span>
           <span>{blog.views} views</span>
         </div>
 
-        {/* Cover */}
         {blog.cover_image && (
-          <div
-            className="aspect-video rounded-2xl overflow-hidden mb-8 relative"
-            style={{ background: 'var(--bg-alt)' }}
-          >
+          <div className="cover-frame mb-8 md:mb-10">
             <Image
               src={blog.cover_image}
               alt={blog.title}
               fill
-              className="object-cover"
               priority
-              sizes="(max-width: 800px) 100vw, 800px"
+              sizes="(max-width: 820px) 100vw, 820px"
             />
           </div>
         )}
 
-        {/* Content */}
         <div
-          className="prose max-w-none text-[15px] md:text-[16px]"
+          className="prose max-w-none text-[16px]"
           dangerouslySetInnerHTML={{ __html: sanitize(blog.content || '') }}
         />
 
-        {/* Back */}
         <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
           <Link href="/blog" className="btn btn-secondary">
             ← Back to all guides
@@ -305,11 +306,10 @@ export default async function BlogDetailPage({ params }: Props) {
 </file>
 
 <file path="app/(public)/blog/page.tsx">
-import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getAllBlogs } from '@/lib/db';
-import { formatDate } from '@/lib/utils';
+import BlogCard from '@/components/BlogCard';
+import EmptyState from '@/components/EmptyState';
 
 export const metadata: Metadata = {
   title: 'Blog — Puzzle Game Guides & Tips',
@@ -322,78 +322,24 @@ export default async function BlogPage() {
   const blogs = await getAllBlogs();
 
   return (
-    <div className="container-page py-12 md:py-16 animate-fade-in-up">
-      {/* Header */}
-      <div className="mb-10 md:mb-12">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: 'var(--tealdark)' }}>
-          📝 Blog
-        </h1>
-        <p className="text-[15px] md:text-base" style={{ color: 'var(--muted)' }}>
-          Guides, tips, and strategies for every puzzle game.
+    <div className="container-page py-10 md:py-16 animate-fade-in-up">
+      <header className="mb-8 md:mb-12 text-center">
+        <h1 className="page-title">Blog</h1>
+        <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+          Guides, tips and strategies for every puzzle game.
         </p>
-      </div>
+      </header>
 
       {blogs.length === 0 ? (
-        <div
-          className="rounded-2xl p-10 md:p-16 text-center"
-          style={{ border: '2px dashed var(--line)', background: 'var(--card)' }}
-        >
-          <div className="text-5xl mb-4">📝</div>
-          <p className="font-semibold mb-1" style={{ color: 'var(--ink)' }}>
-            No blog posts yet
-          </p>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Add blogs from the admin panel to see them here.
-          </p>
-        </div>
+        <EmptyState
+          emoji="📝"
+          title="No blog posts yet"
+          text="Add blogs from the admin panel to see them here."
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {blogs.map((blog) => (
-            <Link key={blog.id} href={`/blog/${blog.slug}`} className="card card-hover group flex flex-col">
-              {blog.cover_image ? (
-                <div
-                  className="aspect-[16/9] relative overflow-hidden"
-                  style={{ background: 'var(--bg-alt)' }}
-                >
-                  <Image
-                    src={blog.cover_image}
-                    alt={blog.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                </div>
-              ) : (
-                <div
-                  className="aspect-[16/9] flex items-center justify-center text-5xl"
-                  style={{ background: 'var(--bg-alt)' }}
-                >
-                  📝
-                </div>
-              )}
-              <div className="p-5 flex-1 flex flex-col">
-                <h2
-                  className="font-bold text-[16px] line-clamp-2 mb-2.5 group-hover:text-[var(--coral)] transition-colors leading-snug"
-                  style={{ color: 'var(--ink)' }}
-                >
-                  {blog.title}
-                </h2>
-                {blog.meta_description && (
-                  <p
-                    className="text-sm line-clamp-2 leading-relaxed mb-3 flex-1"
-                    style={{ color: 'var(--muted)' }}
-                  >
-                    {blog.meta_description}
-                  </p>
-                )}
-                <div
-                  className="text-xs pt-3 mt-auto"
-                  style={{ color: 'var(--muted-light)', borderTop: '1px solid var(--line-soft)' }}
-                >
-                  {formatDate(blog.created_at)}
-                </div>
-              </div>
-            </Link>
+            <BlogCard key={blog.id} blog={blog} />
           ))}
         </div>
       )}
@@ -403,10 +349,12 @@ export default async function BlogPage() {
 </file>
 
 <file path="app/(public)/category/[slug]/page.tsx">
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getCategoryBySlug, getGamesByCategory } from '@/lib/db';
+import Breadcrumb from '@/components/Breadcrumb';
+import GameCard from '@/components/GameCard';
+import EmptyState from '@/components/EmptyState';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -431,50 +379,23 @@ export default async function CategoryPage({ params }: Props) {
   const games = await getGamesByCategory(category.id);
 
   return (
-    <div className="container-page py-12 md:py-16 animate-fade-in-up">
-      <nav className="text-[13px] mb-6 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
-        <Link href="/" className="hover:text-[var(--coral)] transition">Home</Link>
-        <span>›</span>
-        <span style={{ color: 'var(--ink)' }}>{category.name}</span>
-      </nav>
+    <div className="container-page py-8 md:py-14 animate-fade-in-up">
+      <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: category.name }]} />
 
-      <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: 'var(--tealdark)' }}>
-        {category.name}
-      </h1>
-      {category.description && (
-        <p className="text-[15px] mb-8 max-w-2xl" style={{ color: 'var(--muted)' }}>
-          {category.description}
-        </p>
-      )}
-
-      <div className="mb-8">
-        <span className="badge badge-teal">{games.length} games</span>
-      </div>
+      <header className="mt-5 mb-8 md:mb-10">
+        <h1 className="page-title">{category.name}</h1>
+        {category.description && <p className="page-sub">{category.description}</p>}
+        <div className="mt-4">
+          <span className="badge badge-primary">{games.length} games</span>
+        </div>
+      </header>
 
       {games.length === 0 ? (
-        <div
-          className="rounded-2xl p-10 md:p-16 text-center"
-          style={{ border: '2px dashed var(--line)', background: 'var(--card)' }}
-        >
-          <div className="text-5xl mb-4">🎮</div>
-          <p style={{ color: 'var(--muted)' }}>
-            No games in this category yet.
-          </p>
-        </div>
+        <EmptyState emoji="🎮" text="No games in this category yet." />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-          {games.map((game) => (
-            <Link key={game.id} href={`/game/${game.slug}`} className="card card-hover p-5 group">
-              <h3
-                className="font-bold text-[15px] mb-2 line-clamp-1 group-hover:text-[var(--coral)] transition-colors"
-                style={{ color: 'var(--ink)' }}
-              >
-                {game.name}
-              </h3>
-              <span className="badge badge-teal text-[10px]">
-                {game.total_levels || 0} levels
-              </span>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {games.map((game, idx) => (
+            <GameCard key={game.id} game={game} index={idx} />
           ))}
         </div>
       )}
@@ -485,6 +406,7 @@ export default async function CategoryPage({ params }: Props) {
 
 <file path="app/(public)/contact/page.tsx">
 import type { Metadata } from 'next';
+import StaticPage from '@/components/StaticPage';
 
 export const metadata: Metadata = {
   title: 'Contact Us',
@@ -493,17 +415,12 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="container-narrow py-12 md:py-16 animate-fade-in-up">
-      <h1 className="text-3xl md:text-4xl font-bold mb-8" style={{ color: 'var(--tealdark)' }}>
-        Contact Us
-      </h1>
-      <div className="card p-6 md:p-8">
-        <div className="prose max-w-none text-[15px] md:text-[16px]">
-          <p>Have questions, feedback, or business inquiries? Reach out to us:</p>
-          <p><strong>Email:</strong> contact@yoursite.com</p>
-        </div>
-      </div>
-    </div>
+    <StaticPage title="Contact us" subtitle="Questions, feedback, or a game you want covered? Write to us.">
+      <p>Have questions, feedback, or business inquiries? Reach out to us:</p>
+      <p>
+        <strong>Email:</strong> contact@yoursite.com
+      </p>
+    </StaticPage>
   );
 }
 </file>
@@ -520,6 +437,8 @@ import {
 } from '@/lib/db';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
+import Breadcrumb from '@/components/Breadcrumb';
+import PopularLevels from '@/components/PopularLevels';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
@@ -616,7 +535,7 @@ export default async function LevelPage({ params }: Props) {
   };
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <ViewTracker type="level" id={level.id} />
       <script
         type="application/ld+json"
@@ -627,20 +546,19 @@ export default async function LevelPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <div
-        className="container-page pt-5 text-[13px]"
-        style={{ color: 'var(--muted)' }}
-      >
-        <Link href="/" className="hover:text-[var(--coral)] transition">Home</Link>
-        <span className="mx-2">/</span>
-        <Link href={`/game/${game.slug}`} className="hover:text-[var(--coral)] transition">{game.name}</Link>
-        <span className="mx-2">/</span>
-        <span style={{ color: 'var(--ink)' }}>Level {level.level_number}</span>
+      <div className="container-page pt-5">
+        <Breadcrumb
+          items={[
+            { label: 'Home', href: '/' },
+            { label: game.name, href: `/game/${game.slug}` },
+            { label: `Level ${level.level_number}` },
+          ]}
+        />
       </div>
 
-      <div className="container-page pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+      <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
-          <h1 className="text-3xl md:text-[32px] font-bold mb-2" style={{ color: 'var(--tealdark)' }}>
+          <h1 className="page-title mb-2">
             {game.name} Level {level.level_number} Walkthrough
           </h1>
 
@@ -648,33 +566,27 @@ export default async function LevelPage({ params }: Props) {
             {level.views} views · {new Date(level.created_at).toLocaleDateString()}
           </p>
 
-          <div className="aspect-video rounded-2xl overflow-hidden mb-5" style={{ background: '#12201F' }}>
+          <div className="video-frame mb-6">
             <iframe
               src={`https://www.youtube.com/embed/${level.youtube_id}`}
               title={`${game.name} Level ${level.level_number}`}
-              className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               loading="lazy"
             />
           </div>
 
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="flex flex-wrap gap-4 mb-8">
             <a
               href={level.youtube_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-3 rounded-[10px] font-bold text-sm text-white transition hover:opacity-90"
-              style={{ background: '#E8482B' }}
+              className="btn btn-youtube"
             >
               ▶ {settings?.youtube_button_text || 'Watch on YouTube'}
             </a>
-            <Link
-              href={`/game/${game.slug}`}
-              className="px-5 py-3 rounded-[10px] font-bold text-sm transition hover:bg-white"
-              style={{ border: '1.5px solid var(--line)', color: 'var(--ink)' }}
-            >
-              🎮 All Levels
+            <Link href={`/game/${game.slug}`} className="btn btn-secondary">
+              🎮 All levels
             </Link>
           </div>
 
@@ -683,148 +595,91 @@ export default async function LevelPage({ params }: Props) {
           )}
 
           {level.description && (
-            <section className="mb-8">
-              <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--tealdark)' }}>
-                Overview
-              </h2>
-              <p className="leading-7" style={{ color: 'var(--ink)' }}>{level.description}</p>
+            <section className="section" style={{ marginBottom: '2rem' }}>
+              <h2 className="section-title mb-3">Overview</h2>
+              <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
+                {level.description}
+              </p>
             </section>
           )}
 
           {level.walkthrough && (
-            <section className="mb-8">
-              <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--tealdark)' }}>
-                Step-by-Step Walkthrough
-              </h2>
+            <section className="section" style={{ marginBottom: '2rem' }}>
+              <h2 className="section-title mb-3">Step-by-step walkthrough</h2>
               <div
-                className="prose max-w-none text-[15px] leading-7"
+                className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: sanitize(level.walkthrough) }}
               />
             </section>
           )}
 
           {level.tips && (
-            <section
-              className="rounded-2xl p-5 mb-8"
-              style={{ background: 'var(--tip)', border: '1px solid var(--tipline)' }}
-            >
-              <h3 className="text-[15px] font-bold mb-2" style={{ color: 'var(--ink)' }}>
-                💡 Pro Tip
-              </h3>
+            <section className="tip-box mb-8">
+              <h3>💡 Pro tip</h3>
               <div
-                className="prose max-w-none text-[14px] leading-6"
+                className="prose max-w-none text-[14.5px]"
                 dangerouslySetInnerHTML={{ __html: sanitize(level.tips) }}
               />
             </section>
           )}
 
           {nearbyLevels.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--tealdark)' }}>
-                All Levels
-              </h2>
-              <div className="grid grid-cols-6 sm:grid-cols-10 gap-2">
-                {nearbyLevels.map((item) => {
-                  const isCurrent = item.level_number === levelNumber;
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`/game/${game.slug}/level-${item.level_number}`}
-                      className={`text-center py-2.5 rounded-xl font-bold text-[13px] transition-all duration-200 ${
-                        isCurrent ? 'scale-105' : 'hover:-translate-y-0.5 hover:shadow-md'
-                      }`}
-                      style={
-                        isCurrent
-                          ? {
-                              background: 'linear-gradient(135deg, var(--coral), var(--coral-dark))',
-                              color: '#fff',
-                              boxShadow: 'var(--shadow-coral)',
-                            }
-                          : { background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--ink)' }
-                      }
-                    >
-                      {item.level_number}
-                    </Link>
-                  );
-                })}
+            <section className="section" style={{ marginBottom: '2rem' }}>
+              <h2 className="section-title mb-4">More levels</h2>
+              <div className="level-grid">
+                {nearbyLevels.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/game/${game.slug}/level-${item.level_number}`}
+                    className={`level-tile ${item.level_number === levelNumber ? 'current' : ''}`}
+                    aria-current={item.level_number === levelNumber ? 'page' : undefined}
+                  >
+                    {item.level_number}
+                  </Link>
+                ))}
               </div>
             </section>
           )}
 
-          <nav className="flex justify-between gap-3 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
+          <nav className="pager pt-6" style={{ borderTop: '1px solid var(--line)' }} aria-label="Level navigation">
             {prevLevel ? (
               <Link
                 href={`/game/${game.slug}/level-${prevLevel.level_number}`}
-                className="flex-1 card card-hover p-4 text-[13px] group"
+                className="card card-hover pager-item"
               >
-                <div className="flex items-center gap-2 mb-1" style={{ color: 'var(--muted)' }}>
-                  <span className="transition-transform group-hover:-translate-x-1">←</span>
-                  <span>Previous</span>
-                </div>
-                <div className="font-bold" style={{ color: 'var(--ink)' }}>
-                  Level {prevLevel.level_number}
-                </div>
+                <small>← Previous</small>
+                <strong>Level {prevLevel.level_number}</strong>
               </Link>
-            ) : <div className="flex-1" />}
+            ) : (
+              <div />
+            )}
             {nextLevel ? (
               <Link
                 href={`/game/${game.slug}/level-${nextLevel.level_number}`}
-                className="flex-1 card card-hover p-4 text-[13px] text-right group"
+                className="card card-hover pager-item next"
               >
-                <div className="flex items-center justify-end gap-2 mb-1" style={{ color: 'var(--muted)' }}>
-                  <span>Next</span>
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </div>
-                <div className="font-bold" style={{ color: 'var(--ink)' }}>
-                  Level {nextLevel.level_number}
-                </div>
+                <small>Next →</small>
+                <strong>Level {nextLevel.level_number}</strong>
               </Link>
-            ) : <div className="flex-1" />}
+            ) : (
+              <div />
+            )}
           </nav>
         </main>
 
-        <aside className="hidden lg:flex flex-col gap-5 sticky top-24">
+        <aside className="sidebar">
           {settings?.adsense_sidebar && (
-            <AdSlot code={settings.adsense_sidebar} label="Sidebar" variant="square" />
-          )}
-
-          {popularLevels.length > 0 && (
-            <div className="card p-5">
-              <h3
-                className="text-sm font-bold mb-4 flex items-center gap-2"
-                style={{ color: 'var(--tealdark)' }}
-              >
-                🔥 Popular Levels
-              </h3>
-              <div className="flex flex-col gap-2">
-                {popularLevels.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/game/${game.slug}/level-${item.level_number}`}
-                    className="flex items-center gap-3 text-[13px] p-2 rounded-lg transition-all hover:bg-[var(--bg-alt)] group"
-                    style={{ color: 'var(--ink)' }}
-                  >
-                    <span
-                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 text-[12px] transition-transform group-hover:scale-105"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--teal), var(--tealdark))',
-                        color: 'white',
-                        fontFamily: 'var(--font-space-grotesk), sans-serif',
-                      }}
-                    >
-                      {item.level_number}
-                    </span>
-                    <span className="line-clamp-1 group-hover:text-[var(--coral)] transition-colors font-medium">
-                      {item.title || `Level ${item.level_number}`}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+            <div className="hidden lg:block">
+              <AdSlot code={settings.adsense_sidebar} label="Sidebar" variant="square" />
             </div>
           )}
 
+          <PopularLevels gameSlug={game.slug} levels={popularLevels} />
+
           {settings?.adsense_footer && (
-            <AdSlot code={settings.adsense_footer} label="Sidebar footer" variant="skyscraper" />
+            <div className="hidden lg:block">
+              <AdSlot code={settings.adsense_footer} label="Sidebar footer" variant="skyscraper" />
+            </div>
           )}
         </aside>
       </div>
@@ -844,9 +699,13 @@ import {
   getBlogsByGame,
   getSettings,
 } from '@/lib/db';
-import { extractYoutubeId, formatDate } from '@/lib/utils';
+import { extractYoutubeId } from '@/lib/utils';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
+import Breadcrumb from '@/components/Breadcrumb';
+import BlogCard from '@/components/BlogCard';
+import LevelButtons from '@/components/LevelButtons';
+import PopularLevels from '@/components/PopularLevels';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -891,6 +750,9 @@ export default async function GamePage({ params }: Props) {
     ? extractYoutubeId(game.youtube_trailer_url)
     : '';
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const popularLevels = [...levels]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 5);
 
   const videoGameSchema = {
     '@context': 'https://schema.org',
@@ -930,7 +792,7 @@ export default async function GamePage({ params }: Props) {
       : null;
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <ViewTracker type="game" id={game.id} />
       <script
         type="application/ld+json"
@@ -947,40 +809,29 @@ export default async function GamePage({ params }: Props) {
         />
       )}
 
-      <div
-        className="container-page pt-5 text-[13px]"
-        style={{ color: 'var(--muted)' }}
-      >
-        <Link href="/" className="hover:text-[var(--coral)] transition">Home</Link>
-        <span className="mx-2">/</span>
-        <span style={{ color: 'var(--ink)' }}>{game.name}</span>
+      <div className="container-page pt-5">
+        <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: game.name }]} />
       </div>
 
-      <div className="container-page pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+      <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
-          <h1
-            className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
-            style={{ color: 'var(--tealdark)' }}
-          >
-            {game.name} — All Levels Walkthrough
-          </h1>
+          <h1 className="page-title mb-4">{game.name} — All Levels Walkthrough</h1>
 
           {game.short_description && (
-            <p className="text-[15px] md:text-base mb-6 leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            <p
+              className="text-[16px] md:text-[17px] mb-6 leading-relaxed"
+              style={{ color: 'var(--ink-soft)' }}
+            >
               {game.short_description}
             </p>
           )}
 
           {game.cover_image && (
-            <div
-              className="aspect-video relative rounded-2xl overflow-hidden mb-6"
-              style={{ background: 'var(--teallight)' }}
-            >
+            <div className="cover-frame mb-6">
               <Image
                 src={game.cover_image}
                 alt={`${game.name} cover`}
                 fill
-                className="object-cover"
                 priority
                 sizes="(max-width: 1024px) 100vw, 900px"
               />
@@ -988,14 +839,10 @@ export default async function GamePage({ params }: Props) {
           )}
 
           {trailerId && (
-            <div
-              className="aspect-video rounded-2xl overflow-hidden mb-6"
-              style={{ background: '#0B3F42' }}
-            >
+            <div className="video-frame mb-6">
               <iframe
                 src={`https://www.youtube.com/embed/${trailerId}`}
                 title={`${game.name} trailer`}
-                className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 loading="lazy"
@@ -1003,54 +850,47 @@ export default async function GamePage({ params }: Props) {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 mb-10">
-            {game.youtube_channel_url && (
-              <a
-                href={game.youtube_channel_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn"
-                style={{ background: '#E8482B', color: 'white' }}
-              >
-                ▶ Subscribe
-              </a>
-            )}
-            {links.map((link, index) => (
-              <a
-                key={`${link.url}-${index}`}
-                href={link.url}
-                target={link.newTab !== false ? '_blank' : '_self'}
-                rel={link.newTab !== false ? 'noopener noreferrer' : undefined}
-                className="btn btn-secondary"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
+          {(game.youtube_channel_url || links.length > 0) && (
+            <div className="flex flex-wrap gap-4 mb-10">
+              {game.youtube_channel_url && (
+                <a
+                  href={game.youtube_channel_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-youtube"
+                >
+                  ▶ Subscribe
+                </a>
+              )}
+              {links.map((link, index) => (
+                <a
+                  key={`${link.url}-${index}`}
+                  href={link.url}
+                  target={link.newTab !== false ? '_blank' : '_self'}
+                  rel={link.newTab !== false ? 'noopener noreferrer' : undefined}
+                  className="btn btn-secondary"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          )}
 
-          {/* ABOUT */}
           {game.full_description && (
-            <section className="mb-10">
-              <h2
-                className="text-xl md:text-2xl font-bold mb-4"
-                style={{ color: 'var(--tealdark)' }}
-              >
-                About {game.name}
-              </h2>
+            <section className="section">
+              <h2 className="section-title mb-4">About {game.name}</h2>
               <div
-                className="prose max-w-none text-[15px] leading-7"
+                className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: sanitize(game.full_description) }}
               />
             </section>
           )}
 
           {game.walkthrough_intro && (
-            <section className="mb-10">
-              <h2 className="text-xl md:text-2xl font-bold mb-4" style={{ color: 'var(--tealdark)' }}>
-                Walkthrough Guide
-              </h2>
+            <section className="section">
+              <h2 className="section-title mb-4">Walkthrough guide</h2>
               <div
-                className="prose max-w-none text-[15px] leading-7"
+                className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: sanitize(game.walkthrough_intro) }}
               />
             </section>
@@ -1060,97 +900,38 @@ export default async function GamePage({ params }: Props) {
             <AdSlot code={settings.adsense_in_article} label="In article" variant="banner" />
           )}
 
-          {/* ALL LEVELS — improved grid */}
-          <section className="mb-10">
-            <h2 className="text-xl md:text-2xl font-bold mb-5" style={{ color: 'var(--tealdark)' }}>
-              🎮 All Levels ({levels.length})
-            </h2>
-            {levels.length === 0 ? (
-              <div
-                className="rounded-2xl p-8 text-center"
-                style={{ border: '2px dashed var(--line)', background: 'var(--card)', color: 'var(--muted)' }}
-              >
-                No levels added yet.
+          <section className="section" id="levels" style={{ scrollMarginTop: 90 }}>
+            <div className="section-head">
+              <div>
+                <h2 className="section-title">All levels</h2>
+                <p className="section-sub">{levels.length} walkthroughs — tap a level to open it</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
-                {levels.map((level) => (
-                  <Link
-                    key={level.id}
-                    href={`/game/${game.slug}/level-${level.level_number}`}
-                    className="text-center py-3 rounded-xl font-bold text-[13px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                    style={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--line)',
-                      color: 'var(--ink)',
-                    }}
-                  >
-                    {level.level_number}
-                  </Link>
-                ))}
-              </div>
-            )}
+            </div>
+            <LevelButtons gameSlug={game.slug} levels={levels} />
           </section>
 
           {blogs.length > 0 && (
-            <section className="mb-10">
-              <h2 className="text-xl md:text-2xl font-bold mb-4" style={{ color: 'var(--tealdark)' }}>
-                📝 Guides & Tips for {game.name}
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
+            <section className="section">
+              <h2 className="section-title mb-5">Guides &amp; tips for {game.name}</h2>
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
                 {blogs.map((blog) => (
-                  <Link
-                    key={blog.id}
-                    href={`/blog/${blog.slug}`}
-                    className="card card-hover p-5"
-                  >
-                    <h3 className="font-semibold line-clamp-2 mb-2" style={{ color: 'var(--ink)' }}>
-                      {blog.title}
-                    </h3>
-                    {blog.meta_description && (
-                      <p className="text-sm line-clamp-2 mb-2" style={{ color: 'var(--muted)' }}>
-                        {blog.meta_description}
-                      </p>
-                    )}
-                    <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                      {formatDate(blog.created_at)}
-                    </p>
-                  </Link>
+                  <BlogCard key={blog.id} blog={blog} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* FAQ — polished accordion */}
           {game.faq && game.faq.length > 0 && (
-            <section className="mb-10">
-              <h2 className="text-xl md:text-2xl font-bold mb-5" style={{ color: 'var(--tealdark)' }}>
-                ❓ Frequently Asked Questions
-              </h2>
+            <section className="section" style={{ marginBottom: 0 }}>
+              <h2 className="section-title mb-5">Frequently asked questions</h2>
               <div className="space-y-3">
                 {game.faq.map((faq, index) => (
-                  <details
-                    key={`${faq.q}-${index}`}
-                    className="card p-5 group cursor-pointer"
-                  >
-                    <summary
-                      className="font-semibold cursor-pointer list-none flex items-center justify-between gap-4"
-                      style={{ color: 'var(--ink)' }}
-                    >
+                  <details key={`${faq.q}-${index}`} className="card faq-item">
+                    <summary>
                       <span>{faq.q}</span>
-                      <span
-                        className="transition-transform duration-300 group-open:rotate-180 shrink-0 text-lg"
-                        style={{ color: 'var(--muted)' }}
-                      >
-                        ▾
-                      </span>
+                      <span className="chev" aria-hidden="true">▾</span>
                     </summary>
-                    <p
-                      className="mt-3 leading-7 text-[15px]"
-                      style={{ color: 'var(--ink-soft)' }}
-                    >
-                      {faq.a}
-                    </p>
+                    <p>{faq.a}</p>
                   </details>
                 ))}
               </div>
@@ -1158,49 +939,24 @@ export default async function GamePage({ params }: Props) {
           )}
         </main>
 
-        <aside className="hidden lg:flex flex-col gap-5 sticky top-24">
+        <aside className="sidebar">
           {settings?.adsense_sidebar && (
-            <AdSlot code={settings.adsense_sidebar} label="Sidebar" variant="square" />
-          )}
-
-          {levels.length > 0 && (
-            <div className="card p-5">
-              <h3
-                className="text-sm font-bold mb-4 flex items-center gap-2"
-                style={{ color: 'var(--tealdark)' }}
-              >
-                🔥 Popular Levels
-              </h3>
-              <div className="flex flex-col gap-2">
-                {levels.slice(0, 5).map((level) => (
-                  <Link
-                    key={level.id}
-                    href={`/game/${game.slug}/level-${level.level_number}`}
-                    className="flex items-center gap-3 text-[13px] p-2 rounded-lg transition-all hover:bg-[var(--bg-alt)] group"
-                    style={{ color: 'var(--ink)' }}
-                  >
-                    <span
-                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 text-[12px] transition-transform group-hover:scale-105"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--teal), var(--tealdark))',
-                        color: 'white',
-                        fontFamily: 'var(--font-space-grotesk), sans-serif',
-                      }}
-                    >
-                      {level.level_number}
-                    </span>
-                    <span className="line-clamp-1 group-hover:text-[var(--coral)] transition-colors font-medium">
-                      {level.title || `Level ${level.level_number}`}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+            <div className="hidden lg:block">
+              <AdSlot code={settings.adsense_sidebar} label="Sidebar" variant="square" />
             </div>
           )}
 
+          <PopularLevels gameSlug={game.slug} levels={popularLevels} />
+
           {settings?.adsense_footer && (
-            <AdSlot code={settings.adsense_footer} label="Sidebar footer" variant="skyscraper" />
+            <div className="hidden lg:block">
+              <AdSlot code={settings.adsense_footer} label="Sidebar footer" variant="skyscraper" />
+            </div>
           )}
+
+          <Link href="/blog" className="btn btn-secondary btn-block">
+            More guides
+          </Link>
         </aside>
       </div>
     </div>
@@ -1210,6 +966,7 @@ export default async function GamePage({ params }: Props) {
 
 <file path="app/(public)/privacy-policy/page.tsx">
 import type { Metadata } from 'next';
+import StaticPage from '@/components/StaticPage';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -1218,32 +975,26 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="container-narrow py-12 md:py-16 animate-fade-in-up">
-      <h1 className="text-3xl md:text-4xl font-bold mb-8" style={{ color: 'var(--tealdark)' }}>
-        Privacy Policy
-      </h1>
-      <div className="card p-6 md:p-8">
-        <div className="prose max-w-none text-[15px] md:text-[16px]">
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
-          <h2>Information We Collect</h2>
-          <p>We use Google Analytics and Google AdSense which may collect anonymous usage data.</p>
-          <h2>Cookies</h2>
-          <p>We use cookies to improve user experience and serve relevant ads.</p>
-          <h2>Third-Party Services</h2>
-          <p>Our site embeds YouTube videos. YouTube may collect data as per their privacy policy.</p>
-          <h2>Contact</h2>
-          <p>For privacy questions, email contact@yoursite.com.</p>
-        </div>
-      </div>
-    </div>
+    <StaticPage title="Privacy policy" subtitle="How we handle your data.">
+      <p>Last updated: {new Date().toLocaleDateString()}</p>
+      <h2>Information we collect</h2>
+      <p>We use Google Analytics and Google AdSense which may collect anonymous usage data.</p>
+      <h2>Cookies</h2>
+      <p>We use cookies to improve user experience and serve relevant ads.</p>
+      <h2>Third-party services</h2>
+      <p>Our site embeds YouTube videos. YouTube may collect data as per their privacy policy.</p>
+      <h2>Contact</h2>
+      <p>For privacy questions, email contact@yoursite.com.</p>
+    </StaticPage>
   );
 }
 </file>
 
 <file path="app/(public)/search/page.tsx">
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { searchGames } from '@/lib/db';
+import GameCard from '@/components/GameCard';
+import EmptyState from '@/components/EmptyState';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -1258,95 +1009,70 @@ export default async function SearchPage({ searchParams }: Props) {
   const games = query ? await searchGames(query) : [];
 
   return (
-    <div className="container-page py-12 md:py-16 animate-fade-in-up">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-center" style={{ color: 'var(--tealdark)' }}>
-          🔍 Search
-        </h1>
-        <p className="text-center mb-8" style={{ color: 'var(--muted)' }}>
-          Find games and walkthroughs
+    <div className="container-page py-10 md:py-16 animate-fade-in-up">
+      <div className="max-w-2xl mx-auto text-center mb-10">
+        <h1 className="page-title">Search</h1>
+        <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+          Find games and walkthroughs.
         </p>
 
-        <form action="/search" method="get" className="mb-10">
-          <div className="relative">
-            <input
-              type="text"
-              name="q"
-              defaultValue={query}
-              placeholder="Search games..."
-              autoFocus
-              className="w-full px-6 py-4 pr-14 rounded-2xl text-[15px] outline-none transition-all focus:ring-2 focus:ring-[var(--coral)]"
-              style={{
-                background: 'var(--card)',
-                border: '1.5px solid var(--line)',
-                color: 'var(--ink)',
-              }}
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-              style={{ background: 'var(--coral)', color: 'white' }}
-              aria-label="Search"
-            >
-              →
-            </button>
-          </div>
+        <form action="/search" method="get" className="search-wrap search-big mt-7">
+          <svg
+            className="search-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="text"
+            name="q"
+            defaultValue={query}
+            placeholder="Search games…"
+            aria-label="Search games"
+            autoFocus
+            className="search-input"
+          />
+          <button type="submit" className="btn btn-primary btn-sm search-submit">
+            Search
+          </button>
         </form>
       </div>
 
       {query && (
         <p className="text-center mb-6" style={{ color: 'var(--muted)' }}>
           {games.length} result{games.length === 1 ? '' : 's'} for{' '}
-          <span className="font-semibold" style={{ color: 'var(--ink)' }}>
+          <span className="font-bold" style={{ color: 'var(--ink)' }}>
             &quot;{query}&quot;
           </span>
         </p>
       )}
 
       {games.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {games.map((game) => (
-            <Link key={game.id} href={`/game/${game.slug}`} className="card card-hover p-5 group">
-              <h3
-                className="font-bold text-[15px] mb-2 group-hover:text-[var(--coral)] transition-colors"
-                style={{ color: 'var(--ink)' }}
-              >
-                {game.name}
-              </h3>
-              {game.short_description && (
-                <p className="text-sm line-clamp-2" style={{ color: 'var(--muted)' }}>
-                  {game.short_description}
-                </p>
-              )}
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {games.map((game, idx) => (
+            <GameCard key={game.id} game={game} index={idx} />
           ))}
         </div>
       )}
 
       {query && games.length === 0 && (
-        <div
-          className="rounded-2xl p-10 md:p-16 text-center max-w-lg mx-auto"
-          style={{ border: '2px dashed var(--line)', background: 'var(--card)' }}
-        >
-          <div className="text-5xl mb-4">🔍</div>
-          <p className="font-semibold mb-1" style={{ color: 'var(--ink)' }}>
-            No results found
-          </p>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Try different keywords.
-          </p>
+        <div className="max-w-lg mx-auto">
+          <EmptyState emoji="🔍" title="No results found" text="Try a different game name." />
         </div>
       )}
 
       {!query && (
-        <div
-          className="rounded-2xl p-10 md:p-16 text-center max-w-lg mx-auto"
-          style={{ border: '2px dashed var(--line)', background: 'var(--card)' }}
-        >
-          <div className="text-5xl mb-4">🎮</div>
-          <p style={{ color: 'var(--muted)' }}>
-            Type something above to search games.
-          </p>
+        <div className="max-w-lg mx-auto">
+          <EmptyState emoji="🎮" text="Type a game name above to search." />
         </div>
       )}
     </div>
@@ -1356,6 +1082,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
 <file path="app/(public)/terms/page.tsx">
 import type { Metadata } from 'next';
+import StaticPage from '@/components/StaticPage';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -1364,20 +1091,13 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="container-narrow py-12 md:py-16 animate-fade-in-up">
-      <h1 className="text-3xl md:text-4xl font-bold mb-8" style={{ color: 'var(--tealdark)' }}>
-        Terms of Service
-      </h1>
-      <div className="card p-6 md:p-8">
-        <div className="prose max-w-none text-[15px] md:text-[16px]">
-          <p>By using this site, you agree to these terms.</p>
-          <h2>Use of Content</h2>
-          <p>All content is for informational purposes only.</p>
-          <h2>External Links</h2>
-          <p>We embed YouTube videos and link to external sites. We are not responsible for their content.</p>
-        </div>
-      </div>
-    </div>
+    <StaticPage title="Terms of service" subtitle="The rules for using this site.">
+      <p>By using this site, you agree to these terms.</p>
+      <h2>Use of content</h2>
+      <p>All content is for informational purposes only.</p>
+      <h2>External links</h2>
+      <p>We embed YouTube videos and link to external sites. We are not responsible for their content.</p>
+    </StaticPage>
   );
 }
 </file>
@@ -1388,6 +1108,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import AdSlot from '@/components/AdSlot';
+import BackgroundDecor from '@/components/BackgroundDecor';
 
 export default async function PublicLayout({
   children,
@@ -1400,38 +1121,55 @@ export default async function PublicLayout({
   ]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <BackgroundDecor />
+      <div className="site-content min-h-screen flex flex-col">
       {settings?.google_analytics_id && (
         <GoogleAnalytics gaId={settings.google_analytics_id} />
       )}
       <Navbar settings={settings} />
       {settings?.adsense_header && (
-        <div className="max-w-7xl mx-auto px-4 w-full">
+        <div className="container-page">
           <AdSlot code={settings.adsense_header} label="Header" />
         </div>
       )}
       <main className="flex-1">{children}</main>
       {settings?.adsense_footer && (
-        <div className="max-w-7xl mx-auto px-4 w-full">
+        <div className="container-page">
           <AdSlot code={settings.adsense_footer} label="Footer" />
         </div>
       )}
       <Footer settings={settings} categories={categories} />
     </div>
+    </>
   );
 }
 </file>
 
 <file path="app/(public)/page.tsx">
 import Link from 'next/link';
-import Image from 'next/image';
 import { getAllGames, getLatestLevels, getLatestBlogs } from '@/lib/db';
+import NavbarSearch from '@/components/NavbarSearch';
+import GameCard from '@/components/GameCard';
+import BlogCard from '@/components/BlogCard';
+import EmptyState from '@/components/EmptyState';
 
 export const revalidate = 60;
 
 type LevelWithGame = import('@/types').Level & {
   game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
 };
+
+const TILES: { n: string; kind: '' | 'solved' | 'stuck' }[] = [
+  { n: '1', kind: 'solved' },
+  { n: '2', kind: 'solved' },
+  { n: '3', kind: 'solved' },
+  { n: '4', kind: 'solved' },
+  { n: '5', kind: 'solved' },
+  { n: '?', kind: 'stuck' },
+  { n: '7', kind: '' },
+  { n: '8', kind: '' },
+];
 
 export default async function HomePage() {
   const [games, levels, blogs] = await Promise.all([
@@ -1440,103 +1178,94 @@ export default async function HomePage() {
     getLatestBlogs(3),
   ]);
 
+  const totalLevels = games.reduce((sum, g) => sum + (g.total_levels || 0), 0);
+
   return (
-    <div className="animate-fade-in-up">
+    <div>
       {/* ============= HERO ============= */}
-      <section className="container-narrow text-center pt-16 md:pt-24 pb-12 md:pb-16">
-        <div className="badge badge-coral mb-5 mx-auto">
-          🎮 New levels added daily
-        </div>
-        <h1
-          className="text-[34px] sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-[1.1]"
-          style={{ color: 'var(--tealdark)' }}
-        >
-          Stuck on a Level?<br />
-          <span style={{ color: 'var(--coral)' }}>We&apos;ve Got You.</span>
-        </h1>
-        <p
-          className="text-[15px] md:text-lg mb-8 md:mb-10 max-w-xl mx-auto leading-relaxed px-2"
-          style={{ color: 'var(--muted)' }}
-        >
-          Video guides and step-by-step solutions for every level, in every
-          puzzle game — updated daily.
-        </p>
-        <div className="flex gap-3 md:gap-4 justify-center flex-wrap px-2">
-          <Link href="#all-games" className="btn btn-primary">
-            Browse Games →
-          </Link>
-          <Link href="/blog" className="btn btn-secondary">
-            Read Guides
-          </Link>
+      <section className="hero">
+        <div className="hero-dots" />
+        <div className="hero-blob b1" />
+        <div className="hero-blob b2" />
+        <div className="hero-blob b3" />
+
+        <div className="container-narrow relative text-center">
+          <h1 className="hero-title animate-fade-in-up">
+            Stuck on level 6? Watch how it&apos;s solved.
+          </h1>
+          <p className="hero-sub animate-fade-in-up" style={{ animationDelay: '90ms' }}>
+            Video walkthroughs and step-by-step solutions for every level of your favourite puzzle games.
+          </p>
+
+          <div
+            className="max-w-xl mx-auto mt-8 animate-fade-in-up"
+            style={{ animationDelay: '170ms' }}
+          >
+            <NavbarSearch big placeholder="Search a game, e.g. Fish Jam" />
+          </div>
+
+          <div className="tile-strip" aria-hidden="true">
+            {TILES.map((tile, i) => (
+              <span
+                key={tile.n + i}
+                className={`tile ${tile.kind}`}
+                style={{ animationDelay: `${300 + i * 80}ms` }}
+              >
+                {tile.n}
+              </span>
+            ))}
+          </div>
+
+          <div
+            className="flex gap-4 justify-center flex-wrap mt-10 animate-fade-in-up"
+            style={{ animationDelay: '260ms' }}
+          >
+            <Link href="#all-games" className="btn btn-primary btn-lg">
+              Browse games
+            </Link>
+            <Link href="/blog" className="btn btn-secondary btn-lg">
+              Read guides
+            </Link>
+          </div>
+
+          <div className="stats-row animate-fade-in-up" style={{ animationDelay: '340ms' }}>
+            <div className="stat">
+              <b>{games.length}</b>
+              <span>Games</span>
+            </div>
+            <div className="stat">
+              <b>{totalLevels}</b>
+              <span>Levels</span>
+            </div>
+            <div className="stat">
+              <b>Free</b>
+              <span>Video guides</span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ============= ALL GAMES ============= */}
-      <section id="all-games" className="container-page mb-16 md:mb-20">
-        <div className="flex items-end justify-between mb-6 md:mb-8 flex-wrap gap-3">
+      <section id="all-games" className="container-page section" style={{ scrollMarginTop: 100 }}>
+        <div className="section-head">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--tealdark)' }}>
-              🎮 All Games
-            </h2>
-            <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-              {games.length} {games.length === 1 ? 'game' : 'games'} available
+            <h2 className="section-title">All games</h2>
+            <p className="section-sub">
+              {games.length} {games.length === 1 ? 'game' : 'games'} with level-by-level guides
             </p>
           </div>
         </div>
 
         {games.length === 0 ? (
-          <div
-            className="rounded-2xl p-10 md:p-16 text-center"
-            style={{ border: '2px dashed var(--line)', background: 'var(--card)' }}
-          >
-            <div className="text-5xl mb-4">🎮</div>
-            <p className="font-semibold mb-1" style={{ color: 'var(--ink)' }}>
-              No games added yet
-            </p>
-            <p className="text-sm" style={{ color: 'var(--muted)' }}>
-              Add games from the admin panel to see them here.
-            </p>
-          </div>
+          <EmptyState
+            emoji="🎮"
+            title="No games added yet"
+            text="Add games from the admin panel to see them here."
+          />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {games.map((game, idx) => (
-              <Link
-                key={game.id}
-                href={`/game/${game.slug}`}
-                className="card card-hover group"
-                style={{ animationDelay: `${idx * 40}ms` }}
-              >
-                <div
-                  className="aspect-[16/10] relative overflow-hidden"
-                  style={{ background: 'var(--teallight)' }}
-                >
-                  {game.cover_image ? (
-                    <Image
-                      src={game.cover_image}
-                      alt={game.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl">
-                      🎮
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-                <div className="p-4">
-                  <h3
-                    className="font-bold text-[15px] mb-1.5 line-clamp-1 group-hover:text-[var(--coral)] transition-colors"
-                    style={{ color: 'var(--ink)' }}
-                  >
-                    {game.name}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
-                    <span className="badge badge-teal">{game.total_levels || 0} levels</span>
-                  </div>
-                </div>
-              </Link>
+              <GameCard key={game.id} game={game} index={idx} />
             ))}
           </div>
         )}
@@ -1544,19 +1273,15 @@ export default async function HomePage() {
 
       {/* ============= LATEST LEVELS ============= */}
       {levels.length > 0 && (
-        <section className="container-page mb-16 md:mb-20">
-          <div className="flex items-end justify-between mb-6 md:mb-8">
+        <section className="container-page section">
+          <div className="section-head">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--tealdark)' }}>
-                🆕 Latest Levels
-              </h2>
-              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-                Fresh walkthroughs added recently
-              </p>
+              <h2 className="section-title">Latest levels</h2>
+              <p className="section-sub">Fresh walkthroughs added recently</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {(levels as LevelWithGame[]).map((level) => {
               const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
               if (!gameData?.slug) return null;
@@ -1564,29 +1289,18 @@ export default async function HomePage() {
                 <Link
                   key={level.id}
                   href={`/game/${gameData.slug}/level-${level.level_number}`}
-                  className="card card-hover group p-4 flex items-center gap-4"
+                  className="card card-hover level-row"
                 >
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg shrink-0 transition-transform duration-300 group-hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--teal), var(--tealdark))',
-                      color: 'white',
-                      fontFamily: 'var(--font-space-grotesk), sans-serif',
-                    }}
-                  >
-                    {level.level_number}
-                  </div>
+                  <div className="level-badge">{level.level_number}</div>
                   <div className="min-w-0 flex-1">
                     <h3
-                      className="font-semibold line-clamp-1 mb-1 group-hover:text-[var(--coral)] transition-colors"
+                      className="font-bold text-[15px] line-clamp-1"
                       style={{ color: 'var(--ink)' }}
                     >
                       {level.title || `Level ${level.level_number}`}
                     </h3>
-                    <p className="text-xs flex items-center gap-2" style={{ color: 'var(--muted)' }}>
-                      <span className="line-clamp-1">{gameData.name}</span>
-                      <span>·</span>
-                      <span>{level.views} views</span>
+                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
+                      {gameData.name} · {level.views} views
                     </p>
                   </div>
                 </Link>
@@ -1598,69 +1312,35 @@ export default async function HomePage() {
 
       {/* ============= LATEST BLOGS ============= */}
       {blogs.length > 0 && (
-        <section className="container-page mb-16 md:mb-20">
-          <div className="flex items-end justify-between mb-6 md:mb-8">
+        <section className="container-page section">
+          <div className="section-head">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--tealdark)' }}>
-                📝 Latest Guides
-              </h2>
-              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-                Tips, tricks, and walkthrough articles
-              </p>
+              <h2 className="section-title">Latest guides</h2>
+              <p className="section-sub">Tips, tricks and walkthrough articles</p>
             </div>
-            <Link
-              href="/blog"
-              className="text-sm font-semibold hover:text-[var(--coral)] transition-colors hidden sm:block"
-              style={{ color: 'var(--teal)' }}
-            >
+            <Link href="/blog" className="link-arrow">
               View all →
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {blogs.map((blog) => (
-              <Link key={blog.id} href={`/blog/${blog.slug}`} className="card card-hover group">
-                {blog.cover_image && (
-                  <div
-                    className="aspect-[16/9] relative overflow-hidden"
-                    style={{ background: 'var(--bg-alt)' }}
-                  >
-                    <Image
-                      src={blog.cover_image}
-                      alt={blog.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  </div>
-                )}
-                <div className="p-5">
-                  <h3
-                    className="font-bold text-[15px] line-clamp-2 mb-2.5 group-hover:text-[var(--coral)] transition-colors leading-snug"
-                    style={{ color: 'var(--ink)' }}
-                  >
-                    {blog.title}
-                  </h3>
-                  {blog.meta_description && (
-                    <p
-                      className="text-sm line-clamp-2 leading-relaxed"
-                      style={{ color: 'var(--muted)' }}
-                    >
-                      {blog.meta_description}
-                    </p>
-                  )}
-                </div>
-              </Link>
+              <BlogCard key={blog.id} blog={blog} />
             ))}
-          </div>
-
-          <div className="text-center mt-8 sm:hidden">
-            <Link href="/blog" className="btn btn-secondary">
-              View all guides →
-            </Link>
           </div>
         </section>
       )}
+
+      {/* ============= CTA ============= */}
+      <section className="container-page section" style={{ marginBottom: 0 }}>
+        <div className="cta-band">
+          <h2>Can&apos;t find your game?</h2>
+          <p>Tell us which puzzle game you&apos;re stuck on and we&apos;ll add its walkthrough.</p>
+          <Link href="/contact" className="btn btn-accent btn-lg">
+            Request a game
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1706,52 +1386,69 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #D4ECFF 0%, #F3F9FF 100%)' }}
+    >
+      <div className="hero-dots" />
+      <div className="hero-blob b1" />
+      <div className="hero-blob b2" />
+
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md"
+        className="card p-7 sm:p-9 w-full max-w-md relative animate-fade-in-up"
+        style={{ boxShadow: 'var(--shadow-lg)' }}
       >
-        <h1 className="text-2xl font-bold mb-2 text-center">Admin Login</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <div className="flex justify-center mb-5">
+          <span className="brand-mark" style={{ width: 56, height: 56, fontSize: 28, borderRadius: 18 }}>
+            🧩
+          </span>
+        </div>
+        <h1 className="text-2xl font-extrabold mb-1 text-center">Admin login</h1>
+        <p className="text-sm text-center mb-7" style={{ color: 'var(--muted)' }}>
           Sign in to manage your site
         </p>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+          <div
+            role="alert"
+            className="p-3 rounded-xl mb-5 text-sm font-medium"
+            style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+          >
             {error}
           </div>
         )}
 
         <label className="block mb-4">
-          <span className="text-sm font-medium text-gray-700">Email</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Email</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="email"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
             placeholder="admin@yoursite.com"
           />
         </label>
 
-        <label className="block mb-6">
-          <span className="text-sm font-medium text-gray-700">Password</span>
+        <label className="block mb-7">
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Password</span>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="current-password"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
             placeholder="••••••••"
           />
         </label>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {loading ? 'Logging in...' : 'Login'}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+          {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
     </div>
@@ -1856,71 +1553,57 @@ export default async function AdminBlogsPage() {
   const blogs = await getBlogs();
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
         <div>
-          <h1 className="text-3xl font-bold">Blogs</h1>
-          <p className="text-gray-600 mt-1">{blogs.length} total posts</p>
+          <h1 className="admin-title">Blogs</h1>
+          <p className="admin-sub">{blogs.length} total posts</p>
         </div>
-        <Link
-          href="/admin/blogs/new"
-          className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-        >
-          + Add New Blog
+        <Link href="/admin/blogs/new" className="btn btn-primary btn-sm">
+          + Add blog
         </Link>
       </div>
 
       {blogs.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center">
-          <p className="text-gray-500 mb-4">Abhi koi blog nahi hai.</p>
-          <Link
-            href="/admin/blogs/new"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            + Create First Blog
+        <div className="empty-state">
+          <div className="emoji">📝</div>
+          <p className="font-bold mb-4">No blogs yet</p>
+          <Link href="/admin/blogs/new" className="btn btn-primary btn-sm">
+            + Create first blog
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr className="text-left text-sm text-gray-600">
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">Views</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+        <div className="card admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Slug</th>
+                <th>Views</th>
+                <th>Status</th>
+                <th className="right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {blogs.map((blog) => (
-                <tr key={blog.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{blog.title}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                    {blog.slug}
-                  </td>
-                  <td className="px-4 py-3 text-sm">{blog.views || 0}</td>
-                  <td className="px-4 py-3">
+                <tr key={blog.id}>
+                  <td className="name">{blog.title}</td>
+                  <td className="mono">{blog.slug}</td>
+                  <td>{blog.views || 0}</td>
+                  <td>
                     {blog.published ? (
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Published
-                      </span>
+                      <span className="pill pill-green">Published</span>
                     ) : (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Draft
-                      </span>
+                      <span className="pill pill-gray">Draft</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Link
-                      href={`/admin/blogs/${blog.id}/edit`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
-                    <DeleteBlogButton id={blog.id} title={blog.title} />
+                  <td className="right">
+                    <span className="admin-actions">
+                      <Link href={`/admin/blogs/${blog.id}/edit`} className="act act-edit">
+                        Edit
+                      </Link>
+                      <DeleteBlogButton id={blog.id} title={blog.title} />
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -1957,60 +1640,89 @@ export default async function DashboardPage() {
   const stats = await getStats();
 
   const cards = [
-    { label: 'Games', value: stats.games, icon: '🎮', href: '/admin/games', color: 'bg-blue-500' },
-    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/admin/games', color: 'bg-green-500' },
-    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/admin/blogs', color: 'bg-purple-500' },
+    { label: 'Games', value: stats.games, icon: '🎮', href: '/admin/games', bg: 'linear-gradient(180deg,#38BDF8,#0284C7)' },
+    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/admin/games', bg: 'linear-gradient(180deg,#A5B4FC,#6366F1)' },
+    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/admin/blogs', bg: 'linear-gradient(180deg,#FDBA74,#FB923C)' },
   ];
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back to your admin panel</p>
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
+        <div>
+          <h1 className="admin-title">Dashboard</h1>
+          <p className="admin-sub">Welcome back to your admin panel</p>
+        </div>
+        <Link href="/" target="_blank" className="btn btn-secondary btn-sm">
+          View site
+        </Link>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
+      <div className="admin-stats">
         {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition border"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-3xl">{card.icon}</span>
-              <span className={`${card.color} text-white text-xs px-2 py-1 rounded-full`}>
-                View
-              </span>
+          <Link key={card.label} href={card.href} className="card card-hover admin-stat">
+            <span className="admin-stat-icon" style={{ background: card.bg }} aria-hidden="true">
+              {card.icon}
+            </span>
+            <div>
+              <div className="admin-stat-num">{card.value}</div>
+              <div className="admin-stat-label">{card.label}</div>
             </div>
-            <div className="text-4xl font-bold mb-1">{card.value}</div>
-            <div className="text-sm text-gray-500">{card.label}</div>
+            <span className="admin-stat-go" aria-hidden="true">→</span>
           </Link>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/games/new"
-            className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-          >
-            + Add New Game
+      <div className="card admin-panel">
+        <h2>Quick actions</h2>
+        <div className="flex flex-wrap gap-4">
+          <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+            + Add game
           </Link>
-          <Link
-            href="/admin/blogs"
-            className="border border-gray-300 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            + Add Blog
+          <Link href="/admin/blogs/new" className="btn btn-accent btn-sm">
+            + Add blog
           </Link>
-          <Link
-            href="/admin/settings"
-            className="border border-gray-300 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            ⚙️ Site Settings
+          <Link href="/admin/settings" className="btn btn-secondary btn-sm">
+            ⚙️ Site settings
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+</file>
+
+<file path="app/admin/(dashboard)/games/[id]/edit/page.tsx">
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { supabaseAdmin } from '@/lib/supabase';
+import { updateGame } from '@/lib/actions/games';
+import GameForm from '@/components/GameForm';
+
+export const dynamic = 'force-dynamic';
+
+type Props = { params: Promise<{ id: string }> };
+
+export default async function EditGamePage({ params }: Props) {
+  const { id } = await params;
+
+  const { data: game } = await supabaseAdmin
+    .from('games')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!game) notFound();
+
+  const action = updateGame.bind(null, id);
+
+  return (
+    <div className="admin-page animate-fade-in-up" style={{ maxWidth: 900 }}>
+      <Link href="/admin/games" className="admin-back">
+        ← Back to games
+      </Link>
+      <h1 className="admin-title mt-2 mb-8">Edit {game.name}</h1>
+
+      <GameForm action={action} game={game} submitLabel="Update game" />
     </div>
   );
 }
@@ -2139,78 +1851,64 @@ export default async function AdminLevelsPage({ params }: Props) {
   const levelList = levels || [];
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          href="/admin/games"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back to Games
-        </Link>
-        <h1 className="text-3xl font-bold mt-2">{game.name} — Levels</h1>
-        <p className="text-gray-600 mt-1">
-          {levelList.length} levels ·{" "}
-          <Link
-            href={`/game/${game.slug}`}
-            target="_blank"
-            className="text-blue-600 hover:underline"
-          >
-            View public page →
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
+        <div>
+          <Link href="/admin/games" className="admin-back">
+            ← Back to games
           </Link>
-        </p>
+          <h1 className="admin-title mt-2">{game.name} — Levels</h1>
+          <p className="admin-sub">
+            {levelList.length} levels ·{' '}
+            <Link
+              href={`/game/${game.slug}`}
+              target="_blank"
+              className="font-bold"
+              style={{ color: 'var(--primary-dark)' }}
+            >
+              View public page →
+            </Link>
+          </p>
+        </div>
+        <Link href={`/admin/games/${id}/levels/new`} className="btn btn-primary btn-sm">
+          + Add single level
+        </Link>
       </div>
 
-      {/* Bulk Generate */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold mb-3">⚡ Bulk Generate Levels</h2>
-        <p className="text-sm text-gray-700 mb-4">
-          Quickly generate multiple level slots at once. Default YouTube URL optional
-          hai — baad me edit kar sakte ho.
+      <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+        <h2>⚡ Bulk generate levels</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
+          Create many level slots at once. The default YouTube URL is optional — you can edit each level later.
         </p>
         <BulkGenerateForm gameId={id} />
       </div>
 
-      {/* Add Single Level */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">All Levels</h2>
-        <Link
-          href={`/admin/games/${id}/levels/new`}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
-        >
-          + Add Single Level
-        </Link>
+      <div className="section-head" style={{ marginBottom: '1rem' }}>
+        <h2 className="section-title" style={{ fontSize: '1.3rem' }}>All levels</h2>
       </div>
 
-      {/* Levels List */}
       {levelList.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center text-gray-500">
-          <p>Abhi koi level nahi. Bulk generate use karo upar.</p>
+        <div className="empty-state">
+          <div className="emoji">🎯</div>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>
+            No levels yet. Use bulk generate above.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="admin-level-grid">
           {levelList.map((level) => (
-            <div
-              key={level.id}
-              className="bg-white border rounded-lg p-3 hover:shadow-md transition"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="text-xl font-bold text-blue-600">
-                  {level.level_number}
-                </div>
-                {!level.published && (
-                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                    Draft
-                  </span>
-                )}
+            <div key={level.id} className="card card-hover admin-level">
+              <div className="flex items-start justify-between">
+                <div className="num">{level.level_number}</div>
+                {!level.published && <span className="pill pill-gray">Draft</span>}
               </div>
-              <div className="text-xs text-gray-500 mb-3 truncate">
-                {level.youtube_id ? `🎥 ${level.youtube_id.slice(0, 8)}...` : "No video"}
+              <div className="vid">
+                {level.youtube_id ? `🎥 ${level.youtube_id.slice(0, 11)}` : 'No video'}
               </div>
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between gap-2">
                 <Link
                   href={`/admin/games/${id}/levels/${level.id}/edit`}
-                  className="text-blue-600 hover:underline"
+                  className="act act-edit"
                 >
                   Edit
                 </Link>
@@ -2268,81 +1966,62 @@ export default async function AdminGamesPage() {
   const games = await getGames();
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="admin-page animate-fade-in-up">
+      <div className="admin-head">
         <div>
-          <h1 className="text-3xl font-bold">Games</h1>
-          <p className="text-gray-600 mt-1">{games.length} total games</p>
+          <h1 className="admin-title">Games</h1>
+          <p className="admin-sub">{games.length} total games</p>
         </div>
-        <Link
-          href="/admin/games/new"
-          className="bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-        >
-          + Add New Game
+        <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+          + Add game
         </Link>
       </div>
 
       {games.length === 0 ? (
-        <div className="bg-white border-2 border-dashed rounded-xl p-12 text-center">
-          <p className="text-gray-500 mb-4">Abhi koi game nahi hai.</p>
-          <Link
-            href="/admin/games/new"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            + Create First Game
+        <div className="empty-state">
+          <div className="emoji">🎮</div>
+          <p className="font-bold mb-4">No games yet</p>
+          <Link href="/admin/games/new" className="btn btn-primary btn-sm">
+            + Create first game
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr className="text-left text-sm text-gray-600">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">Levels</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+        <div className="card admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Levels</th>
+                <th>Status</th>
+                <th className="right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {games.map((game) => (
-                <tr key={game.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{game.name}</div>
+                <tr key={game.id}>
+                  <td className="name">{game.name}</td>
+                  <td className="mono">{game.slug}</td>
+                  <td>
+                    <span className="pill pill-blue">{game.total_levels || 0}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                    {game.slug}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
-                      {game.total_levels || 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  <td>
                     {game.published ? (
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Published
-                      </span>
+                      <span className="pill pill-green">Published</span>
                     ) : (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Draft
-                      </span>
+                      <span className="pill pill-gray">Draft</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Link
-                      href={`/admin/games/${game.id}/levels`}
-                      className="text-sm text-green-600 hover:underline"
-                    >
-                      Levels
-                    </Link>
-                    <Link
-                      href={`/admin/games/${game.id}/edit`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
-                    <DeleteGameButton id={game.id} name={game.name} />
+                  <td className="right">
+                    <span className="admin-actions">
+                      <Link href={`/admin/games/${game.id}/levels`} className="act act-levels">
+                        Levels
+                      </Link>
+                      <Link href={`/admin/games/${game.id}/edit`} className="act act-edit">
+                        Edit
+                      </Link>
+                      <DeleteGameButton id={game.id} name={game.name} />
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -2381,18 +2060,18 @@ export default async function AdminSettingsPage() {
   const settings = await getSettings();
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-2">Site Settings</h1>
-      <p className="text-gray-600 mb-8">
-        Manage site-wide configuration, AdSense codes, and social links.
-      </p>
+    <div className="admin-page animate-fade-in-up" style={{ maxWidth: 900 }}>
+      <div className="admin-head">
+        <div>
+          <h1 className="admin-title">Site settings</h1>
+          <p className="admin-sub">Manage site-wide configuration, AdSense codes and social links.</p>
+        </div>
+      </div>
 
       {!settings && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6 text-sm text-yellow-800">
-          ⚠️ Settings row nahi mili DB me. Supabase SQL Editor me yeh run karo:
-          <code className="block mt-2 bg-yellow-100 p-2 rounded">
-            INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
-          </code>
+        <div className="admin-alert">
+          ⚠️ Settings row not found in the database. Run this in the Supabase SQL Editor:
+          <code>INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;</code>
         </div>
       )}
 
@@ -2406,6 +2085,7 @@ export default async function AdminSettingsPage() {
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
+import BackgroundDecor from '@/components/BackgroundDecor';
 
 export const dynamic = 'force-dynamic';
 
@@ -2418,10 +2098,13 @@ export default async function AdminDashboardLayout({
   if (!session) redirect('/admin/login');
 
   return (
-    <div className="flex min-h-screen">
-      <AdminSidebar />
-      <main className="flex-1 bg-gray-50 overflow-x-auto">{children}</main>
-    </div>
+    <>
+      <BackgroundDecor />
+      <div className="admin-shell">
+        <AdminSidebar />
+        <main className="admin-main">{children}</main>
+      </div>
+    </>
   );
 }
 </file>
@@ -2612,22 +2295,18 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-      <h2 className="text-3xl font-bold text-red-600 mb-4">
-        Something went wrong
-      </h2>
-      <p className="text-gray-600 mb-6 max-w-md">
-        We hit an unexpected error. Please try again. If the problem continues, contact support.
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+      <div className="tile stuck mb-6" style={{ width: 72, height: 72, fontSize: 32 }}>!</div>
+      <h2 className="page-title">Something went wrong</h2>
+      <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+        We hit an unexpected error. Try again — if it keeps happening, contact support.
       </p>
       {error.digest && (
-        <p className="text-xs text-gray-400 mb-6 font-mono">
+        <p className="text-xs mt-4 font-mono" style={{ color: 'var(--muted-light)' }}>
           Error ID: {error.digest}
         </p>
       )}
-      <button
-        onClick={reset}
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-      >
+      <button onClick={reset} className="btn btn-primary mt-8">
         Try again
       </button>
     </div>
@@ -2638,35 +2317,58 @@ export default function Error({
 <file path="app/globals.css">
 @import "tailwindcss";
 
+/* =========================================================
+   PUZZLE WALKTHROUGHS — Sky design system
+   ========================================================= */
 :root {
-  /* Base palette */
-  --bg: #FBF7F0;
-  --bg-alt: #F5EEE2;
-  --ink: #172422;
-  --ink-soft: #3C4A47;
-  --muted: #5B6B68;
-  --muted-light: #8A9A97;
+  /* Surfaces */
+  --bg: #F8FAFC;
+  --bg-alt: #F1F5F9;
+  --surface: #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.95);
 
-  /* Brand */
-  --teal: #0F5257;
-  --tealdark: #0B3F42;
-  --teallight: #E4EEEC;
-  --coral: #FF6B4A;
-  --coral-dark: #E8482B;
-  --coral-soft: #FFF3E9;
+  /* Text */
+  --ink: #0F172A;
+  --ink-soft: #334155;
+  --muted: #64748B;
+  --muted-light: #94A3B8;
 
-  /* UI */
-  --line: #E4DCC9;
-  --line-soft: #EFE7D5;
-  --card: #FFFFFF;
-  --card-hover: #FFFDF8;
+  /* Brand — sky blue */
+  --primary: #0EA5E9;
+  --primary-dark: #0284C7;
+  --primary-deep: #0369A1;
+  --primary-light: #7DD3FC;
+  --primary-soft: #E0F2FE;
+  --indigo: #6366F1;
+
+  /* Accent — sunny orange (used sparingly for energy) */
+  --accent: #FB923C;
+  --accent-dark: #EA580C;
+  --accent-soft: #FFF7ED;
+
+  /* Lines */
+  --line: #E2E8F0;
+  --line-soft: #F1F5F9;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(23, 36, 34, 0.04);
-  --shadow-md: 0 4px 16px rgba(23, 36, 34, 0.06);
-  --shadow-lg: 0 12px 32px rgba(23, 36, 34, 0.10);
-  --shadow-coral: 0 8px 20px rgba(255, 107, 74, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
+  /* Legacy aliases (so older components keep working) */
+  --card: var(--surface);
+  --card-hover: #FAFDFF;
+  --tealdark: var(--ink);
+  --teal: var(--primary-dark);
+  --teallight: var(--primary-soft);
+  --coral: var(--accent);
+  --coral-dark: var(--accent-dark);
+  --coral-soft: var(--accent-soft);
+  --tip: #FFF7ED;
+  --tipline: #FED7AA;
+  --muted-lt: var(--muted-light);
+  --shadow-coral: 0 8px 20px rgba(251, 146, 60, 0.3);
   --background: var(--bg);
   --foreground: var(--ink);
 }
@@ -2678,277 +2380,1302 @@ export default function Error({
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-body), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  overflow-x: hidden;
+  position: relative;
+  font-feature-settings: 'cv01' on, 'cv02' on;
 }
+
+/* ---- Page background design: subtle gradient ---- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.08), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(99, 102, 241, 0.05), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 80%, rgba(251, 146, 60, 0.04), transparent 50%);
+}
+
+/* Floating puzzle pieces layer */
+.bg-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bg-piece {
+  position: absolute;
+  animation: pieceFloat 11s ease-in-out infinite;
+  will-change: transform;
+}
+.bg-piece svg { display: block; width: 100%; height: 100%; }
+.bg-piece.sky svg path { fill: #7DD3FC; }
+.bg-piece.indigo svg path { fill: #A5B4FC; }
+.bg-piece.orange svg path { fill: #FDBA74; }
+.bg-piece { opacity: 0.34; }
+@media (max-width: 760px) {
+  .bg-piece { opacity: 0.22; }
+  .bg-piece:nth-child(n + 5) { display: none; }
+}
+@keyframes pieceFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-18px) rotate(calc(var(--r, 0deg) + 7deg)); }
+}
+.site-content { position: relative; z-index: 1; }
 
 h1, h2, h3, h4, h5 {
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.03em;
   line-height: 1.15;
-  color: var(--tealdark);
+  color: var(--ink);
+  text-wrap: balance;
+  font-feature-settings: 'ss01' on, 'ss02' on;
 }
 
-::selection {
-  background: var(--coral);
-  color: white;
+img { max-width: 100%; }
+
+::selection { background: var(--primary); color: #fff; }
+
+:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
-/* ========== SCROLLBAR ========== */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-alt);
-}
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-alt); }
 ::-webkit-scrollbar-thumb {
-  background: var(--line);
+  background: var(--primary-light);
   border-radius: 10px;
   border: 2px solid var(--bg-alt);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-light);
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+.container-page,
+.container-narrow {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(16px, 4vw, 28px);
+  padding-right: clamp(16px, 4vw, 28px);
+  width: 100%;
+}
+.container-page { max-width: 1240px; }
+.container-narrow { max-width: 820px; }
+
+.section { margin-bottom: clamp(3.5rem, 7vw, 6rem); }
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: clamp(1.5rem, 3.5vw, 2.5rem);
+}
+.section-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.section-sub {
+  color: var(--muted);
+  font-size: 0.97rem;
+  margin-top: 0.35rem;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
-/* ========== BUTTONS ========== */
+.page-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--primary-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.page-sub {
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  margin-top: 0.75rem;
+  max-width: 42rem;
+  line-height: 1.7;
+  font-weight: 500;
+}
+
+.layout-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .layout-2col {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 2.5rem;
+  }
+}
+.sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+@media (min-width: 1024px) {
+  .sidebar { position: sticky; top: 92px; }
+}
+
+.link-arrow {
+  color: var(--primary-dark);
+  font-weight: 700;
+  font-size: 0.92rem;
+  transition: color 150ms, transform 150ms;
+  display: inline-flex;
+  gap: 4px;
+}
+.link-arrow:hover { color: var(--accent-dark); transform: translateX(3px); }
+
+/* =========================================================
+   BUTTONS — Modern clean style
+   ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 22px;
+  padding: 0.9rem 1.5rem;
   border-radius: 12px;
+  font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.94rem;
   line-height: 1;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  border: none;
+  border: 0;
   text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease, background 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-sm { padding: 0.65rem 1.05rem; font-size: 0.86rem; border-radius: 10px; }
+.btn-lg { padding: 1.1rem 1.9rem; font-size: 1.02rem; border-radius: 14px; }
+.btn-block { width: 100%; }
 
 .btn-primary {
-  background: var(--coral);
-  color: white;
+  color: #fff;
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
 }
 .btn-primary:hover {
-  background: var(--coral-dark);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-coral);
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-lg);
 }
 .btn-primary:active {
   transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary {
-  background: var(--card);
   color: var(--ink);
+  background: #fff;
   border: 1.5px solid var(--line);
+  box-shadow: var(--shadow-sm);
 }
 .btn-secondary:hover {
-  border-color: var(--ink);
-  background: var(--bg-alt);
   transform: translateY(-2px);
+  color: var(--primary-deep);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-md);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
-.btn-teal {
-  background: var(--teal);
-  color: white;
+.btn-accent {
+  color: #fff;
+  background: linear-gradient(135deg, #FDBA74 0%, #FB923C 100%);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
 }
-.btn-teal:hover {
-  background: var(--tealdark);
+.btn-accent::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.btn-accent:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 82, 87, 0.25);
+  filter: brightness(1.04);
+  box-shadow: var(--shadow-lg);
 }
+.btn-accent:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 
-.btn-ghost {
-  background: transparent;
-  color: var(--ink);
+.btn-youtube {
+  color: #fff;
+  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
 }
-.btn-ghost:hover {
-  background: var(--bg-alt);
+.btn-youtube::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
 }
+.btn-youtube:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: var(--shadow-lg); }
+.btn-youtube:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 
-/* ========== CARDS ========== */
+/* Legacy names */
+.btn-teal { color: #fff; background: linear-gradient(180deg, #38BDF8, #0EA5E9); box-shadow: 0 5px 0 #0369A1; }
+.btn-teal:active { transform: translateY(4px); box-shadow: 0 1px 0 #0369A1; }
+.btn-ghost { background: transparent; color: var(--ink); margin-bottom: 0; }
+.btn-ghost:hover { background: var(--primary-soft); }
+
+/* =========================================================
+   CARDS
+   ========================================================= */
 .card {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   position: relative;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms ease, border-color 240ms ease;
 }
-
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 50%);
+  opacity: 0;
+  transition: opacity 240ms ease;
+  pointer-events: none;
+}
 .card-hover:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--line-soft);
+  border-color: var(--primary-light);
 }
-
+.card-hover:hover::before {
+  opacity: 1;
+}
 .card-flat {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;
 }
 
-/* ========== BADGES ========== */
+.game-card { display: flex; flex-direction: column; height: 100%; }
+.game-thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #E0F2FE 0%, #E0E7FF 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+.game-thumb img { transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1); object-fit: cover; }
+.game-card:hover .game-thumb img { transform: scale(1.05); }
+.game-badge { position: absolute; left: 12px; bottom: 12px; box-shadow: var(--shadow-md); }
+.game-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 160ms;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.game-card:hover .game-title { color: var(--primary-dark); }
+.game-desc {
+  color: var(--muted);
+  font-size: 0.89rem;
+  margin-top: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.blog-card { display: flex; flex-direction: column; height: 100%; }
+.blog-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 2.75rem;
+  background: linear-gradient(135deg, #E0F2FE 0%, #E0E7FF 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+.blog-thumb img { object-fit: cover; transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1); }
+.blog-card:hover .blog-thumb img { transform: scale(1.06); }
+.blog-body { padding: 1.35rem; display: flex; flex-direction: column; flex: 1; }
+.blog-title {
+  font-weight: 700;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 160ms;
+  letter-spacing: -0.02em;
+}
+.blog-card:hover .blog-title { color: var(--primary-dark); }
+.blog-excerpt {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0.6rem 0 1.1rem;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.65;
+  font-weight: 500;
+}
+.blog-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--muted-light);
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line-soft);
+  margin-top: auto;
+  font-weight: 600;
+}
+
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+}
+.level-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #38BDF8, #0284C7);
+  box-shadow: var(--shadow-md);
+  transition: transform 220ms ease;
+  letter-spacing: -0.02em;
+}
+.card:hover .level-badge { transform: translateY(-2px) rotate(-4deg); box-shadow: var(--shadow-lg); }
+
+/* =========================================================
+   BADGES
+   ========================================================= */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 11px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
   font-weight: 700;
+  line-height: 1.2;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
+  box-shadow: var(--shadow-sm);
 }
+.badge-primary, .badge-teal { background: var(--primary-soft); color: var(--primary-deep); }
+.badge-accent, .badge-coral { background: var(--accent-soft); color: var(--accent-dark); }
+.badge-white { background: rgba(255,255,255,0.95); color: var(--primary-deep); box-shadow: var(--shadow-md); }
+.badge-ink { background: var(--ink); color: #fff; }
 
-.badge-coral {
-  background: var(--coral-soft);
-  color: var(--coral-dark);
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
 }
-
-.badge-teal {
-  background: var(--teallight);
-  color: var(--teal);
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 72px;
 }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  transition: transform 180ms;
+}
+.brand:hover { transform: scale(1.02); }
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+.nav-link {
+  padding: 0.6rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  transition: background 160ms, color 160ms;
+}
+.nav-link:hover { background: var(--primary-soft); color: var(--primary-deep); }
+.nav-link.active { background: var(--primary-soft); color: var(--primary-deep); }
 
-.badge-ink {
+.menu-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 150ms, box-shadow 150ms, background 150ms;
+  flex-shrink: 0;
+}
+.menu-btn:hover { background: var(--bg-alt); }
+.menu-btn:active { transform: scale(0.95); }
+.menu-lines { position: relative; width: 18px; height: 14px; }
+.menu-lines span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  border-radius: 2px;
   background: var(--ink);
-  color: white;
+  transition: transform 260ms ease, opacity 200ms ease, top 260ms ease;
+}
+.menu-lines span:nth-child(1) { top: 0; }
+.menu-lines span:nth-child(2) { top: 6px; }
+.menu-lines span:nth-child(3) { top: 12px; }
+.menu-lines.open span:nth-child(1) { top: 6px; transform: rotate(45deg); }
+.menu-lines.open span:nth-child(2) { opacity: 0; }
+.menu-lines.open span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+.mobile-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mobile-panel.open { grid-template-rows: 1fr; }
+.mobile-panel-inner { overflow: hidden; }
+.mobile-links { display: grid; gap: 0.35rem; padding: 0.25rem 0 1.25rem; }
+.mobile-links .nav-link { font-size: 1rem; padding: 0.85rem 1rem; border-radius: 14px; }
+
+/* Search inputs */
+.search-wrap { position: relative; width: 100%; }
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.8rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  outline: none;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  transition: border-color 160ms, box-shadow 160ms, background 160ms;
+}
+.search-input::placeholder { color: var(--muted-light); }
+.search-input:focus {
+  background: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-light);
+  pointer-events: none;
+}
+.search-big .search-input {
+  padding: 1.1rem 8.5rem 1.1rem 3.3rem;
+  font-size: 1rem;
+  background: #fff;
+  box-shadow: var(--shadow-lg);
+  border-radius: 16px;
+}
+.search-big .search-icon { left: 1.3rem; }
+.search-big .search-submit {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.search-big .search-submit.btn { margin-bottom: 0; }
+@media (max-width: 520px) {
+  .search-big .search-input { padding-right: 1.25rem; }
+  .search-big .search-submit { display: none; }
 }
 
-/* ========== PROSE ========== */
-.prose h2 {
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-top: 2rem;
-  margin-bottom: 0.85rem;
-  color: var(--tealdark);
-  letter-spacing: -0.02em;
+/* =========================================================
+   HERO
+   ========================================================= */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(5rem, 12vw, 8rem) 0 clamp(5rem, 10vw, 7rem);
+  background: linear-gradient(180deg, rgba(224, 242, 254, 0.5) 0%, rgba(248, 250, 252, 0) 75%);
 }
-.prose h3 {
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-top: 1.5rem;
-  margin-bottom: 0.65rem;
-  color: var(--tealdark);
+.hero-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(14, 165, 233, 0.12) 1.5px, transparent 1.5px);
+  background-size: 36px 36px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  pointer-events: none;
 }
-.prose p {
-  margin-bottom: 1rem;
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  animation: blob 25s ease-in-out infinite;
+}
+.hero-blob.b1 { width: 500px; height: 500px; background: #7DD3FC; top: -150px; left: -120px; opacity: 0.45; }
+.hero-blob.b2 { width: 400px; height: 400px; background: #C7D2FE; top: 80px; right: -100px; opacity: 0.4; animation-delay: -8s; }
+.hero-blob.b3 { width: 350px; height: 350px; background: #FED7AA; bottom: -120px; left: 50%; opacity: 0.3; animation-delay: -12s; }
+
+.hero-title {
+  font-size: clamp(2.8rem, 8vw, 5.2rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  max-width: 18ch;
+  margin-left: auto;
+  margin-right: auto;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--primary-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
+}
+.hero-sub {
+  color: var(--ink-soft);
+  font-size: clamp(1.1rem, 2.6vw, 1.35rem);
+  max-width: 38rem;
+  margin: 1.75rem auto 0;
   line-height: 1.75;
-  color: var(--ink-soft);
+  font-weight: 500;
 }
-.prose ul, .prose ol {
-  padding-left: 1.5rem;
-  margin-bottom: 1rem;
-  line-height: 1.8;
-  color: var(--ink-soft);
+
+/* Hero level-tile strip — the thing this site is about */
+.tile-strip {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.8vw, 1rem);
+  margin-top: clamp(2.5rem, 6vw, 3.5rem);
+  flex-wrap: wrap;
 }
+.tile {
+  width: clamp(44px, 9vw, 62px);
+  height: clamp(44px, 9vw, 62px);
+  border-radius: clamp(14px, 2.5vw, 18px);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.95rem, 2.6vw, 1.25rem);
+  color: var(--primary-deep);
+  background: #fff;
+  border: 1.5px solid var(--line);
+  box-shadow: var(--shadow-md);
+  animation: tilePop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.tile.solved { background: linear-gradient(135deg, #38BDF8, #0EA5E9); color: #fff; border-color: #0284C7; box-shadow: var(--shadow-md); }
+.tile.stuck {
+  background: linear-gradient(135deg, #FDBA74, #FB923C);
+  color: #fff;
+  border-color: #EA580C;
+  box-shadow: var(--shadow-md);
+  animation: tilePop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 2.8s ease-in-out 1.4s infinite;
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.6rem, 2.5vw, 1.2rem);
+  max-width: 600px;
+  margin: clamp(2.5rem, 5vw, 3rem) auto 0;
+}
+.stat {
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.stat b {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(1.35rem, 3.6vw, 1.8rem);
+  color: var(--primary-deep);
+  line-height: 1.1;
+}
+.stat span { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
+/* CTA band */
+.cta-band {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: clamp(2rem, 6vw, 3.5rem);
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, #0284C7 0%, #0EA5E9 50%, #38BDF8 100%);
+  box-shadow: var(--shadow-xl);
+}
+.cta-band::before, .cta-band::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+.cta-band::before { width: 280px; height: 280px; top: -100px; right: -70px; }
+.cta-band::after { width: 200px; height: 200px; bottom: -90px; left: -50px; }
+.cta-band h2 { color: #fff; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; position: relative; margin-bottom: 0.75rem; }
+.cta-band p { color: #E0F2FE; margin: 0 auto 1.75rem; max-width: 34rem; position: relative; line-height: 1.7; }
+.cta-band .btn { position: relative; }
+
+/* =========================================================
+   LEVEL TILES (grids of numbers)
+   ========================================================= */
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 0.65rem;
+}
+.level-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 3px 0 var(--line);
+  transition: transform 140ms, background 140ms, box-shadow 140ms, border-color 140ms, color 140ms;
+}
+.level-tile:hover {
+  transform: translateY(-3px);
+  background: var(--primary-soft);
+  border-color: var(--primary-light);
+  color: var(--primary-deep);
+  box-shadow: 0 6px 0 var(--primary-light);
+}
+.level-tile:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.level-tile.current {
+  color: #fff;
+  background: linear-gradient(180deg, #38BDF8, #0EA5E9);
+  border-color: #0284C7;
+  box-shadow: 0 4px 0 #0369A1, 0 10px 16px -6px rgba(14,165,233,.55);
+}
+
+/* Pager (prev / next) */
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.pager-item { padding: 1rem 1.15rem; display: block; }
+.pager-item small { color: var(--muted); font-size: 0.78rem; display: block; margin-bottom: 0.15rem; }
+.pager-item strong { font-family: var(--font-display), sans-serif; color: var(--ink); }
+.pager-item.next { text-align: right; }
+
+/* =========================================================
+   MEDIA / CONTENT
+   ========================================================= */
+.video-frame {
+  aspect-ratio: 16 / 9;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #071A2E;
+  box-shadow: var(--shadow-lg), 0 0 0 5px #fff, 0 0 0 6px var(--line);
+}
+.video-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+.cover-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #BAE6FD, #C7D2FE);
+  box-shadow: var(--shadow-md);
+}
+.cover-frame img { object-fit: cover; }
+
+.tip-box {
+  border-radius: 20px;
+  padding: 1.15rem 1.3rem;
+  background: linear-gradient(180deg, #FFF7ED, #FFEFD9);
+  border: 1px solid #FED7AA;
+  box-shadow: 0 4px 0 #FED7AA;
+}
+.tip-box h3 { font-size: 1rem; margin-bottom: 0.4rem; color: #9A3412; }
+
+.faq-item { padding: 1.1rem 1.3rem; cursor: pointer; }
+.faq-item summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item .chev {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-size: 0.8rem;
+  transition: transform 280ms ease, background 200ms;
+}
+.faq-item[open] { border-color: var(--primary-light); }
+.faq-item[open] .chev { transform: rotate(180deg); background: var(--primary); color: #fff; }
+.faq-item p { margin-top: 0.8rem; color: var(--ink-soft); line-height: 1.75; font-size: 0.95rem; }
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.breadcrumb a { padding: 0.15rem 0.35rem; border-radius: 8px; transition: color 150ms, background 150ms; }
+.breadcrumb a:hover { color: var(--primary-dark); background: var(--primary-soft); }
+.crumb { display: inline-flex; align-items: center; gap: 0.15rem; }
+.crumb-sep { color: var(--muted-light); padding: 0 0.15rem; }
+.crumb-current { color: var(--ink); font-weight: 600; padding: 0.15rem 0.35rem; }
+
+.empty-state {
+  border: 2px dashed var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  padding: clamp(2rem, 7vw, 4rem) 1.5rem;
+  text-align: center;
+}
+.empty-state .emoji { font-size: 3rem; margin-bottom: 0.75rem; }
+
+/* Ads */
+.ad-wrap { margin: 1.5rem 0; }
+.ad-label {
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--muted-light);
+  margin-bottom: 0.4rem;
+}
+.ad-box {
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-alt);
+  border: 1px dashed var(--line);
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+.site-footer {
+  position: relative;
+  margin-top: clamp(4rem, 8vw, 6rem);
+  padding: clamp(3rem, 7vw, 4.5rem) 0 2rem;
+  color: #CBD5E1;
+  background: linear-gradient(180deg, #0F172A 0%, #020617 100%);
+}
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  margin-bottom: 3rem;
+}
+@media (min-width: 640px) { .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .footer-grid { grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)); gap: 3rem; } }
+.footer-grid.no-cat { }
+@media (min-width: 1024px) { .footer-grid.no-cat { grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)); } }
+.footer-title { color: #fff; font-family: var(--font-display), sans-serif; font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, #E0F2FE 100%); -webkit-background-clip: text; background-clip: text; }
+.footer-links { display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; }
+.footer-link { transition: color 150ms, transform 150ms; display: inline-block; font-weight: 500; }
+.footer-link:hover { color: #fff; transform: translateX(4px); }
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.75rem;
+  text-align: center;
+  font-size: 0.87rem;
+  color: #94A3B8;
+  line-height: 1.6;
+}
+.social-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 160ms, transform 160ms;
+}
+.social-pill:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
+
+/* =========================================================
+   PROSE
+   ========================================================= */
+.prose { color: var(--ink-soft); font-size: 1.02rem; line-height: 1.8; }
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+.prose h2 {
+  font-size: clamp(1.4rem, 3.2vw, 1.75rem);
+  font-weight: 800;
+  margin: 2.5rem 0 1rem;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+.prose h3 { font-size: clamp(1.15rem, 2.6vw, 1.3rem); font-weight: 700; margin: 2rem 0 0.75rem; color: var(--ink); letter-spacing: -0.02em; line-height: 1.35; }
+.prose h4 { font-size: 1.1rem; font-weight: 700; margin: 1.6rem 0 0.6rem; letter-spacing: -0.01em; }
+.prose p { margin-bottom: 1.25rem; line-height: 1.85; }
+.prose ul, .prose ol { padding-left: 1.5rem; margin-bottom: 1.25rem; line-height: 1.85; }
 .prose ul { list-style: disc; }
 .prose ol { list-style: decimal; }
-.prose li { margin-bottom: 0.35rem; }
-.prose a {
-  color: var(--teal);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 150ms;
+.prose li { margin-bottom: 0.5rem; }
+.prose li::marker { color: var(--primary); font-weight: 700; }
+.prose a { color: var(--primary-dark); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; transition: color 150ms; font-weight: 600; }
+.prose a:hover { color: var(--accent-dark); }
+.prose img { max-width: 100%; height: auto; border-radius: 20px; margin: 2rem 0; box-shadow: var(--shadow-lg); }
+.prose strong, .prose b { font-weight: 700; color: var(--ink); }
+.prose blockquote {
+  margin: 1.75rem 0;
+  padding: 1.25rem 1.5rem;
+  border-left: 4px solid var(--primary);
+  background: var(--primary-soft);
+  border-radius: 0 18px 18px 0;
+  color: var(--ink);
+  font-weight: 500;
 }
-.prose a:hover { color: var(--coral); }
-.prose img {
-  max-width: 100%;
-  border-radius: 12px;
-  margin: 1.25rem 0;
-}
-.prose strong { font-weight: 700; color: var(--ink); }
 .prose code {
-  background: var(--bg-alt);
-  padding: 3px 7px;
-  border-radius: 6px;
-  font-size: 0.88em;
-  color: var(--coral-dark);
+  background: var(--primary-soft);
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  color: var(--primary-deep);
+  font-weight: 600;
+}
+.prose pre { background: #0B2540; color: #E0F2FE; padding: 1.25rem 1.5rem; border-radius: 18px; overflow-x: auto; margin-bottom: 1.25rem; box-shadow: var(--shadow-md); }
+.prose pre code { background: transparent; color: inherit; padding: 0; }
+.prose hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.prose table { display: block; overflow-x: auto; width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.prose th, .prose td { border: 1px solid var(--line); padding: 0.75rem 1rem; text-align: left; }
+.prose th { background: var(--primary-soft); color: var(--ink); font-weight: 700; }
+
+/* =========================================================
+   FORM FIELDS (public + admin)
+   ========================================================= */
+input[type="text"], input[type="url"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
+  background: #fff;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
 }
 
-/* ========== ANIMATIONS ========== */
+/* =========================================================
+   ANIMATION
+   ========================================================= */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.animate-fade-in-up { animation: fadeInUp 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-.animate-fade-in-up {
-  animation: fadeInUp 500ms cubic-bezier(0.4, 0, 0.2, 1) both;
+@keyframes tilePop {
+  from { opacity: 0; transform: translateY(18px) scale(0.7); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  8% { transform: rotate(-9deg); }
+  16% { transform: rotate(8deg); }
+  24% { transform: rotate(-5deg); }
+  32% { transform: rotate(0); }
+}
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -24px) scale(1.08); }
+  66% { transform: translate(-22px, 22px) scale(0.95); }
+}
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-alt) 25%, var(--line-soft) 50%, var(--bg-alt) 75%);
+  background: linear-gradient(90deg, var(--bg-alt) 25%, #fff 50%, var(--bg-alt) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-/* ========== LAYOUT HELPERS ========== */
-.container-page {
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
-}
-
-.container-narrow {
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
-}
-
-@media (max-width: 640px) {
-  .container-page,
-  .container-narrow {
-    padding-left: 20px;
-    padding-right: 20px;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   BASE FIX — Tailwind v4 default border is currentColor
+   ========================================================= */
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--line);
+  }
+}
+
+/* =========================================================
+   ADMIN SHELL (plain CSS — no responsive utility dependence)
+   ========================================================= */
+.admin-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+.admin-side {
+  width: 268px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0B2540 0%, #071A2E 100%);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.admin-topbar { display: none; }
+.admin-drawer { display: none; }
+.admin-main { flex: 1; min-width: 0; }
+
+@media (max-width: 1023px) {
+  .admin-shell { flex-direction: column; }
+  .admin-side { display: none; }
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: 0.7rem 1rem;
+    background: #0B2540;
+    box-shadow: 0 8px 20px -12px rgba(0,0,0,0.6);
+  }
+  .admin-drawer {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    visibility: hidden;
+    transition: visibility 0s linear 320ms;
+  }
+  .admin-drawer.open { visibility: visible; transition-delay: 0s; }
+  .admin-drawer .backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 26, 46, 0.6);
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+  .admin-drawer.open .backdrop { opacity: 1; }
+  .admin-drawer .panel {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: min(300px, 85vw);
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #0B2540 0%, #071A2E 100%);
+    transform: translateX(-100%);
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 20px 0 50px -20px rgba(0,0,0,0.6);
+  }
+  .admin-drawer.open .panel { transform: none; }
+}
+
+.admin-brand-row { padding: 1.25rem 1.15rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.admin-brand-row .brand { color: #fff; }
+.admin-nav { flex: 1; padding: 1rem 0.8rem; display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+.admin-foot { padding: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 0.3rem; }
+.admin-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #B4CCE0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 160ms, color 160ms, transform 160ms;
+}
+.admin-link .ico {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.admin-link:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.admin-link.active {
+  color: #fff;
+  background: linear-gradient(180deg, #38BDF8, #0EA5E9);
+  box-shadow: 0 4px 0 #0369A1, 0 12px 20px -10px rgba(14,165,233,0.7);
+  margin-bottom: 4px;
+}
+.admin-link.active .ico { background: rgba(255,255,255,0.22); }
+.admin-link.danger:hover { background: #EF4444; color: #fff; }
+
+/* Page chrome */
+.admin-page { padding: clamp(1.1rem, 3.5vw, 2.25rem); max-width: 1280px; margin: 0 auto; width: 100%; }
+.admin-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+.admin-title { font-size: clamp(1.6rem, 3.5vw, 2.15rem); font-weight: 800; }
+.admin-sub { color: var(--muted); font-size: 0.95rem; margin-top: 0.25rem; }
+.admin-back { font-size: 0.85rem; font-weight: 700; color: var(--primary-dark); }
+.admin-back:hover { color: var(--accent-dark); }
+
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+.admin-stat { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.3rem; }
+.admin-stat-icon {
+  width: 56px; height: 56px;
+  border-radius: 18px;
+  display: grid; place-items: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+}
+.admin-stat-num { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: 2.1rem; line-height: 1; color: var(--ink); }
+.admin-stat-label { color: var(--muted); font-size: 0.88rem; margin-top: 0.3rem; font-weight: 600; }
+.admin-stat-go { margin-left: auto; color: var(--muted-light); font-size: 1.2rem; transition: transform 200ms, color 200ms; }
+.admin-stat:hover .admin-stat-go { transform: translateX(4px); color: var(--primary-dark); }
+
+.admin-panel { padding: clamp(1.1rem, 3vw, 1.6rem); }
+.admin-panel h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: 1rem; }
+.admin-panel-tint { background: linear-gradient(135deg, #E0F2FE 0%, #EEF2FF 100%); border-color: #BAE6FD; }
+
+/* Tables */
+.admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-table { width: 100%; min-width: 620px; border-collapse: collapse; }
+.admin-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+  background: var(--primary-soft);
+  padding: 0.8rem 1rem;
+  white-space: nowrap;
+}
+.admin-table th.right, .admin-table td.right { text-align: right; }
+.admin-table td { padding: 0.9rem 1rem; border-top: 1px solid var(--line-soft); font-size: 0.92rem; vertical-align: middle; }
+.admin-table tbody tr { transition: background 150ms; }
+.admin-table tbody tr:hover { background: #F7FBFF; }
+.admin-table .name { font-weight: 700; color: var(--ink); }
+.admin-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; color: var(--muted); }
+.admin-actions { display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+
+.pill { display: inline-flex; align-items: center; padding: 0.22rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.pill-green { background: #DCFCE7; color: #15803D; }
+.pill-gray { background: #EEF2F7; color: #475569; }
+.pill-blue { background: var(--primary-soft); color: var(--primary-deep); }
+
+/* Small action buttons */
+.act {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.42rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.8rem; font-weight: 700; line-height: 1;
+  border: 0; cursor: pointer;
+  transition: transform 140ms, filter 140ms, background 140ms;
+}
+.act:hover { transform: translateY(-1px); filter: brightness(0.96); }
+.act:disabled { opacity: 0.6; cursor: not-allowed; }
+.act-edit { background: var(--primary-soft); color: var(--primary-deep); }
+.act-levels { background: #D1FAE5; color: #047857; }
+.act-del { background: #FEE2E2; color: #B91C1C; }
+.act-del.solid { background: #EF4444; color: #fff; }
+.act-ghost { background: #EEF2F7; color: #475569; }
+
+/* Level cards (admin) */
+.admin-level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.85rem; }
+.admin-level { padding: 0.9rem; }
+.admin-level .num { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--primary-dark); line-height: 1; }
+.admin-level .vid { font-size: 0.75rem; color: var(--muted); margin: 0.5rem 0 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.admin-alert { border-radius: 16px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; font-size: 0.9rem; background: #FFF7ED; border: 1px solid #FED7AA; color: #9A3412; }
+.admin-alert code { display: block; margin-top: 0.5rem; padding: 0.5rem 0.7rem; background: #FFEDD5; border-radius: 10px; font-size: 0.82rem; overflow-x: auto; }
+
+/* Make the old admin forms (Tailwind boxes) match the new look */
+.admin-main .bg-white.rounded-xl { border-radius: 22px; box-shadow: var(--shadow-sm); border-color: var(--line); }
+.admin-main .bg-white.rounded-xl.p-12 { padding: 3rem 1.5rem; }
+.admin-main > .p-8 { padding: clamp(1.1rem, 3.5vw, 2.25rem); }
+.admin-main input[type="text"], .admin-main input[type="url"], .admin-main input[type="number"],
+.admin-main input[type="email"], .admin-main input[type="password"], .admin-main select, .admin-main textarea {
+  border-color: var(--line);
+  border-radius: 12px;
+}
+.admin-main form .card + .card, .admin-main form > * + * { }
+
+/* =========================================================
+   CLEAN-UP PASS
+   ========================================================= */
+.section-title { display: flex; align-items: center; gap: 0.7rem; }
+.section-title::before {
+  content: '';
+  width: 6px;
+  height: 1.05em;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #38BDF8, #6366F1);
+}
+.card-hover:hover { border-color: rgba(125, 211, 252, 0.9); }
+.nav-inner { min-height: 72px; }
+.site-nav { background: rgba(255, 255, 255, 0.72); }
+
+/* Footer pattern */
+.site-footer { overflow: hidden; }
+.site-footer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M44 37v14M37 44h14'/%3E%3C/g%3E%3C/svg%3E");
+}
+.site-footer > .container-page { position: relative; z-index: 1; }
+
+/* Admin content area gets a soft frosted surface feel */
+.admin-main { background: transparent; }
 </file>
 
 <file path="app/layout.tsx">
 import type { Metadata, Viewport } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const body = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-body',
 });
 
-const spaceGrotesk = Space_Grotesk({
+const display = Sora({
   subsets: ['latin'],
   display: 'swap',
-  weight: ['500', '700'],
-  variable: '--font-space-grotesk',
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-display',
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -3008,7 +3735,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0B3F42',
+  themeColor: '#0EA5E9',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -3016,7 +3743,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${body.variable} ${display.variable}`}>
       <body>{children}</body>
     </html>
   );
@@ -3027,16 +3754,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 export default function Loading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-12 h-12 rounded-full border-[3px] animate-spin"
-          style={{
-            borderColor: 'var(--line)',
-            borderTopColor: 'var(--coral)',
-          }}
-        />
-        <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
-          Loading...
+      <div className="flex flex-col items-center gap-5">
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="tile solved"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 8,
+                boxShadow: '0 3px 0 #0369A1',
+                animation: `tilePop 700ms ease ${i * 160}ms infinite alternate both`,
+              }}
+            />
+          ))}
+        </div>
+        <p className="text-sm font-semibold" style={{ color: 'var(--muted)' }}>
+          Loading…
         </p>
       </div>
     </div>
@@ -3049,35 +3784,19 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center animate-fade-in-up">
-      <div
-        className="text-[100px] md:text-[140px] font-bold leading-none mb-2"
-        style={{
-          color: 'var(--coral)',
-          fontFamily: 'var(--font-space-grotesk), sans-serif',
-        }}
-      >
-        404
+    <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center animate-fade-in-up">
+      <div className="tile-strip" style={{ marginTop: 0, marginBottom: '1.5rem' }}>
+        <span className="tile solved">4</span>
+        <span className="tile stuck">0</span>
+        <span className="tile solved">4</span>
       </div>
-      <h2
-        className="text-2xl md:text-3xl font-bold mb-4"
-        style={{ color: 'var(--tealdark)' }}
-      >
-        Page Not Found
-      </h2>
-      <p
-        className="mb-8 max-w-md text-[15px]"
-        style={{ color: 'var(--muted)' }}
-      >
-        The page you&apos;re looking for doesn&apos;t exist or has been moved.
+      <h1 className="page-title">This level doesn&apos;t exist</h1>
+      <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+        The page you&apos;re looking for was moved or never existed. Head back and pick another game.
       </p>
-      <div className="flex gap-3 flex-wrap justify-center">
-        <Link href="/" className="btn btn-primary">
-          Go Home
-        </Link>
-        <Link href="/blog" className="btn btn-secondary">
-          Read Blog
-        </Link>
+      <div className="flex gap-4 flex-wrap justify-center mt-8">
+        <Link href="/" className="btn btn-primary">Go home</Link>
+        <Link href="/blog" className="btn btn-secondary">Read guides</Link>
       </div>
     </div>
   );
@@ -3185,6 +3904,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 
 const links = [
@@ -3194,58 +3914,95 @@ const links = [
   { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 
-export default function AdminSidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-gray-900 text-gray-300 min-h-screen flex flex-col">
-      {/* Logo */}
-      <div className="p-5 border-b border-gray-800">
-        <Link href="/admin/dashboard" className="text-white font-bold text-lg">
-          🧩 Admin Panel
+    <>
+      <div className="admin-brand-row">
+        <Link href="/admin/dashboard" onClick={onNavigate} className="brand">
+          <span className="brand-mark" aria-hidden="true">🧩</span>
+          <span>Admin panel</span>
         </Link>
       </div>
 
-      {/* Nav Links */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="admin-nav" aria-label="Admin">
         {links.map((link) => {
           const active = pathname === link.href || pathname.startsWith(link.href + '/');
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${
-                active
-                  ? 'bg-blue-600 text-white'
-                  : 'hover:bg-gray-800 hover:text-white'
-              }`}
+              onClick={onNavigate}
+              className={`admin-link ${active ? 'active' : ''}`}
+              aria-current={active ? 'page' : undefined}
             >
-              <span>{link.icon}</span>
+              <span className="ico" aria-hidden="true">{link.icon}</span>
               <span>{link.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="p-3 border-t border-gray-800 space-y-2">
-        <Link
-          href="/"
-          target="_blank"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 hover:text-white transition"
-        >
-          <span>🌐</span>
-          <span>View Site</span>
+      <div className="admin-foot">
+        <Link href="/" target="_blank" className="admin-link">
+          <span className="ico" aria-hidden="true">🌐</span>
+          <span>View site</span>
         </Link>
         <button
+          type="button"
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition text-left"
+          className="admin-link danger"
         >
-          <span>🚪</span>
-          <span>Sign Out</span>
+          <span className="ico" aria-hidden="true">🚪</span>
+          <span>Sign out</span>
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export default function AdminSidebar() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="admin-side">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile / tablet top bar */}
+      <div className="admin-topbar">
+        <Link href="/admin/dashboard" className="brand" style={{ color: '#fff' }}>
+          <span className="brand-mark" style={{ width: 36, height: 36, fontSize: 18 }} aria-hidden="true">
+            🧩
+          </span>
+          <span>Admin</span>
+        </Link>
+        <button
+          type="button"
+          className="menu-btn"
+          aria-label="Open menu"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <span className="menu-lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+      </div>
+
+      {/* Drawer (mobile / tablet only) */}
+      <div className={`admin-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
+        <div className="backdrop" onClick={() => setOpen(false)} />
+        <aside className="panel" inert={!open}>
+          <SidebarContent onNavigate={() => setOpen(false)} />
+        </aside>
+      </div>
+    </>
   );
 }
 </file>
@@ -3275,23 +4032,92 @@ export default function AdSlot({
   };
 
   return (
-    <div className="my-6" data-ad-label={label}>
-      <div
-        className="text-[10px] text-center uppercase mb-2 tracking-widest font-medium"
-        style={{ color: 'var(--muted-light)' }}
-      >
-        Advertisement
-      </div>
-      <div
-        className={`rounded-2xl flex items-center justify-center overflow-hidden ${heights[variant]}`}
-        style={{
-          background: 'var(--bg-alt)',
-          border: '1px dashed var(--line)',
-        }}
-      >
+    <div className="ad-wrap" data-ad-label={label}>
+      <div className="ad-label">Advertisement</div>
+      <div className={`ad-box ${heights[variant]}`}>
         <div dangerouslySetInnerHTML={{ __html: cleanCode }} />
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="components/BackgroundDecor.tsx">
+type Piece = { x: string; y: string; s: number; r: number; c: 'sky' | 'indigo' | 'orange'; d: number; t: number };
+
+// Positions are kept near the page edges so text stays readable.
+const PIECES: Piece[] = [
+  { x: '3%', y: '16%', s: 96, r: -14, c: 'sky', d: 0, t: 11 },
+  { x: '90%', y: '10%', s: 120, r: 18, c: 'indigo', d: -3, t: 13 },
+  { x: '93%', y: '58%', s: 84, r: -8, c: 'orange', d: -6, t: 10 },
+  { x: '1.5%', y: '64%', s: 112, r: 12, c: 'indigo', d: -2, t: 14 },
+  { x: '11%', y: '90%', s: 76, r: -20, c: 'orange', d: -5, t: 12 },
+  { x: '85%', y: '88%', s: 100, r: 10, c: 'sky', d: -8, t: 15 },
+];
+
+export default function BackgroundDecor() {
+  return (
+    <div className="bg-decor" aria-hidden="true">
+      {PIECES.map((p, i) => (
+        <div
+          key={i}
+          className={`bg-piece ${p.c}`}
+          style={
+            {
+              left: p.x,
+              top: p.y,
+              width: p.s,
+              height: p.s,
+              '--r': `${p.r}deg`,
+              animationDelay: `${p.d}s`,
+              animationDuration: `${p.t}s`,
+            } as React.CSSProperties
+          }
+        >
+          <svg viewBox="-10 -10 120 120">
+            <path d="M10 10 H38 C38 -6 62 -6 62 10 H90 V38 C106 38 106 62 90 62 V90 H10 V62 C22 62 22 38 10 38 Z" />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+</file>
+
+<file path="components/BlogCard.tsx">
+import Link from 'next/link';
+import Image from 'next/image';
+import type { Blog } from '@/types';
+import { formatDate } from '@/lib/utils';
+
+export default function BlogCard({ blog }: { blog: Blog }) {
+  return (
+    <Link href={`/blog/${blog.slug}`} className="card card-hover blog-card">
+      <div className="blog-thumb">
+        {blog.cover_image ? (
+          <Image
+            src={blog.cover_image}
+            alt={blog.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <span aria-hidden="true">📝</span>
+        )}
+      </div>
+      <div className="blog-body">
+        <h3 className="blog-title">{blog.title}</h3>
+        {blog.meta_description ? (
+          <p className="blog-excerpt">{blog.meta_description}</p>
+        ) : (
+          <div style={{ flex: 1 }} />
+        )}
+        <div className="blog-meta">
+          <span>{formatDate(blog.created_at)}</span>
+          <span style={{ color: 'var(--primary-dark)', fontWeight: 700 }}>Read guide</span>
+        </div>
+      </div>
+    </Link>
   );
 }
 </file>
@@ -3479,6 +4305,29 @@ export default function BlogForm({
 }
 </file>
 
+<file path="components/Breadcrumb.tsx">
+import Link from 'next/link';
+
+type Crumb = { label: string; href?: string };
+
+export default function Breadcrumb({ items }: { items: Crumb[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="breadcrumb">
+      {items.map((item, i) => (
+        <span key={`${item.label}-${i}`} className="crumb">
+          {item.href ? (
+            <Link href={item.href}>{item.label}</Link>
+          ) : (
+            <span className="crumb-current" aria-current="page">{item.label}</span>
+          )}
+          {i < items.length - 1 && <span className="crumb-sep" aria-hidden="true">/</span>}
+        </span>
+      ))}
+    </nav>
+  );
+}
+</file>
+
 <file path="components/BulkGenerateForm.tsx">
 'use client';
 
@@ -3507,58 +4356,42 @@ export default function BulkGenerateForm({ gameId }: { gameId: string }) {
     });
   }
 
+  const field = 'w-full px-3 py-2.5 border rounded-xl outline-none';
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-[110px_110px_1fr_auto] gap-3 items-end">
         <div>
-          <label className="block text-sm font-medium mb-1">From</label>
-          <input
-            type="number"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            min="1"
-            required
-            className="w-24 px-3 py-2 border rounded-lg"
-          />
+          <label className="block text-sm font-semibold mb-1">From</label>
+          <input type="number" value={from} onChange={(e) => setFrom(e.target.value)} min="1" required className={field} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">To</label>
-          <input
-            type="number"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            min="1"
-            required
-            className="w-24 px-3 py-2 border rounded-lg"
-          />
+          <label className="block text-sm font-semibold mb-1">To</label>
+          <input type="number" value={to} onChange={(e) => setTo(e.target.value)} min="1" required className={field} />
         </div>
-        <div className="flex-1 min-w-64">
-          <label className="block text-sm font-medium mb-1">
-            Default YouTube URL (optional)
-          </label>
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-sm font-semibold mb-1">Default YouTube URL (optional)</label>
           <input
             type="url"
             value={defaultUrl}
             onChange={(e) => setDefaultUrl(e.target.value)}
             placeholder="https://youtu.be/..."
-            className="w-full px-3 py-2 border rounded-lg"
+            className={field}
           />
         </div>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {isPending ? 'Generating...' : '⚡ Generate'}
+        <button type="submit" disabled={isPending} className="btn btn-primary btn-sm col-span-2 sm:col-span-1">
+          {isPending ? 'Generating…' : '⚡ Generate'}
         </button>
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+        <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#FEF2F2', color: '#B91C1C' }}>
+          {error}
+        </p>
       )}
 
-      <p className="text-xs text-gray-500">
-        Example: From 1 To 50 → 50 blank levels ban jayenge.
+      <p className="text-xs" style={{ color: 'var(--muted)' }}>
+        Example: From 1 To 50 creates 50 blank levels.
       </p>
     </form>
   );
@@ -3579,8 +4412,9 @@ export default function DeleteBlogButton({ id, title }: Props) {
 
   if (confirming) {
     return (
-      <span className="inline-flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => {
             startTransition(async () => {
               const res = await deleteBlog(id);
@@ -3588,14 +4422,11 @@ export default function DeleteBlogButton({ id, title }: Props) {
             });
           }}
           disabled={isPending}
-          className="text-sm text-red-600 font-semibold hover:underline disabled:opacity-50"
+          className="act act-del solid"
         >
-          {isPending ? 'Deleting...' : 'Confirm'}
+          {isPending ? 'Deleting…' : 'Confirm'}
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-sm text-gray-500 hover:underline"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="act act-ghost">
           Cancel
         </button>
       </span>
@@ -3604,8 +4435,9 @@ export default function DeleteBlogButton({ id, title }: Props) {
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="text-sm text-red-600 hover:underline"
+      className="act act-del"
       title={`Delete ${title}`}
     >
       Delete
@@ -3628,8 +4460,9 @@ export default function DeleteGameButton({ id, name }: Props) {
 
   if (confirming) {
     return (
-      <span className="inline-flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => {
             startTransition(async () => {
               const res = await deleteGame(id);
@@ -3637,14 +4470,11 @@ export default function DeleteGameButton({ id, name }: Props) {
             });
           }}
           disabled={isPending}
-          className="text-sm text-red-600 font-semibold hover:underline disabled:opacity-50"
+          className="act act-del solid"
         >
-          {isPending ? 'Deleting...' : 'Confirm'}
+          {isPending ? 'Deleting…' : 'Confirm'}
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-sm text-gray-500 hover:underline"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="act act-ghost">
           Cancel
         </button>
       </span>
@@ -3653,8 +4483,9 @@ export default function DeleteGameButton({ id, name }: Props) {
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="text-sm text-red-600 hover:underline"
+      className="act act-del"
       title={`Delete ${name}`}
     >
       Delete
@@ -3677,8 +4508,9 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
 
   if (confirming) {
     return (
-      <span className="inline-flex gap-1 text-xs">
+      <span className="inline-flex gap-1">
         <button
+          type="button"
           onClick={() => {
             startTransition(async () => {
               const res = await deleteLevel(levelId, gameId);
@@ -3686,14 +4518,11 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
             });
           }}
           disabled={isPending}
-          className="text-red-600 font-semibold hover:underline disabled:opacity-50"
+          className="act act-del solid"
         >
-          {isPending ? '...' : 'Yes'}
+          {isPending ? '…' : 'Yes'}
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-gray-500 hover:underline"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="act act-ghost">
           No
         </button>
       </span>
@@ -3702,12 +4531,39 @@ export default function DeleteLevelButton({ levelId, gameId, levelNumber }: Prop
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
-      className="text-red-600 hover:underline"
+      className="act act-del"
       title={`Delete Level ${levelNumber}`}
     >
-      Del
+      Delete
     </button>
+  );
+}
+</file>
+
+<file path="components/EmptyState.tsx">
+type Props = {
+  emoji?: string;
+  title?: string;
+  text?: string;
+};
+
+export default function EmptyState({ emoji = '🎮', title, text }: Props) {
+  return (
+    <div className="empty-state">
+      <div className="emoji">{emoji}</div>
+      {title && (
+        <p className="font-bold mb-1" style={{ color: 'var(--ink)' }}>
+          {title}
+        </p>
+      )}
+      {text && (
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>
+          {text}
+        </p>
+      )}
+    </div>
   );
 }
 </file>
@@ -3746,99 +4602,124 @@ export default function Footer({ settings, categories }: Props) {
   const visibleCategories = categories.slice(0, 6);
 
   return (
-    <footer
-      className="mt-16 pt-10 pb-5 px-6 md:px-12"
-      style={{ background: 'var(--tealdark)', color: '#CFE3E0' }}
-    >
-      <div
-        className={`max-w-6xl mx-auto grid gap-8 mb-8 ${
-          visibleCategories.length > 0 ? 'md:grid-cols-5' : 'md:grid-cols-4'
-        }`}
-      >
-        {/* Brand */}
-        <div>
-          <div
-            className="flex items-center gap-2 font-bold text-white mb-3"
-            style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}
-          >
-            <span>🧩</span>
-            <span>{siteName}</span>
-          </div>
-          <p className="text-sm leading-relaxed">{siteDescription}</p>
-        </div>
-
-        {/* Quick Links */}
-        <div>
-          <div className="font-bold text-white mb-3">Quick Links</div>
-          <div className="flex flex-col gap-2 text-sm">
-            <Link href="/" className="hover:text-white transition">Home</Link>
-            <Link href="/blog" className="hover:text-white transition">Blog</Link>
-            <Link href="/about" className="hover:text-white transition">About</Link>
-            <Link href="/contact" className="hover:text-white transition">Contact</Link>
-          </div>
-        </div>
-
-        {/* Categories */}
-        {visibleCategories.length > 0 && (
-          <div>
-            <div className="font-bold text-white mb-3">Categories</div>
-            <div className="flex flex-col gap-2 text-sm">
-              {visibleCategories.map((category) => (
-                <div key={category.id}>
-                  <Link
-                    href={`/category/${category.slug}`}
-                    className="hover:text-white transition"
-                  >
-                    {category.name}
-                  </Link>
-                </div>
-              ))}
+    <footer className="site-footer">
+      <div className="container-page">
+        <div className={`footer-grid ${visibleCategories.length === 0 ? 'no-cat' : ''}`}>
+          {/* Brand */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <div className="brand" style={{ color: '#fff', marginBottom: '0.9rem' }}>
+              <span className="brand-mark" aria-hidden="true">🧩</span>
+              <span>{siteName}</span>
             </div>
-          </div>
-        )}
-
-        {/* Legal */}
-        <div>
-          <div className="font-bold text-white mb-3">Legal</div>
-          <div className="flex flex-col gap-2 text-sm">
-            <Link href="/privacy-policy" className="hover:text-white transition">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white transition">Terms</Link>
-          </div>
-        </div>
-
-        {/* Follow */}
-        <div>
-          <div className="font-bold text-white mb-3">Follow</div>
-          {socialLinks.length > 0 ? (
-            <div className="flex flex-col gap-2 text-sm">
-              {socialLinks.map(({ key, label }) => (
-                <div key={key}>
+            <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
+            {socialLinks.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-5">
+                {socialLinks.map(({ key, label }) => (
                   <a
+                    key={key}
                     href={social[key]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-white transition"
+                    className="social-pill"
                   >
                     {label}
                   </a>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick links */}
+          <div>
+            <div className="footer-title">Quick links</div>
+            <div className="footer-links">
+              <Link href="/" className="footer-link">Home</Link>
+              <Link href="/blog" className="footer-link">Blog</Link>
+              <Link href="/about" className="footer-link">About</Link>
+              <Link href="/contact" className="footer-link">Contact</Link>
             </div>
-          ) : (
-            <p className="text-xs opacity-60">
-              Add social links in admin settings.
-            </p>
+          </div>
+
+          {/* Categories */}
+          {visibleCategories.length > 0 && (
+            <div>
+              <div className="footer-title">Categories</div>
+              <div className="footer-links">
+                {visibleCategories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/category/${category.slug}`}
+                    className="footer-link"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Legal */}
+          <div>
+            <div className="footer-title">Legal</div>
+            <div className="footer-links">
+              <Link href="/privacy-policy" className="footer-link">Privacy policy</Link>
+              <Link href="/terms" className="footer-link">Terms of service</Link>
+            </div>
+          </div>
+
+          {/* Follow (only if no pills shown in brand block, keep a hint for admin) */}
+          <div>
+            <div className="footer-title">Stuck on a level?</div>
+            <p className="text-sm leading-relaxed mb-4">
+              Pick a game and open the exact level you need.
+            </p>
+            <Link href="/#all-games" className="btn btn-primary btn-sm">
+              Browse games
+            </Link>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          © {new Date().getFullYear()} {siteName}. All rights reserved.
         </div>
       </div>
-
-      <div
-        className="max-w-6xl mx-auto pt-5 text-center text-xs"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.1)', color: '#9FC2BE' }}
-      >
-        © {new Date().getFullYear()} {siteName}. All rights reserved.
-      </div>
     </footer>
+  );
+}
+</file>
+
+<file path="components/GameCard.tsx">
+import Link from 'next/link';
+import Image from 'next/image';
+import type { Game } from '@/types';
+
+type Props = { game: Game; index?: number };
+
+export default function GameCard({ game, index = 0 }: Props) {
+  return (
+    <Link
+      href={`/game/${game.slug}`}
+      className="card card-hover game-card animate-fade-in-up"
+      style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
+    >
+      <div className="game-thumb">
+        {game.cover_image ? (
+          <Image
+            src={game.cover_image}
+            alt={game.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        ) : (
+          <span className="text-5xl" aria-hidden="true">🎮</span>
+        )}
+        <span className="badge badge-white game-badge">{game.total_levels || 0} levels</span>
+      </div>
+      <div className="p-5">
+        <h3 className="game-title">{game.name}</h3>
+        {game.short_description && <p className="game-desc">{game.short_description}</p>}
+      </div>
+    </Link>
   );
 }
 </file>
@@ -4260,19 +5141,20 @@ type Props = {
 export default function LevelButtons({ gameSlug, levels }: Props) {
   if (levels.length === 0) {
     return (
-      <div className="border-2 border-dashed rounded-xl p-8 text-center text-gray-500">
-        Abhi koi level add nahi hua.
+      <div className="empty-state">
+        <div className="emoji">🎯</div>
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>No levels added yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-2">
+    <div className="level-grid">
       {levels.map((level) => (
         <Link
           key={level.id}
           href={`/game/${gameSlug}/level-${level.level_number}`}
-          className="text-center py-3 bg-gray-100 hover:bg-blue-600 hover:text-white rounded-lg font-semibold transition"
+          className="level-tile"
         >
           {level.level_number}
         </Link>
@@ -4460,8 +5342,7 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
 </file>
 
 <file path="components/Navbar.tsx">
-import Link from 'next/link';
-import NavbarSearch from './NavbarSearch';
+import NavbarClient from './NavbarClient';
 import type { Settings } from '@/types';
 
 type Props = {
@@ -4469,63 +5350,112 @@ type Props = {
 };
 
 export default function Navbar({ settings }: Props) {
-  const siteName = settings?.site_name || 'PuzzleWalkthroughs';
-  const siteLogo = settings?.site_logo;
+  return (
+    <NavbarClient
+      siteName={settings?.site_name || 'PuzzleWalkthroughs'}
+      siteLogo={settings?.site_logo || null}
+    />
+  );
+}
+</file>
+
+<file path="components/NavbarClient.tsx">
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import NavbarSearch from './NavbarSearch';
+
+const LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+
+type Props = {
+  siteName: string;
+  siteLogo: string | null;
+};
+
+export default function NavbarClient({ siteName, siteLogo }: Props) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 
   return (
-    <nav
-      className="sticky top-0 z-50 border-b backdrop-blur-md"
-      style={{
-        background: 'rgba(255, 255, 255, 0.85)',
-        borderColor: 'var(--line)',
-      }}
-    >
-      <div className="container-page py-3.5 flex items-center gap-4 md:gap-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-bold text-lg md:text-xl whitespace-nowrap transition-transform hover:scale-[1.02]"
-          style={{
-            fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif',
-            color: 'var(--ink)',
-          }}
-        >
-          {siteLogo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={siteLogo}
-              alt={siteName}
-              className="h-7 w-auto max-w-40 object-contain"
-            />
-          ) : (
-            <>
-              <span className="text-2xl">🧩</span>
-              <span className="hidden sm:inline">{siteName}</span>
-              <span className="sm:hidden">Puzzle</span>
-            </>
-          )}
-        </Link>
+    <header className="site-nav">
+      <div className="container-page">
+        <div className="nav-inner">
+          <Link href="/" className="brand" onClick={() => setOpen(false)}>
+            {siteLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={siteLogo} alt={siteName} className="h-9 w-auto max-w-44 object-contain" />
+            ) : (
+              <>
+                <span className="brand-mark" aria-hidden="true">🧩</span>
+                <span className="hidden sm:inline">{siteName}</span>
+                <span className="sm:hidden">Puzzle</span>
+              </>
+            )}
+          </Link>
 
-        <div className="hidden md:block flex-1 max-w-md">
-          <NavbarSearch />
+          <div className="hidden md:block flex-1 max-w-md mx-auto">
+            <NavbarSearch />
+          </div>
+
+          <nav className="hidden md:flex items-center gap-1 ml-auto" aria-label="Main">
+            {LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <button
+            type="button"
+            className="menu-btn md:hidden ml-auto"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className={`menu-lines ${open ? 'open' : ''}`} aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
         </div>
 
-        <div className="hidden md:flex gap-6 text-sm font-semibold whitespace-nowrap ml-auto">
-          <Link href="/" className="transition-colors hover:text-[var(--coral)]" style={{ color: 'var(--ink)' }}>
-            Home
-          </Link>
-          <Link href="/blog" className="transition-colors hover:text-[var(--coral)]" style={{ color: 'var(--ink)' }}>
-            Blog
-          </Link>
-          <Link href="/about" className="transition-colors hover:text-[var(--coral)]" style={{ color: 'var(--ink)' }}>
-            About
-          </Link>
-        </div>
-
-        <div className="md:hidden flex-1 min-w-0">
-          <NavbarSearch />
+        {/* Mobile / tablet panel */}
+        <div className={`mobile-panel md:hidden ${open ? 'open' : ''}`}>
+          <div className="mobile-panel-inner" inert={!open}>
+            <div className="pb-4">
+              <NavbarSearch onDone={() => setOpen(false)} />
+            </div>
+            <nav className="mobile-links" aria-label="Mobile">
+              {LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 </file>
@@ -4536,30 +5466,108 @@ export default function Navbar({ settings }: Props) {
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function NavbarSearch() {
+type Props = {
+  onDone?: () => void;
+  /** Large hero version with a submit button inside the field */
+  big?: boolean;
+  placeholder?: string;
+};
+
+export default function NavbarSearch({ onDone, big = false, placeholder }: Props) {
   const [query, setQuery] = useState('');
   const router = useRouter();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query)}`);
+    const q = query.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    onDone?.();
   }
 
   return (
-    <form onSubmit={handleSearch} className="w-full">
+    <form onSubmit={handleSearch} className={`search-wrap ${big ? 'search-big' : ''}`} role="search">
+      <svg
+        className="search-icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search games or levels…"
-        className="w-full px-4 py-2.5 rounded-full text-sm outline-none transition focus:ring-2 focus:ring-(--teal)"
-        style={{
-          background: 'var(--bg)',
-          border: '1px solid var(--line)',
-          color: 'var(--ink)',
-        }}
+        placeholder={placeholder || 'Search games…'}
+        aria-label="Search games"
+        className="search-input"
       />
+      {big && (
+        <button type="submit" className="btn btn-primary btn-sm search-submit">
+          Search
+        </button>
+      )}
     </form>
+  );
+}
+</file>
+
+<file path="components/PopularLevels.tsx">
+import Link from 'next/link';
+
+type Item = { id: string; level_number: number; title?: string };
+
+type Props = {
+  gameSlug: string;
+  levels: Item[];
+  heading?: string;
+};
+
+export default function PopularLevels({
+  gameSlug,
+  levels,
+  heading = 'Popular levels',
+}: Props) {
+  if (levels.length === 0) return null;
+
+  return (
+    <div className="card p-5">
+      <h3 className="text-[15px] font-bold mb-4">{heading}</h3>
+      <div className="flex flex-col gap-1.5">
+        {levels.map((item) => (
+          <Link
+            key={item.id}
+            href={`/game/${gameSlug}/level-${item.level_number}`}
+            className="flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+          >
+            <span
+              className="w-9 h-9 rounded-xl grid place-items-center shrink-0 text-[13px] font-bold text-white"
+              style={{
+                background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                boxShadow: '0 3px 0 #0369A1',
+                fontFamily: 'var(--font-display), sans-serif',
+              }}
+            >
+              {item.level_number}
+            </span>
+            <span
+              className="text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+              style={{ color: 'var(--ink)' }}
+            >
+              {item.title || `Level ${item.level_number}`}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 </file>
@@ -4807,6 +5815,32 @@ export default function SettingsForm({ action, settings }: Props) {
 }
 </file>
 
+<file path="components/StaticPage.tsx">
+type Props = {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+};
+
+export default function StaticPage({ title, subtitle, children }: Props) {
+  return (
+    <div className="container-narrow py-10 md:py-16 animate-fade-in-up">
+      <header className="mb-8 md:mb-10 text-center">
+        <h1 className="page-title">{title}</h1>
+        {subtitle && (
+          <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+            {subtitle}
+          </p>
+        )}
+      </header>
+      <div className="card p-6 md:p-10">
+        <div className="prose max-w-none">{children}</div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="components/ViewTracker.tsx">
 'use client';
 
@@ -5043,7 +6077,11 @@ function extractGameData(formData: FormData) {
   return {
     name,
     slug: ((formData.get('slug') as string) || makeSlug(name)).trim(),
-    category_id: (formData.get('category_id') as string) || null,
+    // Only touch category_id when the form actually sends it, so editing a
+    // game never wipes a category that was set elsewhere (e.g. via SQL).
+    ...(formData.has('category_id')
+      ? { category_id: (formData.get('category_id') as string) || null }
+      : {}),
     cover_image: (formData.get('cover_image') as string) || null,
     short_description: (formData.get('short_description') as string) || null,
     full_description: (formData.get('full_description') as string) || null,

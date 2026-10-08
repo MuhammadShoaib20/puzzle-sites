@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import BulkGenerateForm from '@/components/BulkGenerateForm';
+import BulkEditForm from '@/components/BulkEditForm';
 import DeleteLevelButton from '@/components/DeleteLevelButton';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +60,12 @@ export default async function AdminLevelsPage({ params }: Props) {
         </p>
         <BulkGenerateForm gameId={id} />
       </div>
+
+      {levelList.length > 0 && (
+        <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+          <BulkEditForm gameId={id} existingLevels={levelList} />
+        </div>
+      )}
 
       <div className="section-head" style={{ marginBottom: '1rem' }}>
         <h2 className="section-title" style={{ fontSize: '1.3rem' }}>All levels</h2>

@@ -24,7 +24,7 @@ export default function GameCard({ game, index = 0 }: Props) {
         )}
         <span className="badge badge-white game-badge">{game.total_levels || 0} levels</span>
       </div>
-      <div className="p-5">
+      <div className="p-3 sm:p-4 md:p-5">
         <h3 className="game-title">{game.name}</h3>
         {game.short_description && <p className="game-desc">{game.short_description}</p>}
       </div>

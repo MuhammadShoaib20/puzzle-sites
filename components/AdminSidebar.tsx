@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
@@ -12,16 +13,64 @@ const links = [
   { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+type Props = {
+  siteName: string;
+  siteLogo: string | null;
+};
+
+function AdminBrand({
+  siteName,
+  siteLogo,
+  compact = false,
+  onClick,
+}: {
+  siteName: string;
+  siteLogo: string | null;
+  compact?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link href="/admin/dashboard" onClick={onClick} className="brand">
+      {siteLogo ? (
+        <Image
+          src={siteLogo}
+          alt={siteName}
+          width={180}
+          height={60}
+          className={compact ? 'h-8 w-auto max-w-[110px] object-contain' : 'h-9 w-auto max-w-[150px] object-contain'}
+          unoptimized
+        />
+      ) : (
+        <>
+          <span
+            className="brand-mark"
+            aria-hidden="true"
+            style={compact ? { width: 36, height: 36, fontSize: 18, borderRadius: 12 } : undefined}
+          >
+            🧩
+          </span>
+          <span>{compact ? 'Admin' : siteName}</span>
+        </>
+      )}
+    </Link>
+  );
+}
+
+function SidebarContent({
+  onNavigate,
+  siteName,
+  siteLogo,
+}: {
+  onNavigate?: () => void;
+  siteName: string;
+  siteLogo: string | null;
+}) {
   const pathname = usePathname();
 
   return (
     <>
       <div className="admin-brand-row">
-        <Link href="/admin/dashboard" onClick={onNavigate} className="brand">
-          <span className="brand-mark" aria-hidden="true">🧩</span>
-          <span>Admin panel</span>
-        </Link>
+        <AdminBrand siteName={siteName} siteLogo={siteLogo} onClick={onNavigate} />
       </div>
 
       <nav className="admin-nav" aria-label="Admin">
@@ -60,24 +109,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ siteName, siteLogo }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="admin-side">
-        <SidebarContent />
+        <SidebarContent siteName={siteName} siteLogo={siteLogo} />
       </aside>
 
       {/* Mobile / tablet top bar */}
       <div className="admin-topbar">
-        <Link href="/admin/dashboard" className="brand" style={{ color: '#fff' }}>
-          <span className="brand-mark" style={{ width: 36, height: 36, fontSize: 18 }} aria-hidden="true">
-            🧩
-          </span>
-          <span>Admin</span>
-        </Link>
+        <div style={{ color: '#fff' }}>
+          <AdminBrand siteName={siteName} siteLogo={siteLogo} compact />
+        </div>
         <button
           type="button"
           className="menu-btn"
@@ -97,7 +143,11 @@ export default function AdminSidebar() {
       <div className={`admin-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="backdrop" onClick={() => setOpen(false)} />
         <aside className="panel" inert={!open}>
-          <SidebarContent onNavigate={() => setOpen(false)} />
+          <SidebarContent
+            siteName={siteName}
+            siteLogo={siteLogo}
+            onNavigate={() => setOpen(false)}
+          />
         </aside>
       </div>
     </>

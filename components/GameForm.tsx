@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import type { Game } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type FAQItem = { q: string; a: string };
 type ButtonItem = { label: string; url: string; newTab: boolean };
@@ -27,8 +28,37 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
       : []
   );
 
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: { error?: string } | null, formData: FormData) => {
+      const result = await action(formData);
+      return result ?? null;
+    },
+    null
+  );
+
   return (
-    <form action={action as never} className="space-y-6">
+    <form action={formAction} className="space-y-6">
+      {/* ERROR BANNER */}
+      {state?.error && (
+        <div
+          role="alert"
+          style={{
+            background: '#FEF2F2',
+            color: '#B91C1C',
+            border: '1.5px solid #FECACA',
+            borderRadius: 14,
+            padding: '14px 16px',
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            ❌ Game could not be saved
+          </div>
+          <div>{state.error}</div>
+        </div>
+      )}
+
       <input type="hidden" name="faq_json" value={JSON.stringify(faq)} />
       <input
         type="hidden"
@@ -68,16 +98,13 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-          <input
-            type="url"
-            name="cover_image"
-            defaultValue={game?.cover_image || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="cover_image"
+          defaultValue={game?.cover_image || ''}
+          folder="games"
+          label="Cover Image"
+          aspect="video"
+        />
 
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -355,9 +382,10 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
       <div className="flex items-center gap-3">
         <button
           type="submit"
+          disabled={isPending}
           className="btn btn-primary"
         >
-          {submitLabel}
+          {isPending ? 'Saving…' : submitLabel}
         </button>
         <Link
           href="/admin/games"

@@ -7,6 +7,43 @@ import { extractYoutubeId } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
 
 // ==========================================
+// BULK EDIT ALL LEVELS AT ONCE
+// ==========================================
+export async function bulkEditLevels(gameId: string, formData: FormData) {
+  await requireAuth();
+
+  const levelsJson = formData.get('levels_json') as string;
+  if (!levelsJson) {
+    return { error: 'No levels data provided.' };
+  }
+
+  try {
+    const levels = JSON.parse(levelsJson);
+    if (!Array.isArray(levels) || levels.length === 0) {
+      return { error: 'Invalid levels data.' };
+    }
+
+    // Upsert all levels (insert or update based on game_id, level_number)
+    const { error } = await supabaseAdmin
+      .from('levels')
+      .upsert(levels, { onConflict: 'game_id,level_number' });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Update game's total_levels count
+    await updateGameLevelCount(gameId);
+
+    revalidatePath(`/admin/games/${gameId}/levels`);
+    revalidatePath(`/game/[slug]`);
+    redirect(`/admin/games/${gameId}/levels`);
+  } catch (e) {
+    return { error: 'Failed to parse levels data.' };
+  }
+}
+
+// ==========================================
 // BULK GENERATE — Level 1 se N tak
 // ==========================================
 export async function bulkGenerateLevels(gameId: string, formData: FormData) {

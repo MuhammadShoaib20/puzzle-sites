@@ -92,16 +92,37 @@ function extractGameData(formData: FormData) {
 }
 
 export async function createGame(formData: FormData) {
+  console.log('🔵 createGame START');
+
   await requireAuth();
+  console.log('🟢 Auth OK');
 
   const data = extractGameData(formData);
-  if (!data.name) return { error: 'Game name is required.' };
+  console.log('🟢 Data extracted:', {
+    name: data.name,
+    slug: data.slug,
+    published: data.published,
+    has_cover: !!data.cover_image,
+  });
 
-  const { error } = await supabaseAdmin.from('games').insert(data);
+  if (!data.name) {
+    console.log('🔴 FAIL: name empty');
+    return { error: 'Game name is required.' };
+  }
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from('games')
+    .insert(data)
+    .select()
+    .single();
 
   if (error) {
+    console.log('🔴 SUPABASE ERROR:', error.message, '| Code:', error.code, '| Details:', error.details);
     return { error: error.message };
   }
+
+  console.log('🟢 INSERTED:', inserted?.id, inserted?.name);
+  console.log('🔵 createGame END');
 
   revalidatePath('/admin/games');
   revalidatePath('/');

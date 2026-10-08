@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Blog, Game } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 
@@ -69,16 +70,13 @@ export default function BlogForm({
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-          <input
-            type="url"
-            name="cover_image"
-            defaultValue={blog?.cover_image || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="cover_image"
+          defaultValue={blog?.cover_image || ''}
+          folder="blogs"
+          label="Cover Image"
+          aspect="video"
+        />
       </div>
 
       {/* ================= CONTENT ================= */}

@@ -18,8 +18,17 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <div className="tile stuck mb-6" style={{ width: 72, height: 72, fontSize: 32 }}>!</div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-5 sm:px-6 text-center animate-fade-in-up">
+      <div
+        className="tile stuck mb-6"
+        style={{
+          width: 'clamp(56px, 12vw, 72px)',
+          height: 'clamp(56px, 12vw, 72px)',
+          fontSize: 'clamp(24px, 5vw, 32px)',
+        }}
+      >
+        !
+      </div>
       <h2 className="page-title">Something went wrong</h2>
       <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
         We hit an unexpected error. Try again — if it keeps happening, contact support.
@@ -29,7 +38,7 @@ export default function Error({
           Error ID: {error.digest}
         </p>
       )}
-      <button onClick={reset} className="btn btn-primary mt-8">
+      <button onClick={reset} className="btn btn-primary mt-6 sm:mt-8">
         Try again
       </button>
     </div>

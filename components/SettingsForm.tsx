@@ -1,4 +1,5 @@
 import type { Settings } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 
@@ -37,16 +38,13 @@ export default function SettingsForm({ action, settings }: Props) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Site Logo URL</label>
-          <input
-            type="url"
-            name="site_logo"
-            defaultValue={settings?.site_logo || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="site_logo"
+          defaultValue={settings?.site_logo || ''}
+          folder="logos"
+          label="Site Logo"
+          aspect="auto"
+        />
 
         <div>
           <label className="block text-sm font-medium mb-1">Site Description</label>

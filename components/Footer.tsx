@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Category, Settings } from '@/types';
 
 type Props = {
@@ -18,6 +19,7 @@ function isSafeExternalUrl(value?: string): value is string {
 
 export default function Footer({ settings, categories }: Props) {
   const siteName = settings?.site_name || 'PuzzleWalkthroughs';
+  const siteLogo = settings?.site_logo || null;
   const siteDescription =
     settings?.site_description ||
     'Complete video walkthroughs for all puzzle games.';
@@ -36,10 +38,47 @@ export default function Footer({ settings, categories }: Props) {
         <div className={`footer-grid ${visibleCategories.length === 0 ? 'no-cat' : ''}`}>
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="brand" style={{ color: '#fff', marginBottom: '0.9rem' }}>
-              <span className="brand-mark" aria-hidden="true">🧩</span>
-              <span>{siteName}</span>
-            </div>
+            <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: '0.9rem',
+                color: '#fff',
+              }}
+            >
+              {siteLogo ? (
+                <Image
+                  src={siteLogo}
+                  alt={siteName}
+                  width={180}
+                  height={60}
+                  style={{
+                    height: 42,
+                    width: 'auto',
+                    maxWidth: 180,
+                    objectFit: 'contain',
+                    filter: 'brightness(0) invert(1)',
+                  }}
+                  unoptimized
+                />
+              ) : (
+                <>
+                  <span className="brand-mark" aria-hidden="true">🧩</span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display), sans-serif',
+                      fontWeight: 800,
+                      fontSize: '1.1rem',
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    {siteName}
+                  </span>
+                </>
+              )}
+            </Link>
             <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
             {socialLinks.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-5">
