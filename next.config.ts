@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: '**.supabase.co' },
     ],
+    formats: ['image/avif', 'image/webp'],
   },
+  poweredByHeader: false,
+  compress: true,
+  reactStrictMode: true,
 };
 
 export default nextConfig;
