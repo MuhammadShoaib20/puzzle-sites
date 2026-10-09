@@ -31,25 +31,24 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         <div className="nav-inner">
           <Link href="/" className="brand" onClick={() => setOpen(false)}>
             {siteLogo ? (
-              <Image
-                src={siteLogo}
-                alt={siteName}
-                width={180}
-                height={48}
-                className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
-                priority
-                unoptimized
-              />
+              <span className="brand-logo-frame">
+                <Image
+                  src={siteLogo}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="brand-logo"
+                  priority
+                  unoptimized
+                />
+              </span>
             ) : (
-              <>
-                <span className="brand-mark" aria-hidden="true">🧩</span>
-                <span className="hidden sm:inline">{siteName}</span>
-                <span className="sm:hidden">Puzzle</span>
-              </>
+              <span className="brand-mark" aria-hidden="true">🧩</span>
             )}
+            <span className="brand-name">{siteName}</span>
           </Link>
 
-          <div className="hidden md:block flex-1 max-w-md mx-auto">
+          <div className="hidden lg:block flex-1 max-w-sm mx-auto">
             <NavbarSearch />
           </div>
 

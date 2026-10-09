@@ -38,46 +38,22 @@ export default function Footer({ settings, categories }: Props) {
         <div className={`footer-grid ${visibleCategories.length === 0 ? 'no-cat' : ''}`}>
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link
-              href="/"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                marginBottom: '0.9rem',
-                color: '#fff',
-              }}
-            >
+            <Link href="/" className="footer-brand">
               {siteLogo ? (
-                <Image
-                  src={siteLogo}
-                  alt={siteName}
-                  width={180}
-                  height={60}
-                  style={{
-                    height: 42,
-                    width: 'auto',
-                    maxWidth: 180,
-                    objectFit: 'contain',
-                    filter: 'brightness(0) invert(1)',
-                  }}
-                  unoptimized
-                />
+                <span className="footer-logo-frame">
+                  <Image
+                    src={siteLogo}
+                    alt={siteName}
+                    width={48}
+                    height={48}
+                    className="footer-logo"
+                    unoptimized
+                  />
+                </span>
               ) : (
-                <>
-                  <span className="brand-mark" aria-hidden="true">🧩</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-display), sans-serif',
-                      fontWeight: 800,
-                      fontSize: '1.1rem',
-                      letterSpacing: '-0.03em',
-                    }}
-                  >
-                    {siteName}
-                  </span>
-                </>
+                <span className="brand-mark" aria-hidden="true">🧩</span>
               )}
+              <span className="footer-brand-name">{siteName}</span>
             </Link>
             <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
             {socialLinks.length > 0 && (
@@ -136,7 +112,7 @@ export default function Footer({ settings, categories }: Props) {
           </div>
 
           {/* Follow (only if no pills shown in brand block, keep a hint for admin) */}
-          <div>
+          <div className="footer-cta">
             <div className="footer-title">Stuck on a level?</div>
             <p className="text-sm leading-relaxed mb-4">
               Pick a game and open the exact level you need.

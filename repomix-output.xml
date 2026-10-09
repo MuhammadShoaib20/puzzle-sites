@@ -106,8 +106,11 @@ app/
       route.ts
     setup-admin/
       route.ts
+    upload/
+      route.ts
   error.tsx
   globals.css
+  icon.tsx
   layout.tsx
   loading.tsx
   not-found.tsx
@@ -120,7 +123,9 @@ components/
   BlogCard.tsx
   BlogForm.tsx
   Breadcrumb.tsx
+  BulkEditForm.tsx
   BulkGenerateForm.tsx
+  BulkImportForm.tsx
   DeleteBlogButton.tsx
   DeleteGameButton.tsx
   DeleteLevelButton.tsx
@@ -129,8 +134,11 @@ components/
   GameCard.tsx
   GameForm.tsx
   GoogleAnalytics.tsx
+  ImageUpload.tsx
   LevelButtons.tsx
   LevelForm.tsx
+  LevelSearchGrid.tsx
+  LoginForm.tsx
   Navbar.tsx
   NavbarClient.tsx
   NavbarSearch.tsx
@@ -704,7 +712,7 @@ import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import BlogCard from '@/components/BlogCard';
-import LevelButtons from '@/components/LevelButtons';
+import LevelSearchGrid from '@/components/LevelSearchGrid';
 import PopularLevels from '@/components/PopularLevels';
 import { sanitize } from '@/lib/sanitize';
 
@@ -900,15 +908,7 @@ export default async function GamePage({ params }: Props) {
             <AdSlot code={settings.adsense_in_article} label="In article" variant="banner" />
           )}
 
-          <section className="section" id="levels" style={{ scrollMarginTop: 90 }}>
-            <div className="section-head">
-              <div>
-                <h2 className="section-title">All levels</h2>
-                <p className="section-sub">{levels.length} walkthroughs — tap a level to open it</p>
-              </div>
-            </div>
-            <LevelButtons gameSlug={game.slug} levels={levels} />
-          </section>
+          <LevelSearchGrid gameSlug={game.slug} levels={levels} />
 
           {blogs.length > 0 && (
             <section className="section">
@@ -1217,7 +1217,7 @@ export default async function HomePage() {
           </div>
 
           <div
-            className="flex gap-4 justify-center flex-wrap mt-10 animate-fade-in-up"
+            className="flex gap-3 sm:gap-4 justify-center flex-wrap mt-8 sm:mt-10 animate-fade-in-up btn-stack"
             style={{ animationDelay: '260ms' }}
           >
             <Link href="#all-games" className="btn btn-primary btn-lg">
@@ -1336,7 +1336,7 @@ export default async function HomePage() {
         <div className="cta-band">
           <h2>Can&apos;t find your game?</h2>
           <p>Tell us which puzzle game you&apos;re stuck on and we&apos;ll add its walkthrough.</p>
-          <Link href="/contact" className="btn btn-accent btn-lg">
+          <Link href="/contact" className="btn btn-accent btn-lg btn-stack">
             Request a game
           </Link>
         </div>
@@ -1347,111 +1347,25 @@ export default async function HomePage() {
 </file>
 
 <file path="app/admin/(auth)/login/page.tsx">
-'use client';
+import type { Metadata } from 'next';
+import { getSettings } from '@/lib/db';
+import LoginForm from '@/components/LoginForm';
 
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+export const dynamic = 'force-dynamic';
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+export const metadata: Metadata = {
+  title: 'Admin Login',
+  robots: { index: false, follow: false },
+};
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (res?.error) {
-        setError('Invalid email or password');
-        setLoading(false);
-      } else {
-        router.push('/admin/dashboard');
-        router.refresh();
-      }
-    } catch {
-      setError('Something went wrong. Try again.');
-      setLoading(false);
-    }
-  }
+export default async function LoginPage() {
+  const settings = await getSettings();
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, #D4ECFF 0%, #F3F9FF 100%)' }}
-    >
-      <div className="hero-dots" />
-      <div className="hero-blob b1" />
-      <div className="hero-blob b2" />
-
-      <form
-        onSubmit={handleSubmit}
-        className="card p-7 sm:p-9 w-full max-w-md relative animate-fade-in-up"
-        style={{ boxShadow: 'var(--shadow-lg)' }}
-      >
-        <div className="flex justify-center mb-5">
-          <span className="brand-mark" style={{ width: 56, height: 56, fontSize: 28, borderRadius: 18 }}>
-            🧩
-          </span>
-        </div>
-        <h1 className="text-2xl font-extrabold mb-1 text-center">Admin login</h1>
-        <p className="text-sm text-center mb-7" style={{ color: 'var(--muted)' }}>
-          Sign in to manage your site
-        </p>
-
-        {error && (
-          <div
-            role="alert"
-            className="p-3 rounded-xl mb-5 text-sm font-medium"
-            style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
-          >
-            {error}
-          </div>
-        )}
-
-        <label className="block mb-4">
-          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
-            style={{ borderColor: 'var(--line)' }}
-            placeholder="admin@yoursite.com"
-          />
-        </label>
-
-        <label className="block mb-7">
-          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
-            style={{ borderColor: 'var(--line)' }}
-            placeholder="••••••••"
-          />
-        </label>
-
-        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
-          {loading ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-    </div>
+    <LoginForm
+      siteName={settings?.site_name || 'PuzzleWalkthroughs'}
+      siteLogo={settings?.site_logo || null}
+    />
   );
 }
 </file>
@@ -1825,6 +1739,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import BulkGenerateForm from '@/components/BulkGenerateForm';
+import BulkEditForm from '@/components/BulkEditForm';
+import BulkImportForm from '@/components/BulkImportForm';
 import DeleteLevelButton from '@/components/DeleteLevelButton';
 
 export const dynamic = 'force-dynamic';
@@ -1882,6 +1798,20 @@ export default async function AdminLevelsPage({ params }: Props) {
         </p>
         <BulkGenerateForm gameId={id} />
       </div>
+
+      <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+        <h2>📥 Bulk import from CSV</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
+          Import levels from a CSV file with walkthrough and tips support.
+        </p>
+        <BulkImportForm gameId={id} />
+      </div>
+
+      {levelList.length > 0 && (
+        <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+          <BulkEditForm gameId={id} existingLevels={levelList} />
+        </div>
+      )}
 
       <div className="section-head" style={{ marginBottom: '1rem' }}>
         <h2 className="section-title" style={{ fontSize: '1.3rem' }}>All levels</h2>
@@ -2086,6 +2016,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
 import BackgroundDecor from '@/components/BackgroundDecor';
+import { getSettings } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -2094,14 +2025,17 @@ export default async function AdminDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const [session, settings] = await Promise.all([auth(), getSettings()]);
   if (!session) redirect('/admin/login');
 
   return (
     <>
       <BackgroundDecor />
       <div className="admin-shell">
-        <AdminSidebar />
+        <AdminSidebar
+          siteName={settings?.site_name || 'PuzzleWalkthroughs'}
+          siteLogo={settings?.site_logo || null}
+        />
         <main className="admin-main">{children}</main>
       </div>
     </>
@@ -2274,6 +2208,89 @@ export async function POST(req: Request) {
 }
 </file>
 
+<file path="app/api/upload/route.ts">
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuth } from '@/lib/require-auth';
+
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+];
+
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+export async function POST(req: Request) {
+  try {
+    await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+  }
+
+  const file = formData.get('file') as File | null;
+  const folder = ((formData.get('folder') as string) || 'general')
+    .replace(/[^a-z0-9-]/gi, '')
+    .slice(0, 40) || 'general';
+
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  }
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return NextResponse.json(
+      { error: 'File type not allowed. Use JPG, PNG, WebP, GIF or AVIF.' },
+      { status: 400 }
+    );
+  }
+
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json(
+      { error: 'File too large (max 5MB).' },
+      { status: 400 }
+    );
+  }
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().slice(0, 5);
+  const filename = `${folder}/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}.${ext}`;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from('images')
+    .upload(filename, buffer, {
+      contentType: file.type,
+      upsert: false,
+      cacheControl: '31536000',
+    });
+
+  if (uploadError) {
+    console.error('Upload error:', uploadError.message);
+    return NextResponse.json(
+      { error: `Upload failed: ${uploadError.message}` },
+      { status: 500 }
+    );
+  }
+
+  const { data } = supabaseAdmin.storage.from('images').getPublicUrl(filename);
+
+  return NextResponse.json({ url: data.publicUrl });
+}
+</file>
+
 <file path="app/error.tsx">
 'use client';
 
@@ -2295,8 +2312,17 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <div className="tile stuck mb-6" style={{ width: 72, height: 72, fontSize: 32 }}>!</div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-5 sm:px-6 text-center animate-fade-in-up">
+      <div
+        className="tile stuck mb-6"
+        style={{
+          width: 'clamp(56px, 12vw, 72px)',
+          height: 'clamp(56px, 12vw, 72px)',
+          fontSize: 'clamp(24px, 5vw, 32px)',
+        }}
+      >
+        !
+      </div>
       <h2 className="page-title">Something went wrong</h2>
       <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
         We hit an unexpected error. Try again — if it keeps happening, contact support.
@@ -2306,7 +2332,7 @@ export default function Error({
           Error ID: {error.digest}
         </p>
       )}
-      <button onClick={reset} className="btn btn-primary mt-8">
+      <button onClick={reset} className="btn btn-primary mt-6 sm:mt-8">
         Try again
       </button>
     </div>
@@ -2434,6 +2460,7 @@ body::before {
 }
 .site-content { position: relative; z-index: 1; }
 
+/* ---------- FLUID TYPOGRAPHY ---------- */
 h1, h2, h3, h4, h5 {
   font-family: var(--font-display), system-ui, sans-serif;
   letter-spacing: -0.03em;
@@ -2442,6 +2469,15 @@ h1, h2, h3, h4, h5 {
   text-wrap: balance;
   font-feature-settings: 'ss01' on, 'ss02' on;
 }
+
+/* Fluid heading scale using clamp() */
+h1 { font-size: clamp(2rem, 6vw, 4rem); font-weight: 800; line-height: 1.08; }
+h2 { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 800; line-height: 1.15; }
+h3 { font-size: clamp(1.15rem, 2.8vw, 1.5rem); font-weight: 700; line-height: 1.3; }
+h4 { font-size: clamp(1.05rem, 2.2vw, 1.2rem); font-weight: 700; }
+h5 { font-size: 1rem; font-weight: 700; }
+
+p  { font-size: clamp(0.95rem, 1.5vw, 1.05rem); }
 
 img { max-width: 100%; }
 
@@ -2470,8 +2506,8 @@ img { max-width: 100%; }
 .container-narrow {
   margin-left: auto;
   margin-right: auto;
-  padding-left: clamp(16px, 4vw, 28px);
-  padding-right: clamp(16px, 4vw, 28px);
+  padding-left: clamp(16px, 4vw, 32px);
+  padding-right: clamp(16px, 4vw, 32px);
   width: 100%;
 }
 .container-page { max-width: 1240px; }
@@ -2483,40 +2519,55 @@ img { max-width: 100%; }
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
   flex-wrap: wrap;
-  margin-bottom: clamp(1.5rem, 3.5vw, 2.5rem);
+  margin-bottom: clamp(1.25rem, 3vw, 2.5rem);
 }
+
 .section-title {
-  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.35rem, 3.5vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
   background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
+
+.section-title::before {
+  content: '';
+  width: clamp(4px, 0.6vw, 6px);
+  height: 1.05em;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #38BDF8, #6366F1);
+}
+
 .section-sub {
   color: var(--muted);
-  font-size: 0.97rem;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
   margin-top: 0.35rem;
   font-weight: 500;
   line-height: 1.6;
 }
 
 .page-title {
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(1.75rem, 5vw, 3.2rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.08;
   letter-spacing: -0.04em;
   background: linear-gradient(135deg, var(--ink) 0%, var(--primary-deep) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
+
 .page-sub {
   color: var(--ink-soft);
-  font-size: clamp(1rem, 2.2vw, 1.15rem);
-  margin-top: 0.75rem;
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  margin-top: clamp(0.5rem, 1.5vw, 0.75rem);
   max-width: 42rem;
   line-height: 1.7;
   font-weight: 500;
@@ -2550,19 +2601,22 @@ img { max-width: 100%; }
 .link-arrow:hover { color: var(--accent-dark); transform: translateX(3px); }
 
 /* =========================================================
-   BUTTONS — Modern clean style
+   BUTTONS — Fully fluid, responsive
    ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0.9rem 1.5rem;
-  border-radius: 12px;
+  gap: clamp(6px, 1vw, 8px);
+  /* Fluid padding: shrinks on mobile, grows on desktop */
+  padding: clamp(0.7rem, 1.8vw, 1rem) clamp(1.1rem, 3vw, 1.75rem);
+  /* Fluid font size: 0.85rem → 1rem */
+  font-size: clamp(0.85rem, 1.5vw, 0.98rem);
+  /* Fluid radius */
+  border-radius: clamp(10px, 1.5vw, 14px);
   font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 0.94rem;
-  line-height: 1;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   cursor: pointer;
   border: 0;
@@ -2572,11 +2626,41 @@ img { max-width: 100%; }
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease, background 180ms ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  max-width: 100%;
 }
+
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-sm { padding: 0.65rem 1.05rem; font-size: 0.86rem; border-radius: 10px; }
-.btn-lg { padding: 1.1rem 1.9rem; font-size: 1.02rem; border-radius: 14px; }
+
+/* Compact */
+.btn-sm {
+  padding: clamp(0.5rem, 1.2vw, 0.75rem) clamp(0.85rem, 2vw, 1.2rem);
+  font-size: clamp(0.78rem, 1.3vw, 0.88rem);
+  border-radius: clamp(8px, 1.2vw, 11px);
+}
+
+/* Large */
+.btn-lg {
+  padding: clamp(0.9rem, 2.2vw, 1.2rem) clamp(1.5rem, 3.5vw, 2.1rem);
+  font-size: clamp(0.95rem, 1.7vw, 1.1rem);
+  border-radius: clamp(12px, 1.8vw, 16px);
+}
+
+/* Full-width */
 .btn-block { width: 100%; }
+
+/* Icon-only button (e.g. close, delete icon) */
+.btn-icon {
+  padding: 0;
+  width: clamp(38px, 5vw, 44px);
+  height: clamp(38px, 5vw, 44px);
+  border-radius: 12px;
+}
+
+/* Mobile: full-width for primary action groups */
+@media (max-width: 480px) {
+  .btn-stack { width: 100%; }
+  .btn-stack .btn { width: 100%; }
+}
 
 .btn-primary {
   color: #fff;
@@ -2669,7 +2753,7 @@ img { max-width: 100%; }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: clamp(14px, 2vw, 22px);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   position: relative;
@@ -2695,7 +2779,7 @@ img { max-width: 100%; }
 .card-flat {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: clamp(12px, 1.8vw, 18px);
 }
 
 .game-card { display: flex; flex-direction: column; height: 100%; }
@@ -2713,10 +2797,11 @@ img { max-width: 100%; }
 .game-badge { position: absolute; left: 12px; bottom: 12px; box-shadow: var(--shadow-md); }
 .game-title {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.1rem);
   color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 160ms;
@@ -2726,10 +2811,11 @@ img { max-width: 100%; }
 .game-card:hover .game-title { color: var(--primary-dark); }
 .game-desc {
   color: var(--muted);
-  font-size: 0.89rem;
+  font-size: clamp(0.82rem, 1.3vw, 0.92rem);
   margin-top: 0.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.55;
@@ -2749,14 +2835,15 @@ img { max-width: 100%; }
 }
 .blog-thumb img { object-fit: cover; transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1); }
 .blog-card:hover .blog-thumb img { transform: scale(1.06); }
-.blog-body { padding: 1.35rem; display: flex; flex-direction: column; flex: 1; }
+.blog-body { padding: clamp(1rem, 2.4vw, 1.5rem); display: flex; flex-direction: column; flex: 1; }
 .blog-title {
   font-weight: 700;
-  font-size: 1.08rem;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
   line-height: 1.35;
   color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 160ms;
@@ -2765,11 +2852,12 @@ img { max-width: 100%; }
 .blog-card:hover .blog-title { color: var(--primary-dark); }
 .blog-excerpt {
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: clamp(0.85rem, 1.4vw, 0.95rem);
   margin: 0.6rem 0 1.1rem;
   flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.65;
@@ -2779,7 +2867,7 @@ img { max-width: 100%; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1.2vw, 0.85rem);
   color: var(--muted-light);
   padding-top: 0.85rem;
   border-top: 1px solid var(--line-soft);
@@ -2790,20 +2878,20 @@ img { max-width: 100%; }
 .level-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.15rem;
+  gap: clamp(0.65rem, 1.5vw, 1rem);
+  padding: clamp(0.75rem, 2vw, 1.15rem) clamp(0.9rem, 2.2vw, 1.3rem);
 }
 .level-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: clamp(42px, 6vw, 56px);
+  height: clamp(42px, 6vw, 56px);
+  border-radius: clamp(11px, 1.8vw, 16px);
   display: grid;
   place-items: center;
   flex-shrink: 0;
   color: #fff;
   font-family: var(--font-display), sans-serif;
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
   background: linear-gradient(135deg, #38BDF8, #0284C7);
   box-shadow: var(--shadow-md);
   transition: transform 220ms ease;
@@ -2818,13 +2906,14 @@ img { max-width: 100%; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0.35rem 0.75rem;
+  padding: clamp(0.25rem, 0.6vw, 0.4rem) clamp(0.55rem, 1.2vw, 0.8rem);
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: clamp(0.68rem, 1vw, 0.78rem);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.02em;
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 .badge-primary, .badge-teal { background: var(--primary-soft); color: var(--primary-deep); }
 .badge-accent, .badge-coral { background: var(--accent-soft); color: var(--accent-dark); }
@@ -2847,16 +2936,16 @@ img { max-width: 100%; }
 .nav-inner {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  min-height: 72px;
+  gap: clamp(0.6rem, 1.5vw, 1rem);
+  min-height: clamp(60px, 8vw, 72px);
 }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: clamp(0.5rem, 1vw, 0.8rem);
   font-family: var(--font-display), sans-serif;
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
   color: var(--ink);
   letter-spacing: -0.03em;
   white-space: nowrap;
@@ -2864,29 +2953,30 @@ img { max-width: 100%; }
 }
 .brand:hover { transform: scale(1.02); }
 .brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: clamp(36px, 5vw, 48px);
+  height: clamp(36px, 5vw, 48px);
+  border-radius: clamp(11px, 1.6vw, 16px);
   display: grid;
   place-items: center;
-  font-size: 26px;
+  font-size: clamp(18px, 3vw, 26px);
   background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
   box-shadow: var(--shadow-md);
   position: relative;
+  flex-shrink: 0;
 }
 .brand-mark::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 16px;
+  border-radius: clamp(11px, 1.6vw, 16px);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
   pointer-events: none;
 }
 .nav-link {
-  padding: 0.6rem 1.1rem;
-  border-radius: 12px;
+  padding: clamp(0.45rem, 1.2vw, 0.6rem) clamp(0.75rem, 1.8vw, 1.1rem);
+  border-radius: clamp(9px, 1.4vw, 12px);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: clamp(0.82rem, 1.3vw, 0.92rem);
   color: var(--ink-soft);
   transition: background 160ms, color 160ms;
 }
@@ -2894,9 +2984,9 @@ img { max-width: 100%; }
 .nav-link.active { background: var(--primary-soft); color: var(--primary-deep); }
 
 .menu-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: clamp(38px, 5.5vw, 44px);
+  height: clamp(38px, 5.5vw, 44px);
+  border-radius: clamp(10px, 1.4vw, 12px);
   border: 1.5px solid var(--line);
   background: #fff;
   display: grid;
@@ -2988,7 +3078,7 @@ img { max-width: 100%; }
 .hero {
   position: relative;
   overflow: hidden;
-  padding: clamp(5rem, 12vw, 8rem) 0 clamp(5rem, 10vw, 7rem);
+  padding: clamp(3rem, 10vw, 8rem) 0 clamp(3rem, 8vw, 7rem);
   background: linear-gradient(180deg, rgba(224, 242, 254, 0.5) 0%, rgba(248, 250, 252, 0) 75%);
 }
 .hero-dots {
@@ -3012,9 +3102,9 @@ img { max-width: 100%; }
 .hero-blob.b3 { width: 350px; height: 350px; background: #FED7AA; bottom: -120px; left: 50%; opacity: 0.3; animation-delay: -12s; }
 
 .hero-title {
-  font-size: clamp(2.8rem, 8vw, 5.2rem);
+  font-size: clamp(2rem, 8vw, 5rem);
   font-weight: 800;
-  line-height: 1.02;
+  line-height: 1.05;
   letter-spacing: -0.05em;
   max-width: 18ch;
   margin-left: auto;
@@ -3026,10 +3116,10 @@ img { max-width: 100%; }
 }
 .hero-sub {
   color: var(--ink-soft);
-  font-size: clamp(1.1rem, 2.6vw, 1.35rem);
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
   max-width: 38rem;
-  margin: 1.75rem auto 0;
-  line-height: 1.75;
+  margin: clamp(1rem, 3vw, 1.75rem) auto 0;
+  line-height: 1.7;
   font-weight: 500;
 }
 
@@ -3074,17 +3164,17 @@ img { max-width: 100%; }
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.6rem, 2.5vw, 1.2rem);
+  gap: clamp(0.5rem, 2vw, 1.2rem);
   max-width: 600px;
-  margin: clamp(2.5rem, 5vw, 3rem) auto 0;
+  margin: clamp(1.75rem, 4vw, 3rem) auto 0;
 }
 .stat {
   background: var(--surface-glass);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1rem 0.75rem;
+  border-radius: clamp(12px, 2vw, 16px);
+  padding: clamp(0.75rem, 2vw, 1.1rem) clamp(0.5rem, 1.5vw, 0.85rem);
   box-shadow: var(--shadow-sm);
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
@@ -3095,18 +3185,22 @@ img { max-width: 100%; }
 .stat b {
   display: block;
   font-family: var(--font-display), sans-serif;
-  font-size: clamp(1.35rem, 3.6vw, 1.8rem);
+  font-size: clamp(1.15rem, 3.2vw, 1.8rem);
   color: var(--primary-deep);
   line-height: 1.1;
 }
-.stat span { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.stat span {
+  font-size: clamp(0.7rem, 1.1vw, 0.82rem);
+  color: var(--muted);
+  font-weight: 600;
+}
 
 /* CTA band */
 .cta-band {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
-  padding: clamp(2rem, 6vw, 3.5rem);
+  border-radius: clamp(16px, 2.5vw, 24px);
+  padding: clamp(1.5rem, 5vw, 3.5rem);
   text-align: center;
   color: #fff;
   background: linear-gradient(135deg, #0284C7 0%, #0EA5E9 50%, #38BDF8 100%);
@@ -3120,8 +3214,21 @@ img { max-width: 100%; }
 }
 .cta-band::before { width: 280px; height: 280px; top: -100px; right: -70px; }
 .cta-band::after { width: 200px; height: 200px; bottom: -90px; left: -50px; }
-.cta-band h2 { color: #fff; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; position: relative; margin-bottom: 0.75rem; }
-.cta-band p { color: #E0F2FE; margin: 0 auto 1.75rem; max-width: 34rem; position: relative; line-height: 1.7; }
+.cta-band h2 {
+  color: #fff;
+  font-size: clamp(1.35rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  position: relative;
+  margin-bottom: clamp(0.5rem, 1.2vw, 0.75rem);
+}
+.cta-band p {
+  color: #E0F2FE;
+  margin: 0 auto clamp(1.25rem, 2.5vw, 1.75rem);
+  max-width: 34rem;
+  position: relative;
+  line-height: 1.7;
+  font-size: clamp(0.92rem, 1.6vw, 1.05rem);
+}
 .cta-band .btn { position: relative; }
 
 /* =========================================================
@@ -3129,18 +3236,19 @@ img { max-width: 100%; }
    ========================================================= */
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
-  gap: 0.65rem;
+  /* Fluid column width: 44px → 62px */
+  grid-template-columns: repeat(auto-fill, minmax(clamp(44px, 6vw, 58px), 1fr));
+  gap: clamp(0.4rem, 1vw, 0.7rem);
 }
 .level-tile {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1 / 1;
-  border-radius: 14px;
+  border-radius: clamp(10px, 1.8vw, 14px);
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: clamp(0.82rem, 1.6vw, 1rem);
   color: var(--ink);
   background: #fff;
   border: 1.5px solid var(--line);
@@ -3174,17 +3282,17 @@ img { max-width: 100%; }
    ========================================================= */
 .video-frame {
   aspect-ratio: 16 / 9;
-  border-radius: 22px;
+  border-radius: clamp(14px, 2.5vw, 22px);
   overflow: hidden;
   background: #071A2E;
-  box-shadow: var(--shadow-lg), 0 0 0 5px #fff, 0 0 0 6px var(--line);
+  box-shadow: var(--shadow-lg), 0 0 0 clamp(3px, 0.5vw, 5px) #fff, 0 0 0 clamp(4px, 0.6vw, 6px) var(--line);
 }
 .video-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
 
 .cover-frame {
   position: relative;
   aspect-ratio: 16 / 9;
-  border-radius: 22px;
+  border-radius: clamp(14px, 2.5vw, 22px);
   overflow: hidden;
   background: linear-gradient(135deg, #BAE6FD, #C7D2FE);
   box-shadow: var(--shadow-md);
@@ -3245,11 +3353,11 @@ img { max-width: 100%; }
 .empty-state {
   border: 2px dashed var(--line);
   background: rgba(255, 255, 255, 0.7);
-  border-radius: 24px;
-  padding: clamp(2rem, 7vw, 4rem) 1.5rem;
+  border-radius: clamp(16px, 2.5vw, 24px);
+  padding: clamp(1.75rem, 6vw, 4rem) clamp(1rem, 3vw, 1.5rem);
   text-align: center;
 }
-.empty-state .emoji { font-size: 3rem; margin-bottom: 0.75rem; }
+.empty-state .emoji { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 0.75rem; }
 
 /* Ads */
 .ad-wrap { margin: 1.5rem 0; }
@@ -3275,8 +3383,8 @@ img { max-width: 100%; }
    ========================================================= */
 .site-footer {
   position: relative;
-  margin-top: clamp(4rem, 8vw, 6rem);
-  padding: clamp(3rem, 7vw, 4.5rem) 0 2rem;
+  margin-top: clamp(3rem, 7vw, 6rem);
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(1.5rem, 3vw, 2rem);
   color: #CBD5E1;
   background: linear-gradient(180deg, #0F172A 0%, #020617 100%);
 }
@@ -3295,17 +3403,31 @@ img { max-width: 100%; }
 }
 @media (min-width: 640px) { .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .footer-grid { grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)); gap: 3rem; } }
-.footer-grid.no-cat { }
 @media (min-width: 1024px) { .footer-grid.no-cat { grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)); } }
-.footer-title { color: #fff; font-family: var(--font-display), sans-serif; font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, #E0F2FE 100%); -webkit-background-clip: text; background-clip: text; }
-.footer-links { display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; }
+.footer-title {
+  color: #fff;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  margin-bottom: clamp(0.75rem, 1.5vw, 1rem);
+  font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff 0%, #E0F2FE 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.2vw, 0.75rem);
+  font-size: clamp(0.85rem, 1.3vw, 0.95rem);
+}
 .footer-link { transition: color 150ms, transform 150ms; display: inline-block; font-weight: 500; }
 .footer-link:hover { color: #fff; transform: translateX(4px); }
 .footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 1.75rem;
+  padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
   text-align: center;
-  font-size: 0.87rem;
+  font-size: clamp(0.78rem, 1.2vw, 0.87rem);
   color: #94A3B8;
   line-height: 1.6;
 }
@@ -3325,20 +3447,31 @@ img { max-width: 100%; }
 /* =========================================================
    PROSE
    ========================================================= */
-.prose { color: var(--ink-soft); font-size: 1.02rem; line-height: 1.8; }
+.prose {
+  color: var(--ink-soft);
+  font-size: clamp(0.98rem, 1.6vw, 1.1rem);
+  line-height: 1.8;
+}
 .prose > :first-child { margin-top: 0; }
 .prose > :last-child { margin-bottom: 0; }
 .prose h2 {
-  font-size: clamp(1.4rem, 3.2vw, 1.75rem);
+  font-size: clamp(1.3rem, 3vw, 1.75rem);
   font-weight: 800;
-  margin: 2.5rem 0 1rem;
+  margin: clamp(1.75rem, 3.5vw, 2.5rem) 0 clamp(0.75rem, 1.5vw, 1rem);
   color: var(--ink);
   letter-spacing: -0.03em;
   line-height: 1.25;
 }
-.prose h3 { font-size: clamp(1.15rem, 2.6vw, 1.3rem); font-weight: 700; margin: 2rem 0 0.75rem; color: var(--ink); letter-spacing: -0.02em; line-height: 1.35; }
+.prose h3 {
+  font-size: clamp(1.1rem, 2.2vw, 1.3rem);
+  font-weight: 700;
+  margin: clamp(1.35rem, 3vw, 2rem) 0 clamp(0.55rem, 1vw, 0.75rem);
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
 .prose h4 { font-size: 1.1rem; font-weight: 700; margin: 1.6rem 0 0.6rem; letter-spacing: -0.01em; }
-.prose p { margin-bottom: 1.25rem; line-height: 1.85; }
+.prose p { margin-bottom: clamp(0.9rem, 1.5vw, 1.25rem); line-height: 1.85; }
 .prose ul, .prose ol { padding-left: 1.5rem; margin-bottom: 1.25rem; line-height: 1.85; }
 .prose ul { list-style: disc; }
 .prose ol { list-style: decimal; }
@@ -3427,6 +3560,61 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* =========================================================
+   RESPONSIVE REFINEMENTS
+   ========================================================= */
+
+/* Small phones — reduce paddings, stack buttons */
+@media (max-width: 480px) {
+  .hero { padding: 2.5rem 0 3rem; }
+  .hero-title { font-size: 2rem; letter-spacing: -0.04em; }
+  .hero-sub { font-size: 1rem; padding: 0 0.5rem; }
+
+  /* Stack primary CTAs */
+  .hero .flex.gap-4 {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 0.5rem;
+  }
+  .hero .btn { width: 100%; }
+
+  /* Level grid: 5 per row on very small */
+  .level-grid {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 0.35rem;
+  }
+
+  /* Pager: stack prev/next */
+  .pager { grid-template-columns: 1fr; }
+
+  /* Stats: compact */
+  .stats-row { gap: 0.5rem; max-width: 100%; }
+  .stat { padding: 0.6rem 0.4rem; }
+  .stat b { font-size: 1.1rem; }
+  .stat span { font-size: 0.65rem; }
+
+  /* Section titles */
+  .section-title::before { width: 4px; }
+
+  /* Footer: single column already */
+  .site-footer .btn-block-mobile { width: 100%; }
+}
+
+/* Tablets — mid-range adjustments */
+@media (min-width: 481px) and (max-width: 1023px) {
+  .hero-title { font-size: clamp(2.5rem, 6vw, 3.5rem); }
+
+  .level-grid {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  }
+}
+
+/* Large screens — cap everything so it doesn't get silly big */
+@media (min-width: 1440px) {
+  .container-page { max-width: 1320px; }
+  .hero-title { font-size: 4.5rem; max-width: 20ch; }
 }
 
 /* =========================================================
@@ -3627,7 +3815,6 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   border-color: var(--line);
   border-radius: 12px;
 }
-.admin-main form .card + .card, .admin-main form > * + * { }
 
 /* =========================================================
    CLEAN-UP PASS
@@ -3658,6 +3845,165 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 
 /* Admin content area gets a soft frosted surface feel */
 .admin-main { background: transparent; }
+
+/* =========================================================
+   LEVEL SEARCH
+   ========================================================= */
+.level-search {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .level-search {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.level-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-light);
+  pointer-events: none;
+}
+
+.level-search-input {
+  width: 100%;
+  padding: 0.6rem 2rem 0.6rem 2.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  outline: none;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  transition: border-color 160ms, box-shadow 160ms, background 160ms;
+}
+
+.level-search-input::placeholder {
+  color: var(--muted-light);
+}
+
+.level-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+/* Hide the number spinner */
+.level-search-input::-webkit-outer-spin-button,
+.level-search-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.level-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--bg-alt);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  transition: background 140ms, color 140ms;
+}
+
+.level-search-clear:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.level-search-info {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--primary-soft);
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.level-search-info strong {
+  color: var(--primary-deep);
+}
+
+.level-search-jump {
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.level-search-jump:hover {
+  color: var(--primary);
+}
+
+/* Flash effect when jumping to a level */
+.level-tile-flash {
+  animation: tileFlash 1.2s ease;
+}
+
+@keyframes tileFlash {
+  0%, 100% {
+    box-shadow: 0 0 0 var(--line);
+    transform: translateY(0) scale(1);
+  }
+  25%, 75% {
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35), 0 4px 12px rgba(124, 58, 237, 0.4);
+    transform: translateY(-4px) scale(1.08);
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary-dark);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.25);
+    transform: translateY(-6px) scale(1.12);
+    background: var(--primary-dark);
+    color: #fff;
+    border-color: var(--primary-dark);
+  }
+}
+</file>
+
+<file path="app/icon.tsx">
+import { ImageResponse } from 'next/og';
+
+export const size = { width: 32, height: 32 };
+export const contentType = 'image/png';
+
+export default function Icon() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          fontSize: 26,
+          background: 'linear-gradient(135deg, #38BDF8, #0EA5E9)',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          borderRadius: 8,
+        }}
+      >
+        🧩
+      </div>
+    ),
+    { ...size }
+  );
+}
 </file>
 
 <file path="app/layout.tsx">
@@ -3784,8 +4130,8 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center animate-fade-in-up">
-      <div className="tile-strip" style={{ marginTop: 0, marginBottom: '1.5rem' }}>
+    <div className="min-h-[70vh] flex flex-col items-center justify-center px-5 sm:px-6 text-center animate-fade-in-up">
+      <div className="tile-strip" style={{ marginTop: 0, marginBottom: 'clamp(1rem, 3vw, 1.5rem)' }}>
         <span className="tile solved">4</span>
         <span className="tile stuck">0</span>
         <span className="tile solved">4</span>
@@ -3794,7 +4140,7 @@ export default function NotFound() {
       <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
         The page you&apos;re looking for was moved or never existed. Head back and pick another game.
       </p>
-      <div className="flex gap-4 flex-wrap justify-center mt-8">
+      <div className="flex gap-3 sm:gap-4 flex-wrap justify-center mt-6 sm:mt-8 btn-stack">
         <Link href="/" className="btn btn-primary">Go home</Link>
         <Link href="/blog" className="btn btn-secondary">Read guides</Link>
       </div>
@@ -3903,6 +4249,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
@@ -3914,16 +4261,64 @@ const links = [
   { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+type Props = {
+  siteName: string;
+  siteLogo: string | null;
+};
+
+function AdminBrand({
+  siteName,
+  siteLogo,
+  compact = false,
+  onClick,
+}: {
+  siteName: string;
+  siteLogo: string | null;
+  compact?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link href="/admin/dashboard" onClick={onClick} className="brand">
+      {siteLogo ? (
+        <Image
+          src={siteLogo}
+          alt={siteName}
+          width={180}
+          height={60}
+          className={compact ? 'h-8 w-auto max-w-[110px] object-contain' : 'h-9 w-auto max-w-[150px] object-contain'}
+          unoptimized
+        />
+      ) : (
+        <>
+          <span
+            className="brand-mark"
+            aria-hidden="true"
+            style={compact ? { width: 36, height: 36, fontSize: 18, borderRadius: 12 } : undefined}
+          >
+            🧩
+          </span>
+          <span>{compact ? 'Admin' : siteName}</span>
+        </>
+      )}
+    </Link>
+  );
+}
+
+function SidebarContent({
+  onNavigate,
+  siteName,
+  siteLogo,
+}: {
+  onNavigate?: () => void;
+  siteName: string;
+  siteLogo: string | null;
+}) {
   const pathname = usePathname();
 
   return (
     <>
       <div className="admin-brand-row">
-        <Link href="/admin/dashboard" onClick={onNavigate} className="brand">
-          <span className="brand-mark" aria-hidden="true">🧩</span>
-          <span>Admin panel</span>
-        </Link>
+        <AdminBrand siteName={siteName} siteLogo={siteLogo} onClick={onNavigate} />
       </div>
 
       <nav className="admin-nav" aria-label="Admin">
@@ -3962,24 +4357,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ siteName, siteLogo }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="admin-side">
-        <SidebarContent />
+        <SidebarContent siteName={siteName} siteLogo={siteLogo} />
       </aside>
 
       {/* Mobile / tablet top bar */}
       <div className="admin-topbar">
-        <Link href="/admin/dashboard" className="brand" style={{ color: '#fff' }}>
-          <span className="brand-mark" style={{ width: 36, height: 36, fontSize: 18 }} aria-hidden="true">
-            🧩
-          </span>
-          <span>Admin</span>
-        </Link>
+        <div style={{ color: '#fff' }}>
+          <AdminBrand siteName={siteName} siteLogo={siteLogo} compact />
+        </div>
         <button
           type="button"
           className="menu-btn"
@@ -3999,7 +4391,11 @@ export default function AdminSidebar() {
       <div className={`admin-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="backdrop" onClick={() => setOpen(false)} />
         <aside className="panel" inert={!open}>
-          <SidebarContent onNavigate={() => setOpen(false)} />
+          <SidebarContent
+            siteName={siteName}
+            siteLogo={siteLogo}
+            onNavigate={() => setOpen(false)}
+          />
         </aside>
       </div>
     </>
@@ -4125,6 +4521,7 @@ export default function BlogCard({ blog }: { blog: Blog }) {
 <file path="components/BlogForm.tsx">
 import Link from 'next/link';
 import type { Blog, Game } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 
@@ -4194,16 +4591,13 @@ export default function BlogForm({
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-          <input
-            type="url"
-            name="cover_image"
-            defaultValue={blog?.cover_image || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="cover_image"
+          defaultValue={blog?.cover_image || ''}
+          folder="blogs"
+          label="Cover Image"
+          aspect="video"
+        />
       </div>
 
       {/* ================= CONTENT ================= */}
@@ -4312,7 +4706,11 @@ type Crumb = { label: string; href?: string };
 
 export default function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="breadcrumb">
+    <nav
+      aria-label="Breadcrumb"
+      className="breadcrumb"
+      style={{ fontSize: 'clamp(0.78rem, 1.3vw, 0.88rem)' }}
+    >
       {items.map((item, i) => (
         <span key={`${item.label}-${i}`} className="crumb">
           {item.href ? (
@@ -4324,6 +4722,228 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
         </span>
       ))}
     </nav>
+  );
+}
+</file>
+
+<file path="components/BulkEditForm.tsx">
+'use client';
+
+import { useState, useActionState } from 'react';
+import { bulkEditLevels } from '@/lib/actions/levels';
+
+type Level = {
+  id?: string;
+  level_number: number;
+  title: string;
+  youtube_url: string;
+  youtube_id?: string;
+  description?: string;
+  walkthrough?: string;
+  tips?: string;
+  published: boolean;
+};
+
+type Props = {
+  gameId: string;
+  existingLevels: Level[];
+};
+
+export default function BulkEditForm({ gameId, existingLevels }: Props) {
+  const [levels, setLevels] = useState<Level[]>(existingLevels);
+  const [isBulkMode, setIsBulkMode] = useState(false);
+
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: { error?: string } | null, formData: FormData) => {
+      const result = await bulkEditLevels(gameId, formData);
+      return result ?? null;
+    },
+    null
+  );
+
+  function handleLevelChange(index: number, field: keyof Level, value: string | boolean) {
+    const updated = [...levels];
+    updated[index] = { ...updated[index], [field]: value };
+
+    // Auto-extract YouTube ID when URL changes
+    if (field === 'youtube_url' && typeof value === 'string') {
+      const match = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (match) {
+        updated[index].youtube_id = match[1];
+      } else {
+        updated[index].youtube_id = '';
+      }
+    }
+
+    setLevels(updated);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.set('levels_json', JSON.stringify(levels));
+    formAction(fd);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold">Bulk Edit All Levels</h3>
+        <button
+          type="button"
+          onClick={() => setIsBulkMode(!isBulkMode)}
+          className="btn btn-secondary btn-sm"
+        >
+          {isBulkMode ? 'Close Bulk Edit' : 'Open Bulk Edit'}
+        </button>
+      </div>
+
+      {isBulkMode && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {state?.error && (
+            <div
+              role="alert"
+              style={{
+                background: '#FEF2F2',
+                color: '#B91C1C',
+                border: '1.5px solid #FECACA',
+                borderRadius: 14,
+                padding: '14px 16px',
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                ❌ Could not save levels
+              </div>
+              <div>{state.error}</div>
+            </div>
+          )}
+
+          <div className="max-h-[600px] overflow-y-auto space-y-3 p-4 border rounded-xl" style={{ background: '#F8FAFC' }}>
+            {levels.map((level, index) => (
+              <div
+                key={level.id || index}
+                className="grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-3 p-4 bg-white rounded-lg border"
+              >
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Level
+                  </label>
+                  <input
+                    type="number"
+                    value={level.level_number}
+                    readOnly
+                    className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-center font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={level.title}
+                    onChange={(e) => handleLevelChange(index, 'title', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder={`Level ${level.level_number}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Published
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleLevelChange(index, 'published', !level.published)}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold ${
+                      level.published
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {level.published ? '✓ Published' : '✗ Draft'}
+                  </button>
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    YouTube URL
+                  </label>
+                  <input
+                    type="url"
+                    value={level.youtube_url}
+                    onChange={(e) => handleLevelChange(index, 'youtube_url', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Description (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={level.description || ''}
+                    onChange={(e) => handleLevelChange(index, 'description', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder="Short description for this level"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Walkthrough (optional)
+                  </label>
+                  <textarea
+                    value={level.walkthrough || ''}
+                    onChange={(e) => handleLevelChange(index, 'walkthrough', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg resize-none"
+                    placeholder="Step-by-step walkthrough..."
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+                    Tips (optional)
+                  </label>
+                  <textarea
+                    value={level.tips || ''}
+                    onChange={(e) => handleLevelChange(index, 'tips', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg resize-none"
+                    placeholder="Helpful tips for this level..."
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <button type="submit" disabled={isPending} className="btn btn-primary">
+              {isPending ? 'Saving All Levels…' : `Save All ${levels.length} Levels`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBulkMode(false)}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!isBulkMode && (
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>
+          Click "Open Bulk Edit" to edit all levels at once and save in one click.
+        </p>
+      )}
+    </div>
   );
 }
 </file>
@@ -4394,6 +5014,398 @@ export default function BulkGenerateForm({ gameId }: { gameId: string }) {
         Example: From 1 To 50 creates 50 blank levels.
       </p>
     </form>
+  );
+}
+</file>
+
+<file path="components/BulkImportForm.tsx">
+'use client';
+
+import { useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { bulkImportLevels } from '@/lib/actions/levels';
+
+type ParsedRow = {
+  level_number: number;
+  youtube_url: string;
+  title: string;
+  walkthrough: string;
+  tips: string;
+  description: string;
+};
+
+type ImportResult =
+  | { success: true; inserted: number; skipped: number; invalid: number }
+  | { error: string };
+
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let current = '';
+  let row: string[] = [];
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      row.push(current);
+      current = '';
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (current || row.length) {
+        row.push(current);
+        rows.push(row);
+        row = [];
+        current = '';
+      }
+      if (ch === '\r' && next === '\n') i++;
+    } else {
+      current += ch;
+    }
+  }
+
+  if (current || row.length) {
+    row.push(current);
+    rows.push(row);
+  }
+
+  return rows.filter((r) => r.some((cell) => cell.trim() !== ''));
+}
+
+function parseLevels(rows: string[][]): { levels: ParsedRow[]; errors: string[] } {
+  if (rows.length < 2) {
+    return { levels: [], errors: ['CSV must have a header row and at least one data row.'] };
+  }
+
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const idxLevel = header.indexOf('level_number');
+  const idxUrl = header.indexOf('youtube_url');
+  const idxTitle = header.indexOf('title');
+  const idxWalkthrough = header.indexOf('walkthrough');
+  const idxTips = header.indexOf('tips');
+  const idxDescription = header.indexOf('description');
+
+  const errors: string[] = [];
+
+  if (idxLevel === -1) errors.push('Missing column: level_number');
+  if (idxUrl === -1) errors.push('Missing column: youtube_url');
+
+  if (errors.length > 0) {
+    return { levels: [], errors };
+  }
+
+  const levels: ParsedRow[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const levelNumber = parseInt((row[idxLevel] || '').trim(), 10);
+    const youtubeUrl = (row[idxUrl] || '').trim();
+    const title = idxTitle >= 0 ? (row[idxTitle] || '').trim() : '';
+    const walkthrough = idxWalkthrough >= 0 ? (row[idxWalkthrough] || '').trim() : '';
+    const tips = idxTips >= 0 ? (row[idxTips] || '').trim() : '';
+    const description = idxDescription >= 0 ? (row[idxDescription] || '').trim() : '';
+
+    if (!levelNumber || !youtubeUrl) continue;
+
+    levels.push({
+      level_number: levelNumber,
+      youtube_url: youtubeUrl,
+      title: title || `Level ${levelNumber}`,
+      walkthrough,
+      tips,
+      description,
+    });
+  }
+
+  return { levels, errors };
+}
+
+export default function BulkImportForm({ gameId }: { gameId: string }) {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [levels, setLevels] = useState<ParsedRow[]>([]);
+  const [fileName, setFileName] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
+  const [result, setResult] = useState<ImportResult | null>(null);
+
+  // ✅ useTransition — async action calls ke liye
+  const [isPending, startTransition] = useTransition();
+
+  async function handleFile(file: File) {
+    setErrors([]);
+    setResult(null);
+    setFileName(file.name);
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setErrors(['Please upload a .csv file.']);
+      setLevels([]);
+      return;
+    }
+
+    const text = await file.text();
+    const rows = parseCSV(text);
+    const { levels: parsed, errors: parseErrors } = parseLevels(rows);
+
+    setErrors(parseErrors);
+    setLevels(parsed);
+  }
+
+  function onSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function reset() {
+    setLevels([]);
+    setFileName('');
+    setErrors([]);
+    setResult(null);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  // ✅ Import handler — startTransition ke andar
+  function handleImport() {
+    if (levels.length === 0) return;
+    setResult(null);
+
+    startTransition(async () => {
+      try {
+        const res = await bulkImportLevels(gameId, JSON.stringify(levels));
+        setResult(res);
+        if ('success' in res) {
+          reset();
+          router.refresh();
+        }
+      } catch {
+        setResult({ error: 'Import failed. Please try again.' });
+      }
+    });
+  }
+
+  function downloadTemplate() {
+    const sample = `level_number,youtube_url,title,walkthrough,tips
+1,https://www.youtube.com/watch?v=Xh5Oq_8BuOU,Sand Blocks Level 1 Walkthrough Solution,"<p>Step-by-step walkthrough coming soon.</p>","<p>Helpful tip for this level.</p>"
+2,https://www.youtube.com/watch?v=ymr6pE8o54E,Sand Blocks Level 2 Walkthrough Solution,,"<p>Plan two moves ahead.</p>"
+3,https://www.youtube.com/watch?v=MfotFKyX62A,Sand Blocks Level 3 Walkthrough Solution,,`;
+
+    const blob = new Blob([sample], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'levels-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header actions */}
+      <div className="flex flex-wrap gap-2 justify-between items-center">
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+          CSV columns: <code>level_number</code>, <code>youtube_url</code>, <code>title</code>,{' '}
+          <code>walkthrough</code>, <code>tips</code>
+        </p>
+        <button
+          type="button"
+          onClick={downloadTemplate}
+          className="btn btn-secondary btn-sm"
+        >
+          📥 Download Template
+        </button>
+      </div>
+
+      {/* Drop zone */}
+      {levels.length === 0 && (
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
+          }}
+          className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer py-10 px-4 transition"
+          style={{ borderColor: 'var(--line)', background: '#fff' }}
+        >
+          <div className="text-4xl mb-3">📄</div>
+          <p className="font-bold mb-1" style={{ color: 'var(--ink)' }}>
+            Click karo ya CSV file drag karo
+          </p>
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            File name: <strong>anything.csv</strong> · Max 2000 levels per upload
+          </p>
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,text/csv"
+        onChange={onSelect}
+        className="hidden"
+      />
+
+      {/* Errors */}
+      {errors.length > 0 && (
+        <div
+          className="rounded-xl p-3 text-sm"
+          style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+        >
+          <div className="font-bold mb-1">
+            ⚠️ {errors.length} issue{errors.length > 1 ? 's' : ''}:
+          </div>
+          <ul className="list-disc pl-5 space-y-0.5">
+            {errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Preview */}
+      {levels.length > 0 && (
+        <div className="rounded-xl border" style={{ borderColor: 'var(--line)' }}>
+          <div
+            className="flex items-center justify-between p-3 border-b"
+            style={{ borderColor: 'var(--line-soft)', background: 'var(--bg-alt)' }}
+          >
+            <div>
+              <p className="font-bold text-sm" style={{ color: 'var(--ink)' }}>
+                📄 {fileName}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {levels.length} levels ready to import
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={reset}
+              disabled={isPending}
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-white disabled:opacity-50"
+              style={{ color: 'var(--muted)' }}
+            >
+              ✕ Change file
+            </button>
+          </div>
+
+          <div className="max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead
+                className="sticky top-0"
+                style={{ background: 'var(--bg-alt)', borderBottom: '1px solid var(--line)' }}
+              >
+                <tr>
+                  <th className="text-left px-3 py-2 font-semibold">#</th>
+                  <th className="text-left px-3 py-2 font-semibold">Title</th>
+                  <th className="text-left px-3 py-2 font-semibold">Walkthrough</th>
+                  <th className="text-left px-3 py-2 font-semibold">Tips</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.slice(0, 50).map((lv, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--line-soft)' }}>
+                    <td className="px-3 py-1.5 font-bold" style={{ color: 'var(--primary-dark)' }}>
+                      {lv.level_number}
+                    </td>
+                    <td className="px-3 py-1.5 truncate" style={{ maxWidth: 220 }}>
+                      {lv.title}
+                    </td>
+                    <td className="px-3 py-1.5 truncate" style={{ maxWidth: 180 }}>
+                      {lv.walkthrough ? (
+                        <span className="text-green-700 font-semibold">
+                          ✓ {lv.walkthrough.length} chars
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--muted-light)' }}>—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 truncate" style={{ maxWidth: 140 }}>
+                      {lv.tips ? (
+                        <span className="text-green-700 font-semibold">
+                          ✓ {lv.tips.length} chars
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--muted-light)' }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {levels.length > 50 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-3 py-2 text-center text-xs"
+                      style={{ color: 'var(--muted)' }}
+                    >
+                      … and {levels.length - 50} more
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            className="p-3 flex justify-end"
+            style={{ borderTop: '1px solid var(--line-soft)' }}
+          >
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={isPending}
+              className="btn btn-primary btn-sm"
+            >
+              {isPending ? 'Importing…' : `⚡ Import ${levels.length} levels`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Result */}
+      {result && (
+        <div
+          className="rounded-xl p-4 text-sm"
+          style={
+            'success' in result
+              ? { background: '#DCFCE7', color: '#15803D', border: '1px solid #86EFAC' }
+              : { background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }
+          }
+        >
+          {'success' in result ? (
+            <>
+              <div className="font-bold mb-1">✅ Import complete!</div>
+              <ul className="text-xs space-y-0.5 mt-1">
+                <li>
+                  • Inserted: <strong>{result.inserted}</strong>
+                </li>
+                {result.skipped > 0 && <li>• Skipped (already exist): {result.skipped}</li>}
+                {result.invalid > 0 && <li>• Invalid rows: {result.invalid}</li>}
+              </ul>
+            </>
+          ) : (
+            <>
+              <div className="font-bold mb-1">❌ Import failed</div>
+              <div>{result.error}</div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 </file>
@@ -4570,6 +5582,7 @@ export default function EmptyState({ emoji = '🎮', title, text }: Props) {
 
 <file path="components/Footer.tsx">
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Category, Settings } from '@/types';
 
 type Props = {
@@ -4589,6 +5602,7 @@ function isSafeExternalUrl(value?: string): value is string {
 
 export default function Footer({ settings, categories }: Props) {
   const siteName = settings?.site_name || 'PuzzleWalkthroughs';
+  const siteLogo = settings?.site_logo || null;
   const siteDescription =
     settings?.site_description ||
     'Complete video walkthroughs for all puzzle games.';
@@ -4607,10 +5621,47 @@ export default function Footer({ settings, categories }: Props) {
         <div className={`footer-grid ${visibleCategories.length === 0 ? 'no-cat' : ''}`}>
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="brand" style={{ color: '#fff', marginBottom: '0.9rem' }}>
-              <span className="brand-mark" aria-hidden="true">🧩</span>
-              <span>{siteName}</span>
-            </div>
+            <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: '0.9rem',
+                color: '#fff',
+              }}
+            >
+              {siteLogo ? (
+                <Image
+                  src={siteLogo}
+                  alt={siteName}
+                  width={180}
+                  height={60}
+                  style={{
+                    height: 42,
+                    width: 'auto',
+                    maxWidth: 180,
+                    objectFit: 'contain',
+                    filter: 'brightness(0) invert(1)',
+                  }}
+                  unoptimized
+                />
+              ) : (
+                <>
+                  <span className="brand-mark" aria-hidden="true">🧩</span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-display), sans-serif',
+                      fontWeight: 800,
+                      fontSize: '1.1rem',
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    {siteName}
+                  </span>
+                </>
+              )}
+            </Link>
             <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
             {socialLinks.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-5">
@@ -4715,7 +5766,7 @@ export default function GameCard({ game, index = 0 }: Props) {
         )}
         <span className="badge badge-white game-badge">{game.total_levels || 0} levels</span>
       </div>
-      <div className="p-5">
+      <div className="p-3 sm:p-4 md:p-5">
         <h3 className="game-title">{game.name}</h3>
         {game.short_description && <p className="game-desc">{game.short_description}</p>}
       </div>
@@ -4727,9 +5778,10 @@ export default function GameCard({ game, index = 0 }: Props) {
 <file path="components/GameForm.tsx">
 'use client';
 
-import { useState } from 'react';
+import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import type { Game } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type FAQItem = { q: string; a: string };
 type ButtonItem = { label: string; url: string; newTab: boolean };
@@ -4754,8 +5806,37 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
       : []
   );
 
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: { error?: string } | null, formData: FormData) => {
+      const result = await action(formData);
+      return result ?? null;
+    },
+    null
+  );
+
   return (
-    <form action={action as never} className="space-y-6">
+    <form action={formAction} className="space-y-6">
+      {/* ERROR BANNER */}
+      {state?.error && (
+        <div
+          role="alert"
+          style={{
+            background: '#FEF2F2',
+            color: '#B91C1C',
+            border: '1.5px solid #FECACA',
+            borderRadius: 14,
+            padding: '14px 16px',
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            ❌ Game could not be saved
+          </div>
+          <div>{state.error}</div>
+        </div>
+      )}
+
       <input type="hidden" name="faq_json" value={JSON.stringify(faq)} />
       <input
         type="hidden"
@@ -4795,16 +5876,13 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-          <input
-            type="url"
-            name="cover_image"
-            defaultValue={game?.cover_image || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="cover_image"
+          defaultValue={game?.cover_image || ''}
+          folder="games"
+          label="Cover Image"
+          aspect="video"
+        />
 
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -5082,9 +6160,10 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
       <div className="flex items-center gap-3">
         <button
           type="submit"
+          disabled={isPending}
           className="btn btn-primary"
         >
-          {submitLabel}
+          {isPending ? 'Saving…' : submitLabel}
         </button>
         <Link
           href="/admin/games"
@@ -5121,6 +6200,219 @@ export default function GoogleAnalytics({ gaId }: { gaId: string }) {
         `}
       </Script>
     </>
+  );
+}
+</file>
+
+<file path="components/ImageUpload.tsx">
+'use client';
+
+import { useRef, useState } from 'react';
+
+type Props = {
+  /** Form field name (e.g. "cover_image") */
+  name: string;
+  /** Existing URL (for edit mode) */
+  defaultValue?: string;
+  /** Storage folder inside the "images" bucket (e.g. "games", "blogs", "logos") */
+  folder?: string;
+  /** Optional label */
+  label?: string;
+  /** Aspect ratio of the preview */
+  aspect?: 'video' | 'square' | 'wide' | 'auto';
+};
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const MAX_SIZE = 5 * 1024 * 1024;
+
+export default function ImageUpload({
+  name,
+  defaultValue = '',
+  folder = 'general',
+  label,
+  aspect = 'video',
+}: Props) {
+  const [url, setUrl] = useState(defaultValue);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    setError('');
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError('Sirf JPG, PNG, WebP, GIF ya AVIF allowed hain.');
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError('File 5MB se chhoti honi chahiye.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', folder);
+
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setError(data.error || 'Upload failed');
+        return;
+      }
+
+      setUrl(data.url);
+    } catch {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function onSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function clear() {
+    setUrl('');
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  const aspectClass = {
+    video: 'aspect-video',
+    square: 'aspect-square',
+    wide: 'aspect-[21/9]',
+    auto: '',
+  }[aspect];
+
+  return (
+    <div>
+      {label && (
+        <label className="block text-sm font-medium mb-1.5">{label}</label>
+      )}
+
+      {/* Hidden input — actual value submitted with form */}
+      <input type="hidden" name={name} value={url} />
+
+      {url ? (
+        <div
+          className="relative rounded-xl overflow-hidden"
+          style={{ border: '1px solid var(--line)' }}
+        >
+          <div className={`${aspectClass} relative`} style={{ background: '#F1F5F9' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="Preview" className="w-full h-full object-cover" />
+          </div>
+
+          <div className="absolute top-2 right-2 flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-md transition hover:scale-105 disabled:opacity-50"
+              style={{ background: 'rgba(255,255,255,0.96)', color: 'var(--ink)' }}
+            >
+              {uploading ? 'Uploading…' : '🔄 Change'}
+            </button>
+            <button
+              type="button"
+              onClick={clear}
+              className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-md text-white transition hover:scale-105"
+              style={{ background: '#EF4444' }}
+            >
+              ✕ Remove
+            </button>
+          </div>
+
+          {uploading && (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.7)' }}
+            >
+              <div
+                className="w-8 h-8 border-[3px] rounded-full animate-spin"
+                style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
+          className={`${aspectClass} rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200`}
+          style={{
+            borderColor: dragging ? 'var(--primary)' : 'var(--line)',
+            background: dragging ? 'var(--primary-soft)' : '#fff',
+            minHeight: aspect === 'auto' ? 120 : undefined,
+          }}
+        >
+          {uploading ? (
+            <>
+              <div
+                className="w-9 h-9 border-[3px] rounded-full animate-spin mb-3"
+                style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
+              />
+              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>
+                Uploading…
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl mb-2">🖼️</div>
+              <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                Click karo ya image drag karo
+              </p>
+              <p className="text-xs mt-1 px-4" style={{ color: 'var(--muted)' }}>
+                JPG · PNG · WebP · GIF · AVIF · Max 5MB
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p className="text-xs mt-2 font-medium" style={{ color: '#B91C1C' }}>
+          {error}
+          <span className="block mt-1 text-[10px] font-normal" style={{ color: '#64748B' }}>
+            (You can still submit the form without an image)
+          </span>
+        </p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        onChange={onSelect}
+        className="hidden"
+      />
+    </div>
   );
 }
 </file>
@@ -5341,6 +6633,320 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
 }
 </file>
 
+<file path="components/LevelSearchGrid.tsx">
+'use client';
+
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+
+type Level = {
+  id: string;
+  level_number: number;
+  title?: string | null;
+};
+
+type Props = {
+  gameSlug: string;
+  levels: Level[];
+};
+
+export default function LevelSearchGrid({ gameSlug, levels }: Props) {
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    if (!q) return levels;
+
+    // If query is only digits, filter by level_number prefix/exact
+    if (/^\d+$/.test(q)) {
+      return levels.filter((l) => String(l.level_number).includes(q));
+    }
+
+    // Otherwise filter by title
+    const lower = q.toLowerCase();
+    return levels.filter((l) =>
+      (l.title || `level ${l.level_number}`).toLowerCase().includes(lower)
+    );
+  }, [levels, query]);
+
+  // Exact match — for the "Go" button
+  const exactMatch = useMemo(() => {
+    if (!/^\d+$/.test(query.trim())) return null;
+    const num = parseInt(query.trim(), 10);
+    return levels.find((l) => l.level_number === num) || null;
+  }, [levels, query]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && exactMatch) {
+      e.preventDefault();
+      // Scroll to the tile
+      const el = document.getElementById(`level-tile-${exactMatch.level_number}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Flash highlight
+      el?.classList.add('level-tile-flash');
+      setTimeout(() => el?.classList.remove('level-tile-flash'), 1200);
+    }
+  }
+
+  return (
+    <section className="section" id="levels" style={{ scrollMarginTop: 90 }}>
+      <div className="section-head">
+        <div>
+          <h2 className="section-title">All levels</h2>
+          <p className="section-sub">
+            {levels.length} walkthroughs — tap a level to open it
+          </p>
+        </div>
+
+        {/* Search input */}
+        <div className="level-search">
+          <svg
+            className="level-search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Go to level…"
+            aria-label="Search levels"
+            className="level-search-input"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="level-search-clear"
+              aria-label="Clear"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Info line when filtering */}
+      {query.trim() && (
+        <p className="level-search-info">
+          {filtered.length === 0 ? (
+            <>
+              No levels match <strong>&quot;{query}&quot;</strong>
+            </>
+          ) : (
+            <>
+              Showing <strong>{filtered.length}</strong> of {levels.length} levels
+              {exactMatch && (
+                <>
+                  {' · '}
+                  <a href={`#level-tile-${exactMatch.level_number}`} className="level-search-jump">
+                    Jump to Level {exactMatch.level_number} ↓
+                  </a>
+                </>
+              )}
+            </>
+          )}
+        </p>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="empty-state">
+          <div className="emoji">🔍</div>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>
+            No levels match your search.
+          </p>
+        </div>
+      ) : (
+        <div className="level-grid">
+          {filtered.map((level) => (
+            <Link
+              key={level.id}
+              id={`level-tile-${level.level_number}`}
+              href={`/game/${gameSlug}/level-${level.level_number}`}
+              className="level-tile"
+              title={level.title || `Level ${level.level_number}`}
+            >
+              {level.level_number}
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+</file>
+
+<file path="components/LoginForm.tsx">
+'use client';
+
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+
+type Props = {
+  siteName: string;
+  siteLogo: string | null;
+};
+
+export default function LoginForm({ siteName, siteLogo }: Props) {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError('Invalid email or password');
+        setLoading(false);
+      } else {
+        router.push('/admin/dashboard');
+        router.refresh();
+      }
+    } catch {
+      setError('Something went wrong. Try again.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #D4ECFF 0%, #F3F9FF 100%)' }}
+    >
+      <div className="hero-dots" />
+      <div className="hero-blob b1" />
+      <div className="hero-blob b2" />
+
+      <form
+        onSubmit={handleSubmit}
+        className="card p-7 sm:p-9 w-full max-w-md relative animate-fade-in-up"
+        style={{ boxShadow: 'var(--shadow-lg)' }}
+      >
+        {/* Logo / Brand */}
+        <div className="flex justify-center mb-5">
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {siteLogo ? (
+              <Image
+                src={siteLogo}
+                alt={siteName}
+                width={180}
+                height={60}
+                style={{
+                  height: 56,
+                  width: 'auto',
+                  maxWidth: 200,
+                  objectFit: 'contain',
+                }}
+                priority
+                unoptimized
+              />
+            ) : (
+              <span
+                className="brand-mark"
+                style={{ width: 56, height: 56, fontSize: 28, borderRadius: 18 }}
+                aria-hidden="true"
+              >
+                🧩
+              </span>
+            )}
+          </Link>
+        </div>
+
+        <h1 className="text-2xl font-extrabold mb-1 text-center">Admin login</h1>
+        <p className="text-sm text-center mb-7" style={{ color: 'var(--muted)' }}>
+          Sign in to manage {siteName}
+        </p>
+
+        {error && (
+          <div
+            role="alert"
+            className="p-3 rounded-xl mb-5 text-sm font-medium"
+            style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+          >
+            {error}
+          </div>
+        )}
+
+        <label className="block mb-4">
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
+            placeholder="admin@yoursite.com"
+          />
+        </label>
+
+        <label className="block mb-7">
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-soft)' }}>Password</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="w-full mt-1.5 px-4 py-3 border rounded-xl outline-none"
+            style={{ borderColor: 'var(--line)' }}
+            placeholder="••••••••"
+          />
+        </label>
+
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <div className="text-center mt-6">
+          <Link
+            href="/"
+            className="text-xs font-semibold hover:opacity-80"
+            style={{ color: 'var(--muted)' }}
+          >
+            ← Back to site
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+}
+</file>
+
 <file path="components/Navbar.tsx">
 import NavbarClient from './NavbarClient';
 import type { Settings } from '@/types';
@@ -5363,6 +6969,7 @@ export default function Navbar({ settings }: Props) {
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import NavbarSearch from './NavbarSearch';
@@ -5392,8 +6999,15 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         <div className="nav-inner">
           <Link href="/" className="brand" onClick={() => setOpen(false)}>
             {siteLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={siteLogo} alt={siteName} className="h-9 w-auto max-w-44 object-contain" />
+              <Image
+                src={siteLogo}
+                alt={siteName}
+                width={180}
+                height={48}
+                className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
+                priority
+                unoptimized
+              />
             ) : (
               <>
                 <span className="brand-mark" aria-hidden="true">🧩</span>
@@ -5539,18 +7153,20 @@ export default function PopularLevels({
   if (levels.length === 0) return null;
 
   return (
-    <div className="card p-5">
-      <h3 className="text-[15px] font-bold mb-4">{heading}</h3>
-      <div className="flex flex-col gap-1.5">
+    <div className="card p-4 sm:p-5">
+      <h3 className="text-[14px] sm:text-[15px] font-bold mb-3 sm:mb-4">{heading}</h3>
+      <div className="flex flex-col gap-1">
         {levels.map((item) => (
           <Link
             key={item.id}
             href={`/game/${gameSlug}/level-${item.level_number}`}
-            className="flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+            className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
           >
             <span
-              className="w-9 h-9 rounded-xl grid place-items-center shrink-0 text-[13px] font-bold text-white"
+              className="rounded-xl grid place-items-center shrink-0 text-[12px] sm:text-[13px] font-bold text-white"
               style={{
+                width: 'clamp(34px, 5vw, 40px)',
+                height: 'clamp(34px, 5vw, 40px)',
                 background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
                 boxShadow: '0 3px 0 #0369A1',
                 fontFamily: 'var(--font-display), sans-serif',
@@ -5559,7 +7175,7 @@ export default function PopularLevels({
               {item.level_number}
             </span>
             <span
-              className="text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+              className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
               style={{ color: 'var(--ink)' }}
             >
               {item.title || `Level ${item.level_number}`}
@@ -5574,6 +7190,7 @@ export default function PopularLevels({
 
 <file path="components/SettingsForm.tsx">
 import type { Settings } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 
@@ -5612,16 +7229,13 @@ export default function SettingsForm({ action, settings }: Props) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Site Logo URL</label>
-          <input
-            type="url"
-            name="site_logo"
-            defaultValue={settings?.site_logo || ''}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ImageUpload
+          name="site_logo"
+          defaultValue={settings?.site_logo || ''}
+          folder="logos"
+          label="Site Logo"
+          aspect="auto"
+        />
 
         <div>
           <label className="block text-sm font-medium mb-1">Site Description</label>
@@ -6103,16 +7717,37 @@ function extractGameData(formData: FormData) {
 }
 
 export async function createGame(formData: FormData) {
+  console.log('🔵 createGame START');
+
   await requireAuth();
+  console.log('🟢 Auth OK');
 
   const data = extractGameData(formData);
-  if (!data.name) return { error: 'Game name is required.' };
+  console.log('🟢 Data extracted:', {
+    name: data.name,
+    slug: data.slug,
+    published: data.published,
+    has_cover: !!data.cover_image,
+  });
 
-  const { error } = await supabaseAdmin.from('games').insert(data);
+  if (!data.name) {
+    console.log('🔴 FAIL: name empty');
+    return { error: 'Game name is required.' };
+  }
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from('games')
+    .insert(data)
+    .select()
+    .single();
 
   if (error) {
+    console.log('🔴 SUPABASE ERROR:', error.message, '| Code:', error.code, '| Details:', error.details);
     return { error: error.message };
   }
+
+  console.log('🟢 INSERTED:', inserted?.id, inserted?.name);
+  console.log('🔵 createGame END');
 
   revalidatePath('/admin/games');
   revalidatePath('/');
@@ -6165,6 +7800,43 @@ import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { extractYoutubeId } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
+
+// ==========================================
+// BULK EDIT ALL LEVELS AT ONCE
+// ==========================================
+export async function bulkEditLevels(gameId: string, formData: FormData) {
+  await requireAuth();
+
+  const levelsJson = formData.get('levels_json') as string;
+  if (!levelsJson) {
+    return { error: 'No levels data provided.' };
+  }
+
+  try {
+    const levels = JSON.parse(levelsJson);
+    if (!Array.isArray(levels) || levels.length === 0) {
+      return { error: 'Invalid levels data.' };
+    }
+
+    // Upsert all levels (insert or update based on game_id, level_number)
+    const { error } = await supabaseAdmin
+      .from('levels')
+      .upsert(levels, { onConflict: 'game_id,level_number' });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Update game's total_levels count
+    await updateGameLevelCount(gameId);
+
+    revalidatePath(`/admin/games/${gameId}/levels`);
+    revalidatePath(`/game/[slug]`);
+    redirect(`/admin/games/${gameId}/levels`);
+  } catch (e) {
+    return { error: 'Failed to parse levels data.' };
+  }
+}
 
 // ==========================================
 // BULK GENERATE — Level 1 se N tak
@@ -6342,6 +8014,103 @@ export async function deleteLevel(levelId: string, gameId: string) {
 
   revalidatePath(`/admin/games/${gameId}/levels`);
   revalidatePath('/admin/games');
+}
+
+// ==========================================
+// BULK IMPORT FROM CSV
+// ==========================================
+export async function bulkImportLevels(
+  gameId: string,
+  levelsJson: string,
+): Promise<
+  | { error: string }
+  | { success: true; inserted: number; skipped: number; invalid: number }
+> {
+  await requireAuth();
+
+  const levels = JSON.parse(levelsJson);
+  if (!Array.isArray(levels) || levels.length === 0) {
+    return { error: 'No valid levels data provided.' };
+  }
+
+  // Get existing levels to avoid duplicates
+  const { data: existing } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('game_id', gameId);
+
+  const existingNumbers = new Set((existing || []).map((l) => l.level_number));
+
+  const newLevels: {
+    game_id: string;
+    level_number: number;
+    title: string;
+    youtube_url: string;
+    youtube_id: string;
+    walkthrough: string | null;
+    tips: string | null;
+    description: string | null;
+    published: boolean;
+  }[] = [];
+
+  let skipped = 0;
+  let invalid = 0;
+
+  for (const level of levels) {
+    const levelNumber = level.level_number;
+    const youtubeUrl = level.youtube_url;
+    const title = level.title || `Level ${levelNumber}`;
+    const walkthrough = level.walkthrough || null;
+    const tips = level.tips || null;
+    const description = level.description || null;
+
+    if (!levelNumber || levelNumber < 1 || levelNumber > 100000) {
+      invalid++;
+      continue;
+    }
+
+    if (existingNumbers.has(levelNumber)) {
+      skipped++;
+      continue;
+    }
+
+    const youtubeId = extractYoutubeId(youtubeUrl);
+    if (!youtubeId) {
+      invalid++;
+      continue;
+    }
+
+    newLevels.push({
+      game_id: gameId,
+      level_number: levelNumber,
+      title,
+      youtube_url: youtubeUrl,
+      youtube_id: youtubeId,
+      walkthrough,
+      tips,
+      description,
+      published: true,
+    });
+
+    existingNumbers.add(levelNumber);
+  }
+
+  if (newLevels.length === 0) {
+    return { error: `No valid levels to import. Skipped: ${skipped}, Invalid: ${invalid}` };
+  }
+
+  const { error } = await supabaseAdmin.from('levels').insert(newLevels);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await updateGameLevelCount(gameId);
+
+  revalidatePath(`/admin/games/${gameId}/levels`);
+  revalidatePath('/admin/games');
+
+  return { success: true, inserted: newLevels.length, skipped, invalid };
 }
 
 // ==========================================

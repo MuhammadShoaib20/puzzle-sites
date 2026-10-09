@@ -4,6 +4,7 @@ import NavbarSearch from '@/components/NavbarSearch';
 import GameCard from '@/components/GameCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
+import HomeScrollControls from '@/components/HomeScrollControls';
 
 export const revalidate = 60;
 
@@ -33,6 +34,7 @@ export default async function HomePage() {
 
   return (
     <div>
+      <HomeScrollControls />
       {/* ============= HERO ============= */}
       <section className="hero">
         <div className="hero-dots" />
@@ -55,6 +57,18 @@ export default async function HomePage() {
             <NavbarSearch big placeholder="Search a game, e.g. Fish Jam" />
           </div>
 
+          <div
+            className="hero-actions flex gap-3 sm:gap-4 justify-center flex-wrap mt-8 sm:mt-10 animate-fade-in-up"
+            style={{ animationDelay: '260ms' }}
+          >
+            <Link href="#all-games" className="btn btn-primary btn-lg">
+              Browse games
+            </Link>
+            <Link href="/blog" className="btn btn-secondary btn-lg">
+              Read guides
+            </Link>
+          </div>
+
           <div className="tile-strip" aria-hidden="true">
             {TILES.map((tile, i) => (
               <span
@@ -65,18 +79,6 @@ export default async function HomePage() {
                 {tile.n}
               </span>
             ))}
-          </div>
-
-          <div
-            className="flex gap-3 sm:gap-4 justify-center flex-wrap mt-8 sm:mt-10 animate-fade-in-up btn-stack"
-            style={{ animationDelay: '260ms' }}
-          >
-            <Link href="#all-games" className="btn btn-primary btn-lg">
-              Browse games
-            </Link>
-            <Link href="/blog" className="btn btn-secondary btn-lg">
-              Read guides
-            </Link>
           </div>
 
           <div className="stats-row animate-fade-in-up" style={{ animationDelay: '340ms' }}>
