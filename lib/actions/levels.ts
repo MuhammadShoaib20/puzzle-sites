@@ -224,7 +224,13 @@ export async function deleteLevel(levelId: string, gameId: string) {
 // ==========================================
 // BULK IMPORT FROM CSV
 // ==========================================
-export async function bulkImportLevels(gameId: string, levelsJson: string) {
+export async function bulkImportLevels(
+  gameId: string,
+  levelsJson: string,
+): Promise<
+  | { error: string }
+  | { success: true; inserted: number; skipped: number; invalid: number }
+> {
   await requireAuth();
 
   const levels = JSON.parse(levelsJson);
