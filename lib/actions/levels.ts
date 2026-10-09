@@ -222,6 +222,97 @@ export async function deleteLevel(levelId: string, gameId: string) {
 }
 
 // ==========================================
+// BULK IMPORT FROM CSV
+// ==========================================
+export async function bulkImportLevels(gameId: string, levelsJson: string) {
+  await requireAuth();
+
+  const levels = JSON.parse(levelsJson);
+  if (!Array.isArray(levels) || levels.length === 0) {
+    return { error: 'No valid levels data provided.' };
+  }
+
+  // Get existing levels to avoid duplicates
+  const { data: existing } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('game_id', gameId);
+
+  const existingNumbers = new Set((existing || []).map((l) => l.level_number));
+
+  const newLevels: {
+    game_id: string;
+    level_number: number;
+    title: string;
+    youtube_url: string;
+    youtube_id: string;
+    walkthrough: string | null;
+    tips: string | null;
+    description: string | null;
+    published: boolean;
+  }[] = [];
+
+  let skipped = 0;
+  let invalid = 0;
+
+  for (const level of levels) {
+    const levelNumber = level.level_number;
+    const youtubeUrl = level.youtube_url;
+    const title = level.title || `Level ${levelNumber}`;
+    const walkthrough = level.walkthrough || null;
+    const tips = level.tips || null;
+    const description = level.description || null;
+
+    if (!levelNumber || levelNumber < 1 || levelNumber > 100000) {
+      invalid++;
+      continue;
+    }
+
+    if (existingNumbers.has(levelNumber)) {
+      skipped++;
+      continue;
+    }
+
+    const youtubeId = extractYoutubeId(youtubeUrl);
+    if (!youtubeId) {
+      invalid++;
+      continue;
+    }
+
+    newLevels.push({
+      game_id: gameId,
+      level_number: levelNumber,
+      title,
+      youtube_url: youtubeUrl,
+      youtube_id: youtubeId,
+      walkthrough,
+      tips,
+      description,
+      published: true,
+    });
+
+    existingNumbers.add(levelNumber);
+  }
+
+  if (newLevels.length === 0) {
+    return { error: `No valid levels to import. Skipped: ${skipped}, Invalid: ${invalid}` };
+  }
+
+  const { error } = await supabaseAdmin.from('levels').insert(newLevels);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await updateGameLevelCount(gameId);
+
+  revalidatePath(`/admin/games/${gameId}/levels`);
+  revalidatePath('/admin/games');
+
+  return { success: true, inserted: newLevels.length, skipped, invalid };
+}
+
+// ==========================================
 // HELPER — Game ke total_levels update karo
 // ==========================================
 async function updateGameLevelCount(gameId: string) {

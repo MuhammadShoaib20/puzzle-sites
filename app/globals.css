@@ -458,6 +458,7 @@ img { max-width: 100%; }
   color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 160ms;
@@ -471,6 +472,7 @@ img { max-width: 100%; }
   margin-top: 0.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.55;
@@ -498,6 +500,7 @@ img { max-width: 100%; }
   color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 160ms;
@@ -511,6 +514,7 @@ img { max-width: 100%; }
   flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.65;
@@ -1056,7 +1060,6 @@ img { max-width: 100%; }
 }
 @media (min-width: 640px) { .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .footer-grid { grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)); gap: 3rem; } }
-.footer-grid.no-cat { }
 @media (min-width: 1024px) { .footer-grid.no-cat { grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)); } }
 .footer-title {
   color: #fff;
@@ -1469,7 +1472,6 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   border-color: var(--line);
   border-radius: 12px;
 }
-.admin-main form .card + .card, .admin-main form > * + * { }
 
 /* =========================================================
    CLEAN-UP PASS
@@ -1500,3 +1502,132 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 
 /* Admin content area gets a soft frosted surface feel */
 .admin-main { background: transparent; }
+
+/* =========================================================
+   LEVEL SEARCH
+   ========================================================= */
+.level-search {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .level-search {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.level-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-light);
+  pointer-events: none;
+}
+
+.level-search-input {
+  width: 100%;
+  padding: 0.6rem 2rem 0.6rem 2.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  outline: none;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  transition: border-color 160ms, box-shadow 160ms, background 160ms;
+}
+
+.level-search-input::placeholder {
+  color: var(--muted-light);
+}
+
+.level-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+/* Hide the number spinner */
+.level-search-input::-webkit-outer-spin-button,
+.level-search-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.level-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--bg-alt);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  transition: background 140ms, color 140ms;
+}
+
+.level-search-clear:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.level-search-info {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--primary-soft);
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.level-search-info strong {
+  color: var(--primary-deep);
+}
+
+.level-search-jump {
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.level-search-jump:hover {
+  color: var(--primary);
+}
+
+/* Flash effect when jumping to a level */
+.level-tile-flash {
+  animation: tileFlash 1.2s ease;
+}
+
+@keyframes tileFlash {
+  0%, 100% {
+    box-shadow: 0 0 0 var(--line);
+    transform: translateY(0) scale(1);
+  }
+  25%, 75% {
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35), 0 4px 12px rgba(124, 58, 237, 0.4);
+    transform: translateY(-4px) scale(1.08);
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary-dark);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.25);
+    transform: translateY(-6px) scale(1.12);
+    background: var(--primary-dark);
+    color: #fff;
+    border-color: var(--primary-dark);
+  }
+}

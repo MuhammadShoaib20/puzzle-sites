@@ -13,7 +13,7 @@ import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import BlogCard from '@/components/BlogCard';
-import LevelButtons from '@/components/LevelButtons';
+import LevelSearchGrid from '@/components/LevelSearchGrid';
 import PopularLevels from '@/components/PopularLevels';
 import { sanitize } from '@/lib/sanitize';
 
@@ -209,15 +209,7 @@ export default async function GamePage({ params }: Props) {
             <AdSlot code={settings.adsense_in_article} label="In article" variant="banner" />
           )}
 
-          <section className="section" id="levels" style={{ scrollMarginTop: 90 }}>
-            <div className="section-head">
-              <div>
-                <h2 className="section-title">All levels</h2>
-                <p className="section-sub">{levels.length} walkthroughs — tap a level to open it</p>
-              </div>
-            </div>
-            <LevelButtons gameSlug={game.slug} levels={levels} />
-          </section>
+          <LevelSearchGrid gameSlug={game.slug} levels={levels} />
 
           {blogs.length > 0 && (
             <section className="section">

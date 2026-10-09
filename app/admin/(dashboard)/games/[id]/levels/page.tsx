@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import BulkGenerateForm from '@/components/BulkGenerateForm';
 import BulkEditForm from '@/components/BulkEditForm';
+import BulkImportForm from '@/components/BulkImportForm';
 import DeleteLevelButton from '@/components/DeleteLevelButton';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +60,14 @@ export default async function AdminLevelsPage({ params }: Props) {
           Create many level slots at once. The default YouTube URL is optional — you can edit each level later.
         </p>
         <BulkGenerateForm gameId={id} />
+      </div>
+
+      <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+        <h2>📥 Bulk import from CSV</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
+          Import levels from a CSV file with walkthrough and tips support.
+        </p>
+        <BulkImportForm gameId={id} />
       </div>
 
       {levelList.length > 0 && (
