@@ -1592,10 +1592,10 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   bottom: max(0.75rem, env(safe-area-inset-bottom));
   z-index: 40;
   display: grid;
-  gap: 0.3rem;
-  padding: 4px;
+  gap: 0.2rem;
+  padding: 3px;
   border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 17px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.76);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -1603,11 +1603,11 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 }
 .home-scroll-button {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff;
   background: linear-gradient(145deg, #38BDF8, #0284C7);
   box-shadow: 0 3px 9px rgba(3, 105, 161, 0.22);
@@ -1628,8 +1628,8 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   cursor: default;
 }
 .home-scroll-button svg {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2.5;

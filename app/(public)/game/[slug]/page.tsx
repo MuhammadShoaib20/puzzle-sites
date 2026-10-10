@@ -14,6 +14,7 @@ import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import BlogCard from '@/components/BlogCard';
 import LevelSearchGrid from '@/components/LevelSearchGrid';
+import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
 import { sanitize } from '@/lib/sanitize';
 
@@ -159,31 +160,30 @@ export default async function GamePage({ params }: Props) {
             </div>
           )}
 
-          {(game.youtube_channel_url || links.length > 0) && (
-            <div className="flex flex-wrap gap-4 mb-10">
-              {game.youtube_channel_url && (
-                <a
-                  href={game.youtube_channel_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-youtube"
-                >
-                  ▶ Subscribe
-                </a>
-              )}
-              {links.map((link, index) => (
-                <a
-                  key={`${link.url}-${index}`}
-                  href={link.url}
-                  target={link.newTab !== false ? '_blank' : '_self'}
-                  rel={link.newTab !== false ? 'noopener noreferrer' : undefined}
-                  className="btn btn-secondary"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-4 mb-10">
+            <ScrollToLevelsButton />
+            {game.youtube_channel_url && (
+              <a
+                href={game.youtube_channel_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-youtube"
+              >
+                ▶ Subscribe
+              </a>
+            )}
+            {links.map((link, index) => (
+              <a
+                key={`${link.url}-${index}`}
+                href={link.url}
+                target={link.newTab !== false ? '_blank' : '_self'}
+                rel={link.newTab !== false ? 'noopener noreferrer' : undefined}
+                className="btn btn-secondary"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
 
           {game.full_description && (
             <section className="section">

@@ -4,7 +4,6 @@ import NavbarSearch from '@/components/NavbarSearch';
 import GameCard from '@/components/GameCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
-import HomeScrollControls from '@/components/HomeScrollControls';
 
 export const revalidate = 60;
 
@@ -34,7 +33,6 @@ export default async function HomePage() {
 
   return (
     <div>
-      <HomeScrollControls />
       {/* ============= HERO ============= */}
       <section className="hero">
         <div className="hero-dots" />
