@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import type { Game, Level, Blog, Page, Category, GameLink, Settings } from '@/types';
 
 // ==========================================
@@ -321,4 +321,141 @@ export async function searchGames(query: string): Promise<Game[]> {
 
   if (error) return [];
   return (data || []) as Game[];
+}
+
+// ==========================================
+// ACTIVITY LOG
+// ==========================================
+
+export type ActivityEntry = {
+  id: string;
+  type: 'login' | 'logout' | 'password_change' | 'admin_action';
+  action: string;
+  status: 'success' | 'failure';
+  email: string;
+  ip_address: string;
+  user_agent: string;
+  created_at: string;
+};
+
+export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+  // Get login attempts from last 24 hours
+  const { data: loginAttempts, error: loginError } = await supabaseAdmin
+    .from('admin_login_attempts')
+    .select('*')
+    .gte('attempted_at', oneHourAgo)
+    .order('attempted_at', { ascending: false })
+    .limit(limit);
+
+  // Get activity log from last 24 hours
+  const { data: activityLog, error: activityError } = await supabaseAdmin
+    .from('admin_activity_log')
+    .select('*')
+    .gte('created_at', oneHourAgo)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (loginError || activityError) {
+    console.error('getRecentActivity error:', loginError?.message, activityError?.message);
+    return [];
+  }
+
+  // Convert login attempts to activity entries
+  const loginEntries: ActivityEntry[] = (loginAttempts || []).map((attempt: any) => ({
+    id: attempt.id,
+    type: 'login',
+    action: attempt.success ? 'Successful login' : 'Failed login attempt',
+    status: attempt.success ? 'success' : 'failure',
+    email: attempt.email,
+    ip_address: attempt.ip_address,
+    user_agent: attempt.user_agent,
+    created_at: attempt.attempted_at,
+  }));
+
+  // Convert activity log to activity entries
+  const activityEntries: ActivityEntry[] = (activityLog || []).map((log: any) => ({
+    id: log.id,
+    type: 'admin_action',
+    action: log.action,
+    status: 'success',
+    email: log.admin_email,
+    ip_address: log.ip_address,
+    user_agent: log.user_agent,
+    created_at: log.created_at,
+  }));
+
+  // Merge and sort by timestamp
+  const allEntries = [...loginEntries, ...activityEntries].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  return allEntries.slice(0, limit);
+}
+
+export async function getActivitySummary() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayIso = today.toISOString();
+
+  // Get today's login attempts
+  const { data: loginAttempts, error: loginError } = await supabaseAdmin
+    .from('admin_login_attempts')
+    .select('*')
+    .gte('attempted_at', todayIso);
+
+  // Get last successful login
+  const { data: lastLogin, error: lastLoginError } = await supabaseAdmin
+    .from('admin_login_attempts')
+    .select('*')
+    .eq('success', true)
+    .order('attempted_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (loginError || lastLoginError) {
+    console.error('getActivitySummary error:', loginError?.message, lastLoginError?.message);
+    return {
+      totalLoginsToday: 0,
+      failedAttemptsToday: 0,
+      lastSuccessfulLogin: null,
+    };
+  }
+
+  const totalLoginsToday = (loginAttempts || []).filter((a: any) => a.success).length;
+  const failedAttemptsToday = (loginAttempts || []).filter((a: any) => !a.success).length;
+
+  return {
+    totalLoginsToday,
+    failedAttemptsToday,
+    lastSuccessfulLogin: lastLogin ? lastLogin.attempted_at : null,
+  };
+}
+
+export async function getSuspiciousIPs(): Promise<string[]> {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from('admin_login_attempts')
+    .select('ip_address')
+    .gte('attempted_at', oneHourAgo)
+    .eq('success', false);
+
+  if (error) {
+    console.error('getSuspiciousIPs error:', error.message);
+    return [];
+  }
+
+  // Count failed attempts per IP
+  const ipCounts = new Map<string, number>();
+  (data || []).forEach((attempt: any) => {
+    const count = ipCounts.get(attempt.ip_address) || 0;
+    ipCounts.set(attempt.ip_address, count + 1);
+  });
+
+  // Return IPs with 5+ failed attempts
+  return Array.from(ipCounts.entries())
+    .filter(([_, count]) => count >= 5)
+    .map(([ip]) => ip);
 }

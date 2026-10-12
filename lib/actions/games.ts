@@ -124,9 +124,9 @@ export async function createGame(formData: FormData) {
   console.log('🟢 INSERTED:', inserted?.id, inserted?.name);
   console.log('🔵 createGame END');
 
-  revalidatePath('/admin/games');
+  revalidatePath('/ms-control-9x7k2p/games');
   revalidatePath('/');
-  redirect('/admin/games');
+  redirect('/ms-control-9x7k2p/games');
 }
 
 export async function updateGame(id: string, formData: FormData) {
@@ -147,10 +147,10 @@ export async function updateGame(id: string, formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath('/admin/games');
+  revalidatePath('/ms-control-9x7k2p/games');
   revalidatePath(`/game/${data.slug}`);
   revalidatePath('/');
-  redirect('/admin/games');
+  redirect('/ms-control-9x7k2p/games');
 }
 
 export async function deleteGame(id: string) {
@@ -162,6 +162,6 @@ export async function deleteGame(id: string) {
     return { error: error.message };
   }
 
-  revalidatePath('/admin/games');
+  revalidatePath('/ms-control-9x7k2p/games');
   revalidatePath('/');
 }

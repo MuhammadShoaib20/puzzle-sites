@@ -38,7 +38,7 @@ function getPageValues(formData: FormData) {
 }
 
 function revalidatePagePaths(slug?: string) {
-  revalidatePath('/admin/pages');
+  revalidatePath('/ms-control-9x7k2p/pages');
   revalidatePath('/sitemap.xml');
   revalidatePath('/', 'layout');
   if (slug) {
@@ -57,7 +57,7 @@ export async function createPage(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePagePaths(result.values.slug);
-  redirect('/admin/pages');
+  redirect('/ms-control-9x7k2p/pages');
 }
 
 export async function updatePage(id: string, formData: FormData) {
@@ -85,7 +85,7 @@ export async function updatePage(id: string, formData: FormData) {
 
   revalidatePagePaths(existingPage.slug);
   revalidatePagePaths(result.values.slug);
-  redirect('/admin/pages');
+  redirect('/ms-control-9x7k2p/pages');
 }
 
 export async function deletePage(id: string) {

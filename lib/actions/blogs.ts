@@ -38,10 +38,10 @@ export async function createBlog(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  revalidatePath('/admin/blogs');
+  revalidatePath('/ms-control-9x7k2p/blogs');
   revalidatePath('/blog');
   revalidatePath('/');
-  redirect('/admin/blogs');
+  redirect('/ms-control-9x7k2p/blogs');
 }
 
 export async function updateBlog(id: string, formData: FormData) {
@@ -77,10 +77,10 @@ export async function updateBlog(id: string, formData: FormData) {
 
   if (error) return { error: error.message };
 
-  revalidatePath('/admin/blogs');
+  revalidatePath('/ms-control-9x7k2p/blogs');
   revalidatePath(`/blog/${slug}`);
   revalidatePath('/blog');
-  redirect('/admin/blogs');
+  redirect('/ms-control-9x7k2p/blogs');
 }
 
 export async function deleteBlog(id: string) {
@@ -89,7 +89,7 @@ export async function deleteBlog(id: string) {
   const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
   if (error) return { error: error.message };
 
-  revalidatePath('/admin/blogs');
+  revalidatePath('/ms-control-9x7k2p/blogs');
   revalidatePath('/blog');
   revalidatePath('/');
 }

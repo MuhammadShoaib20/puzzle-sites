@@ -35,9 +35,9 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
     // Update game's total_levels count
     await updateGameLevelCount(gameId);
 
-    revalidatePath(`/admin/games/${gameId}/levels`);
+    revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
     revalidatePath(`/game/[slug]`);
-    redirect(`/admin/games/${gameId}/levels`);
+    redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
   } catch (e) {
     return { error: 'Failed to parse levels data.' };
   }
@@ -102,9 +102,9 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
     .update({ total_levels: count || 0 })
     .eq('id', gameId);
 
-  revalidatePath(`/admin/games/${gameId}/levels`);
-  revalidatePath('/admin/games');
-  redirect(`/admin/games/${gameId}/levels`);
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePath('/ms-control-9x7k2p/games');
+  redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
 // ==========================================
@@ -155,8 +155,8 @@ export async function createLevel(gameId: string, formData: FormData) {
 
   await updateGameLevelCount(gameId);
 
-  revalidatePath(`/admin/games/${gameId}/levels`);
-  redirect(`/admin/games/${gameId}/levels`);
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
 // ==========================================
@@ -198,9 +198,9 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
     return { error: error.message };
   }
 
-  revalidatePath(`/admin/games/${gameId}/levels`);
-  revalidatePath(`/admin/games/${gameId}/levels/${levelId}/edit`);
-  redirect(`/admin/games/${gameId}/levels`);
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels/${levelId}/edit`);
+  redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
 // ==========================================
@@ -217,8 +217,8 @@ export async function deleteLevel(levelId: string, gameId: string) {
 
   await updateGameLevelCount(gameId);
 
-  revalidatePath(`/admin/games/${gameId}/levels`);
-  revalidatePath('/admin/games');
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePath('/ms-control-9x7k2p/games');
 }
 
 // ==========================================
@@ -312,8 +312,8 @@ export async function bulkImportLevels(
 
   await updateGameLevelCount(gameId);
 
-  revalidatePath(`/admin/games/${gameId}/levels`);
-  revalidatePath('/admin/games');
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePath('/ms-control-9x7k2p/games');
 
   return { success: true, inserted: newLevels.length, skipped, invalid };
 }

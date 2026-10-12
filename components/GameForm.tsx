@@ -388,7 +388,7 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
           {isPending ? 'Saving…' : submitLabel}
         </button>
         <Link
-          href="/admin/games"
+          href="/ms-control-9x7k2p/games"
           className="btn btn-secondary"
         >
           Cancel

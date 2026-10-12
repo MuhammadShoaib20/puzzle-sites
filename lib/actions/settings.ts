@@ -56,7 +56,7 @@ export async function updateSettings(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  revalidatePath('/admin/settings');
+  revalidatePath('/ms-control-9x7k2p/settings');
   revalidatePath('/');
   revalidatePath('/game', 'layout');
 }

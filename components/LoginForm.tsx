@@ -1,32 +1,48 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
 type Props = {
   siteName: string;
   siteLogo: string | null;
+  adminPath: string;
+  message?: string;
 };
 
-export default function LoginForm({ siteName, siteLogo }: Props) {
+export default function LoginForm({ siteName, siteLogo, adminPath, message }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (message === 'password_changed') {
+      setSuccess('Password changed successfully. Please login with your new password.');
+    } else if (message === 'sessions_invalidated') {
+      setSuccess('All sessions have been invalidated. Please login again.');
+    }
+  }, [message]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
+      const userAgent = navigator.userAgent;
+
       const res = await signIn('credentials', {
         email,
         password,
+        userAgent,
         redirect: false,
       });
 
@@ -34,7 +50,7 @@ export default function LoginForm({ siteName, siteLogo }: Props) {
         setError('Invalid email or password');
         setLoading(false);
       } else {
-        router.push('/admin/dashboard');
+        router.push(`/${adminPath}/dashboard`);
         router.refresh();
       }
     } catch {
@@ -98,6 +114,16 @@ export default function LoginForm({ siteName, siteLogo }: Props) {
         <p className="text-sm text-center mb-7" style={{ color: 'var(--muted)' }}>
           Sign in to manage {siteName}
         </p>
+
+        {success && (
+          <div
+            role="alert"
+            className="p-3 rounded-xl mb-5 text-sm font-medium"
+            style={{ background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0' }}
+          >
+            {success}
+          </div>
+        )}
 
         {error && (
           <div

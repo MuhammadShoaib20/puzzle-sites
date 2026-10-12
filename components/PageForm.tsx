@@ -168,7 +168,7 @@ export default function PageForm({
 
       <div className="flex items-center gap-3">
         <SubmitButton label={submitLabel} />
-        <Link href="/admin/pages" className="btn btn-secondary">
+        <Link href="/ms-control-9x7k2p/pages" className="btn btn-secondary">
           Cancel
         </Link>
       </div>

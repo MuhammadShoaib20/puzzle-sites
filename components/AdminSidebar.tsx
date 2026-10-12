@@ -3,20 +3,23 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { signOut } from 'next-auth/react';
+import { logLogout } from '@/lib/actions/security';
 
-const links = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/games', label: 'Games', icon: '🎮' },
-  { href: '/admin/blogs', label: 'Blogs', icon: '📝' },
-  { href: '/admin/pages', label: 'Pages', icon: '📄' },
-  { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
+const getLinks = (adminPath: string) => [
+  { href: `/${adminPath}/dashboard`, label: 'Dashboard', icon: '📊' },
+  { href: `/${adminPath}/games`, label: 'Games', icon: '🎮' },
+  { href: `/${adminPath}/blogs`, label: 'Blogs', icon: '📝' },
+  { href: `/${adminPath}/pages`, label: 'Pages', icon: '📄' },
+  { href: `/${adminPath}/settings`, label: 'Settings', icon: '⚙️' },
+  { href: `/${adminPath}/security`, label: 'Security', icon: '🔒' },
 ];
 
 type Props = {
   siteName: string;
   siteLogo: string | null;
+  adminPath: string;
 };
 
 function AdminBrand({
@@ -24,14 +27,16 @@ function AdminBrand({
   siteLogo,
   compact = false,
   onClick,
+  adminPath,
 }: {
   siteName: string;
   siteLogo: string | null;
   compact?: boolean;
   onClick?: () => void;
+  adminPath: string;
 }) {
   return (
-    <Link href="/admin/dashboard" onClick={onClick} className="brand">
+    <Link href={`/${adminPath}/dashboard`} onClick={onClick} className="brand">
       {siteLogo ? (
         <Image
           src={siteLogo}
@@ -61,17 +66,20 @@ function SidebarContent({
   onNavigate,
   siteName,
   siteLogo,
+  adminPath,
 }: {
   onNavigate?: () => void;
   siteName: string;
   siteLogo: string | null;
+  adminPath: string;
 }) {
   const pathname = usePathname();
+  const links = useMemo(() => getLinks(adminPath), [adminPath]);
 
   return (
     <>
       <div className="admin-brand-row">
-        <AdminBrand siteName={siteName} siteLogo={siteLogo} onClick={onNavigate} />
+        <AdminBrand siteName={siteName} siteLogo={siteLogo} onClick={onNavigate} adminPath={adminPath} />
       </div>
 
       <nav className="admin-nav" aria-label="Admin">
@@ -93,13 +101,16 @@ function SidebarContent({
       </nav>
 
       <div className="admin-foot">
-        <Link href="/" target="_blank" className="admin-link">
+        <Link href="/" target="_blank" rel="noopener noreferrer" className="admin-link">
           <span className="ico" aria-hidden="true">🌐</span>
           <span>View site</span>
         </Link>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          onClick={async () => {
+            await logLogout();
+            await signOut({ callbackUrl: `/${adminPath}/login` });
+          }}
           className="admin-link danger"
         >
           <span className="ico" aria-hidden="true">🚪</span>
@@ -110,20 +121,20 @@ function SidebarContent({
   );
 }
 
-export default function AdminSidebar({ siteName, siteLogo }: Props) {
+export default function AdminSidebar({ siteName, siteLogo, adminPath }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="admin-side">
-        <SidebarContent siteName={siteName} siteLogo={siteLogo} />
+        <SidebarContent siteName={siteName} siteLogo={siteLogo} adminPath={adminPath} />
       </aside>
 
       {/* Mobile / tablet top bar */}
       <div className="admin-topbar">
         <div style={{ color: '#fff' }}>
-          <AdminBrand siteName={siteName} siteLogo={siteLogo} compact />
+          <AdminBrand siteName={siteName} siteLogo={siteLogo} compact adminPath={adminPath} />
         </div>
         <button
           type="button"
@@ -147,6 +158,7 @@ export default function AdminSidebar({ siteName, siteLogo }: Props) {
           <SidebarContent
             siteName={siteName}
             siteLogo={siteLogo}
+            adminPath={adminPath}
             onNavigate={() => setOpen(false)}
           />
         </aside>

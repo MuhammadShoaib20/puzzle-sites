@@ -167,7 +167,7 @@ export default function BlogForm({
           {submitLabel}
         </button>
         <Link
-          href="/admin/blogs"
+          href="/ms-control-9x7k2p/blogs"
           className="btn btn-secondary"
         >
           Cancel
