@@ -10,6 +10,8 @@ Review it against the actual database before using it as a production restore.
 - `schema.sql` — baseline schema snapshot for a new/empty Supabase project.
 - `migrations/20261009_initial_schema.sql` — initial schema migration for a new project.
 - `migrations/20261009_add_operating_system.sql` — adds the per-game platform field.
+- `migrations/20261012_pages_cms.sql` — adds the Pages CMS table, published-page read
+  policy, and the initial About, Contact, Privacy, and Terms pages.
 
 ## Existing project
 
@@ -18,6 +20,10 @@ Check the Supabase migration history and compare the live schema first. If the
 `operating_system` column is missing, run the incremental SQL in
 `migrations/20261009_add_operating_system.sql` in the Supabase SQL Editor. It is safe
 to rerun because it uses `IF NOT EXISTS` and fills null values.
+
+Apply `migrations/20261012_pages_cms.sql` in the Supabase SQL Editor to enable the
+Pages CMS. It is safe to rerun; seed rows are inserted only when their slug does not
+already exist, so existing page content is preserved.
 
 ## New project
 

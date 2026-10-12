@@ -88,6 +88,23 @@ export interface Blog {
 }
 
 // ==========================================
+// PAGE
+// ==========================================
+export interface Page {
+  id: string;
+  slug: string;
+  title: string;
+  content: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  is_published: boolean;
+  show_in_footer: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================
 // GAME LINK (Custom Buttons)
 // ==========================================
 export interface GameLink {

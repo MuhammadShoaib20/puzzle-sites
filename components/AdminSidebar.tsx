@@ -10,6 +10,7 @@ const links = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/admin/games', label: 'Games', icon: '🎮' },
   { href: '/admin/blogs', label: 'Blogs', icon: '📝' },
+  { href: '/admin/pages', label: 'Pages', icon: '📄' },
   { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 

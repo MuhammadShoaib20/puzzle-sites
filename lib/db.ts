@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Game, Level, Blog, Category, GameLink, Settings } from '@/types';
+import type { Game, Level, Blog, Page, Category, GameLink, Settings } from '@/types';
 
 // ==========================================
 // GAMES
@@ -192,6 +192,56 @@ export async function getLatestBlogs(limit = 6): Promise<Blog[]> {
 
   if (error) return [];
   return (data || []) as Blog[];
+}
+
+// ==========================================
+// PAGES
+// ==========================================
+export async function getPageBySlug(slug: string): Promise<Page | null> {
+  const { data, error } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('slug', slug)
+    .eq('is_published', true)
+    .maybeSingle();
+
+  if (error) {
+    console.error('getPageBySlug error:', error.message);
+    return null;
+  }
+  return data as Page | null;
+}
+
+export async function getFooterPages(): Promise<Page[]> {
+  const { data, error } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('is_published', true)
+    .eq('show_in_footer', true)
+    .order('sort_order', { ascending: true })
+    .order('title', { ascending: true });
+
+  if (error) {
+    console.error('getFooterPages error:', error.message);
+    return [];
+  }
+  return (data || []) as Page[];
+}
+
+export async function getAllPublishedPagesForSitemap(): Promise<
+  Pick<Page, 'slug' | 'created_at' | 'updated_at'>[]
+> {
+  const { data, error } = await supabase
+    .from('pages')
+    .select('slug, created_at, updated_at')
+    .eq('is_published', true)
+    .order('slug', { ascending: true });
+
+  if (error) {
+    console.error('getAllPublishedPagesForSitemap error:', error.message);
+    return [];
+  }
+  return (data || []) as Pick<Page, 'slug' | 'created_at' | 'updated_at'>[];
 }
 
 // ==========================================

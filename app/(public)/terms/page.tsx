@@ -1,19 +1,17 @@
 import type { Metadata } from 'next';
-import StaticPage from '@/components/StaticPage';
+import { notFound } from 'next/navigation';
+import PageContent from '@/components/PageContent';
+import { getPageBySlug } from '@/lib/db';
+import { getPageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service',
-  description: 'Terms of service for using Puzzle Walkthroughs.',
-};
+export const dynamic = 'force-dynamic';
 
-export default function TermsPage() {
-  return (
-    <StaticPage title="Terms of service" subtitle="The rules for using this site.">
-      <p>By using this site, you agree to these terms.</p>
-      <h2>Use of content</h2>
-      <p>All content is for informational purposes only.</p>
-      <h2>External links</h2>
-      <p>We embed YouTube videos and link to external sites. We are not responsible for their content.</p>
-    </StaticPage>
-  );
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata(await getPageBySlug('terms'));
+}
+
+export default async function TermsPage() {
+  const page = await getPageBySlug('terms');
+  if (!page) notFound();
+  return <PageContent page={page} />;
 }

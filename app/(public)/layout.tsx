@@ -1,7 +1,6 @@
 import { getSettings, getAllCategories } from '@/lib/db';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import GoogleAnalytics from '@/components/GoogleAnalytics';
 import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
 import HomeScrollControls from '@/components/HomeScrollControls';
@@ -21,9 +20,6 @@ export default async function PublicLayout({
       <BackgroundDecor />
       <div className="site-content min-h-screen flex flex-col">
       <HomeScrollControls />
-      {settings?.google_analytics_id && (
-        <GoogleAnalytics gaId={settings.google_analytics_id} />
-      )}
       <Navbar settings={settings} />
       {settings?.adsense_header && (
         <div className="container-page">

@@ -1,6 +1,23 @@
-import Script from 'next/script';
+'use client';
 
-export default function GoogleAnalytics({ gaId }: { gaId: string }) {
+import { useEffect, useState } from 'react';
+import Script from 'next/script';
+import { useCookieConsent } from './CookieConsentBanner';
+
+type Props = {
+  gaId?: string | null;
+};
+
+export default function ConsentAnalytics({ gaId }: Props) {
+  const consent = useCookieConsent();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || consent !== 'accepted') return null;
+
   if (!gaId) return null;
 
   return (

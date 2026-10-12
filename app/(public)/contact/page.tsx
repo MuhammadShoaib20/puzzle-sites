@@ -1,18 +1,17 @@
 import type { Metadata } from 'next';
-import StaticPage from '@/components/StaticPage';
+import { notFound } from 'next/navigation';
+import PageContent from '@/components/PageContent';
+import { getPageBySlug } from '@/lib/db';
+import { getPageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Contact Us',
-  description: 'Get in touch with Puzzle Walkthroughs.',
-};
+export const dynamic = 'force-dynamic';
 
-export default function ContactPage() {
-  return (
-    <StaticPage title="Contact us" subtitle="Questions, feedback, or a game you want covered? Write to us.">
-      <p>Have questions, feedback, or business inquiries? Reach out to us:</p>
-      <p>
-        <strong>Email:</strong> contact@yoursite.com
-      </p>
-    </StaticPage>
-  );
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata(await getPageBySlug('contact'));
+}
+
+export default async function ContactPage() {
+  const page = await getPageBySlug('contact');
+  if (!page) notFound();
+  return <PageContent page={page} />;
 }

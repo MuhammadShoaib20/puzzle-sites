@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Category, Settings } from '@/types';
+import { getFooterPages } from '@/lib/db';
+import { openCookieBanner } from '@/components/CookieConsentBanner';
 
 type Props = {
   settings: Settings | null;
@@ -17,7 +19,8 @@ function isSafeExternalUrl(value?: string): value is string {
   }
 }
 
-export default function Footer({ settings, categories }: Props) {
+export default async function Footer({ settings, categories }: Props) {
+  const pages = await getFooterPages();
   const siteName = settings?.site_name || 'PuzzleWalkthroughs';
   const siteLogo = settings?.site_logo || null;
   const siteDescription =
@@ -79,10 +82,21 @@ export default function Footer({ settings, categories }: Props) {
             <div className="footer-links">
               <Link href="/" className="footer-link">Home</Link>
               <Link href="/blog" className="footer-link">Blog</Link>
-              <Link href="/about" className="footer-link">About</Link>
-              <Link href="/contact" className="footer-link">Contact</Link>
             </div>
           </div>
+
+          {pages.length > 0 && (
+            <div>
+              <div className="footer-title">Pages</div>
+              <div className="footer-links">
+                {pages.map((page) => (
+                  <Link key={page.id} href={`/${page.slug}`} className="footer-link">
+                    {page.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Categories */}
           {visibleCategories.length > 0 && (
@@ -102,15 +116,6 @@ export default function Footer({ settings, categories }: Props) {
             </div>
           )}
 
-          {/* Legal */}
-          <div>
-            <div className="footer-title">Legal</div>
-            <div className="footer-links">
-              <Link href="/privacy-policy" className="footer-link">Privacy policy</Link>
-              <Link href="/terms" className="footer-link">Terms of service</Link>
-            </div>
-          </div>
-
           {/* Follow (only if no pills shown in brand block, keep a hint for admin) */}
           <div className="footer-cta">
             <div className="footer-title">Stuck on a level?</div>
@@ -124,7 +129,16 @@ export default function Footer({ settings, categories }: Props) {
         </div>
 
         <div className="footer-bottom">
-          © {new Date().getFullYear()} {siteName}. All rights reserved.
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span>© {new Date().getFullYear()} {siteName}. All rights reserved.</span>
+            <button
+              type="button"
+              onClick={openCookieBanner}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+            >
+              Cookie Settings
+            </button>
+          </div>
         </div>
       </div>
     </footer>
