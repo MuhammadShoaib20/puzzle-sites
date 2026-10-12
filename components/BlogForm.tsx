@@ -1,14 +1,20 @@
+'use client';
+
+import { useState, useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Blog, Game } from '@/types';
 import ImageUpload from './ImageUpload';
+import { useToast } from './Toast';
 
-type ActionResult = { error?: string } | void;
+type ActionResult = { success: boolean; error?: string; fieldErrors?: { title?: string; slug?: string; content?: string }; data?: unknown };
 
 type Props = {
-  action: (formData: FormData) => Promise<ActionResult> | ActionResult;
+  action: (formData: FormData) => Promise<ActionResult>;
   blog?: Blog;
   games?: Pick<Game, 'id' | 'name'>[];
   submitLabel?: string;
+  redirectPath?: string;
 };
 
 export default function BlogForm({
@@ -16,9 +22,72 @@ export default function BlogForm({
   blog,
   games = [],
   submitLabel = 'Save',
+  redirectPath = '/ms-control-9x7k2p/blogs',
 }: Props) {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [lastProcessedState, setLastProcessedState] = useState<string | null>(null);
+
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: { success: boolean; error?: string; fieldErrors?: Record<string, string> } | null, formData: FormData) => {
+      const result = await action(formData);
+      return result ?? null;
+    },
+    null
+  );
+
+  // Handle successful submission
+  useEffect(() => {
+    if (!state) return;
+
+    const stateKey = JSON.stringify(state);
+    if (stateKey === lastProcessedState) return;
+
+    setLastProcessedState(stateKey);
+
+    if (state.success) {
+      success('Blog saved successfully!');
+      setTimeout(() => {
+        router.push(redirectPath);
+        router.refresh();
+      }, 500);
+    } else if (state.error) {
+      toastError(state.error);
+      // Set field errors if present
+      if (state.fieldErrors) {
+        setFieldErrors(state.fieldErrors);
+      }
+    }
+  }, [state, lastProcessedState, success, toastError, router, redirectPath]);
+
+  // beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Track unsaved changes
+  const markAsChanged = () => {
+    if (!hasUnsavedChanges) {
+      setHasUnsavedChanges(true);
+    }
+  };
+
   return (
-    <form action={action as never} className="space-y-6">
+    <form
+      action={formAction as never}
+      className="space-y-6"
+      onChange={markAsChanged}
+    >
       {/* ================= BASIC INFO ================= */}
       <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Basic Info</h2>
@@ -36,6 +105,9 @@ export default function BlogForm({
               placeholder="How to Beat Fish Jam Level 25"
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {fieldErrors.title && (
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.title}</p>
+            )}
           </div>
 
           <div>
@@ -49,6 +121,9 @@ export default function BlogForm({
               placeholder="how-to-beat-fish-jam-level-25"
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
             />
+            {fieldErrors.slug && (
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.slug}</p>
+            )}
           </div>
         </div>
 
@@ -94,6 +169,9 @@ export default function BlogForm({
             placeholder="<h2>Introduction</h2><p>...</p>"
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
           />
+          {fieldErrors.content && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.content}</p>
+          )}
           <p className="text-xs text-gray-500 mt-1">
             HTML use karo — headings, paragraphs, lists, links.
           </p>
@@ -162,12 +240,20 @@ export default function BlogForm({
       <div className="flex items-center gap-3">
         <button
           type="submit"
+          disabled={isPending}
           className="btn btn-primary"
         >
-          {submitLabel}
+          {isPending ? (
+            <>
+              <span className="inline-block animate-spin mr-2">⟳</span>
+              Saving…
+            </>
+          ) : (
+            submitLabel
+          )}
         </button>
         <Link
-          href="/ms-control-9x7k2p/blogs"
+          href={redirectPath}
           className="btn btn-secondary"
         >
           Cancel

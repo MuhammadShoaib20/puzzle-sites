@@ -1,20 +1,25 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Game } from '@/types';
 import ImageUpload from './ImageUpload';
+import { useToast } from './Toast';
 
 type FAQItem = { q: string; a: string };
 type ButtonItem = { label: string; url: string; newTab: boolean };
 
 type Props = {
-  action: (formData: FormData) => Promise<{ error?: string } | void>;
+  action: (formData: FormData) => Promise<{ success: boolean; error?: string; fieldErrors?: { name?: string; slug?: string; short_description?: string; full_description?: string; youtube_trailer_url?: string; youtube_channel_url?: string }; data?: unknown }>;
   game?: Game;
   submitLabel?: string;
+  redirectPath?: string;
 };
 
-export default function GameForm({ action, game, submitLabel = 'Save' }: Props) {
+export default function GameForm({ action, game, submitLabel = 'Save', redirectPath = '/ms-control-9x7k2p/games' }: Props) {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
   const [faq, setFaq] = useState<FAQItem[]>(
     Array.isArray(game?.faq) ? game.faq : []
   );
@@ -27,38 +32,68 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
         }))
       : []
   );
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [lastProcessedState, setLastProcessedState] = useState<string | null>(null);
 
   const [state, formAction, isPending] = useActionState(
-    async (_prev: { error?: string } | null, formData: FormData) => {
+    async (_prev: { success: boolean; error?: string; fieldErrors?: Record<string, string> } | null, formData: FormData) => {
       const result = await action(formData);
       return result ?? null;
     },
     null
   );
 
-  return (
-    <form action={formAction} className="space-y-6">
-      {/* ERROR BANNER */}
-      {state?.error && (
-        <div
-          role="alert"
-          style={{
-            background: '#FEF2F2',
-            color: '#B91C1C',
-            border: '1.5px solid #FECACA',
-            borderRadius: 14,
-            padding: '14px 16px',
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-        >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>
-            ❌ Game could not be saved
-          </div>
-          <div>{state.error}</div>
-        </div>
-      )}
+  // Handle successful submission
+  useEffect(() => {
+    if (!state) return;
 
+    const stateKey = JSON.stringify(state);
+    if (stateKey === lastProcessedState) return;
+
+    setLastProcessedState(stateKey);
+
+    if (state.success) {
+      success('Game saved successfully!');
+      setTimeout(() => {
+        router.push(redirectPath);
+        router.refresh();
+      }, 500);
+    } else if (state.error) {
+      toastError(state.error);
+      // Set field errors if present
+      if (state.fieldErrors) {
+        setFieldErrors(state.fieldErrors);
+      }
+    }
+  }, [state, lastProcessedState, success, toastError, router, redirectPath]);
+
+  // beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Track unsaved changes
+  const markAsChanged = () => {
+    if (!hasUnsavedChanges) {
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  return (
+    <form
+      action={formAction}
+      className="space-y-6"
+      onChange={markAsChanged}
+    >
       <input type="hidden" name="faq_json" value={JSON.stringify(faq)} />
       <input
         type="hidden"
@@ -118,6 +153,9 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
             placeholder="Fun puzzle game where you match fish to clear levels."
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {fieldErrors.short_description && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.short_description}</p>
+          )}
         </div>
 
         <div>
@@ -148,6 +186,9 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
             placeholder="<p>Fish Jam is a puzzle game...</p>"
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
           />
+          {fieldErrors.full_description && (
+            <p className="text-xs text-red-600 mt-1">{fieldErrors.full_description}</p>
+          )}
         </div>
 
         <div>
@@ -177,6 +218,9 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
               placeholder="https://youtu.be/..."
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {fieldErrors.youtube_trailer_url && (
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.youtube_trailer_url}</p>
+            )}
           </div>
 
           <div>
@@ -188,6 +232,9 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
               placeholder="https://youtube.com/@yourchannel"
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {fieldErrors.youtube_channel_url && (
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.youtube_channel_url}</p>
+            )}
           </div>
         </div>
       </div>
@@ -385,10 +432,17 @@ export default function GameForm({ action, game, submitLabel = 'Save' }: Props) 
           disabled={isPending}
           className="btn btn-primary"
         >
-          {isPending ? 'Saving…' : submitLabel}
+          {isPending ? (
+            <>
+              <span className="inline-block animate-spin mr-2">⟳</span>
+              Saving…
+            </>
+          ) : (
+            submitLabel
+          )}
         </button>
         <Link
-          href="/ms-control-9x7k2p/games"
+          href={redirectPath}
           className="btn btn-secondary"
         >
           Cancel

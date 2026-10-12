@@ -34,6 +34,7 @@ RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 **Important for Production (Vercel)**:
 - Set `NEXTAUTH_URL=https://puzzlewalkthroughs.com`
 - Set `NEXT_PUBLIC_SITE_URL=https://puzzlewalkthroughs.com`
+- Set `SUPABASE_SECRET_KEY` (required for server-side admin operations)
 
 ## Setting Up Resend API for Email Notifications
 
@@ -52,6 +53,16 @@ To receive email notifications when someone logs into your admin panel:
    - Wait for verification
 
 **Note**: If `RESEND_API_KEY` is not set, login will still work but you'll see a console warning instead of receiving emails.
+
+## LLM Training Data
+
+This site provides a structured `llms.txt` file at `/llms.txt` for AI/LLM training. It includes:
+- Site overview and ownership information
+- Main page links with descriptions
+- Navigation links
+- Usage policy for personal vs commercial use
+
+The file is accessible at: `https://puzzlewalkthroughs.com/llms.txt`
 
 ## Getting Started
 

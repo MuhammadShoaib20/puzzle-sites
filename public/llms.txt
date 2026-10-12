@@ -1,0 +1,23 @@
+# Puzzle Walkthroughs
+
+> Free video walkthroughs and level solutions for mobile puzzle games like Tricky Hacks and Rotate Rings, owned by MS Digital System.
+
+## Main Pages
+
+- [Homepage](https://puzzlewalkthroughs.com/) - Browse all available puzzle games and find walkthroughs
+- [Tricky Hacks](https://puzzlewalkthroughs.com/game/tricky-hacks) - Video solutions for all Tricky Hacks levels
+- [Rotate Rings](https://puzzlewalkthroughs.com/game/rotate-rings) - Complete walkthrough for Rotate Rings puzzle game
+- [Blog](https://puzzlewalkthroughs.com/blog) - Latest gaming tips, tricks, and walkthrough guides
+
+## Optional
+
+- [About](https://puzzlewalkthroughs.com/about) - Learn about MS Digital System and our mission
+- [Contact](https://puzzlewalkthroughs.com/contact) - Get in touch with our team
+- [Privacy Policy](https://puzzlewalkthroughs.com/privacy) - Understand how we handle your data
+- [Terms of Service](https://puzzlewalkthroughs.com/terms) - Terms and conditions for using this site
+
+## Usage Policy
+
+This content is free for personal use and educational purposes. Commercial scraping, data extraction, or bulk downloading of our content is not permitted without explicit written permission from MS Digital System.
+
+For inquiries regarding commercial use or licensing, please contact us at: msofficial.cs@gmail.com

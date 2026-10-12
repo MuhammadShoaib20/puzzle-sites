@@ -7,6 +7,20 @@ import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
 import type { CustomButton, FAQ } from '@/types';
 
+type ActionResult = {
+  success: boolean;
+  error?: string;
+  fieldErrors?: {
+    name?: string;
+    slug?: string;
+    short_description?: string;
+    full_description?: string;
+    youtube_trailer_url?: string;
+    youtube_channel_url?: string;
+  };
+  data?: unknown;
+};
+
 function parseArray(raw: FormDataEntryValue | null): unknown[] {
   if (typeof raw !== 'string') return [];
   try {
@@ -91,77 +105,212 @@ function extractGameData(formData: FormData) {
   };
 }
 
-export async function createGame(formData: FormData) {
-  console.log('🔵 createGame START');
+function validateGameData(data: ReturnType<typeof extractGameData>): { valid: boolean; fieldErrors?: ActionResult['fieldErrors'] } {
+  const fieldErrors: ActionResult['fieldErrors'] = {};
 
-  await requireAuth();
-  console.log('🟢 Auth OK');
-
-  const data = extractGameData(formData);
-  console.log('🟢 Data extracted:', {
-    name: data.name,
-    slug: data.slug,
-    published: data.published,
-    has_cover: !!data.cover_image,
-  });
-
-  if (!data.name) {
-    console.log('🔴 FAIL: name empty');
-    return { error: 'Game name is required.' };
+  // Validate name
+  if (!data.name || data.name.length < 3) {
+    fieldErrors.name = 'Game name must be at least 3 characters.';
+  } else if (data.name.length > 100) {
+    fieldErrors.name = 'Game name must be less than 100 characters.';
   }
 
-  const { data: inserted, error } = await supabaseAdmin
-    .from('games')
-    .insert(data)
-    .select()
-    .single();
-
-  if (error) {
-    console.log('🔴 SUPABASE ERROR:', error.message, '| Code:', error.code, '| Details:', error.details);
-    return { error: error.message };
+  // Validate slug
+  if (!data.slug || data.slug.length < 3) {
+    fieldErrors.slug = 'Slug must be at least 3 characters.';
+  } else if (!/^[a-z0-9-]+$/.test(data.slug)) {
+    fieldErrors.slug = 'Slug can only contain lowercase letters, numbers, and hyphens.';
   }
 
-  console.log('🟢 INSERTED:', inserted?.id, inserted?.name);
-  console.log('🔵 createGame END');
+  // Validate descriptions
+  if (data.short_description && data.short_description.length > 500) {
+    fieldErrors.short_description = 'Short description must be less than 500 characters.';
+  }
+  if (data.full_description && data.full_description.length > 5000) {
+    fieldErrors.full_description = 'Full description must be less than 5000 characters.';
+  }
 
-  revalidatePath('/ms-control-9x7k2p/games');
-  revalidatePath('/');
-  redirect('/ms-control-9x7k2p/games');
+  // Validate YouTube URLs
+  if (data.youtube_trailer_url) {
+    if (!isValidYouTubeUrl(data.youtube_trailer_url)) {
+      fieldErrors.youtube_trailer_url = 'Invalid YouTube trailer URL format.';
+    }
+  }
+  if (data.youtube_channel_url) {
+    if (!isValidYouTubeUrl(data.youtube_channel_url)) {
+      fieldErrors.youtube_channel_url = 'Invalid YouTube channel URL format.';
+    }
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { valid: false, fieldErrors };
+  }
+
+  return { valid: true };
 }
 
-export async function updateGame(id: string, formData: FormData) {
-  await requireAuth();
-
-  const data = extractGameData(formData);
-  if (!data.name) return { error: 'Game name is required.' };
-
-  const { error } = await supabaseAdmin
-    .from('games')
-    .update({
-      ...data,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidatePath('/ms-control-9x7k2p/games');
-  revalidatePath(`/game/${data.slug}`);
-  revalidatePath('/');
-  redirect('/ms-control-9x7k2p/games');
+function isValidYouTubeUrl(url: string): boolean {
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+  return youtubeRegex.test(url);
 }
 
-export async function deleteGame(id: string) {
-  await requireAuth();
+async function checkSlugExists(slug: string, excludeId?: string): Promise<boolean> {
+  const query = supabaseAdmin
+    .from('games')
+    .select('id')
+    .eq('slug', slug);
 
-  const { error } = await supabaseAdmin.from('games').delete().eq('id', id);
-
-  if (error) {
-    return { error: error.message };
+  if (excludeId) {
+    query.neq('id', excludeId);
   }
 
-  revalidatePath('/ms-control-9x7k2p/games');
-  revalidatePath('/');
+  const { data } = await query.limit(1);
+  return (data || []).length > 0;
+}
+
+async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkSlugExists(slug, excludeId)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
+export async function createGame(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAuth();
+
+    const data = extractGameData(formData);
+
+    // Server-side validation
+    const validation = validateGameData(data);
+    if (!validation.valid) {
+      return { success: false, error: 'Please fix the errors below.', fieldErrors: validation.fieldErrors };
+    }
+
+    // Check for duplicate slug
+    let slug = data.slug;
+    if (await checkSlugExists(slug)) {
+      slug = await generateUniqueSlug(slug);
+    }
+
+    const { data: inserted, error } = await supabaseAdmin
+      .from('games')
+      .insert({ ...data, slug })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      if (error.code === '23505') {
+        return { success: false, error: 'A game with this slug already exists. Please choose a different one.' };
+      }
+      return { success: false, error: 'Failed to create game. Please try again.' };
+    }
+
+    revalidatePath('/ms-control-9x7k2p/games');
+    revalidatePath('/');
+    return { success: true, data: inserted };
+  } catch (error) {
+    console.error('Create game error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+export async function updateGame(id: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAuth();
+
+    const data = extractGameData(formData);
+
+    // Server-side validation
+    const validation = validateGameData(data);
+    if (!validation.valid) {
+      return { success: false, error: 'Please fix the errors below.', fieldErrors: validation.fieldErrors };
+    }
+
+    // Check for duplicate slug (excluding current game)
+    let slug = data.slug;
+    if (await checkSlugExists(slug, id)) {
+      slug = await generateUniqueSlug(slug, id);
+    }
+
+    const { error } = await supabaseAdmin
+      .from('games')
+      .update({
+        ...data,
+        slug,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      if (error.code === '23505') {
+        return { success: false, error: 'A game with this slug already exists. Please choose a different one.' };
+      }
+      return { success: false, error: 'Failed to update game. Please try again.' };
+    }
+
+    revalidatePath('/ms-control-9x7k2p/games');
+    revalidatePath(`/game/${slug}`);
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Update game error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+export async function deleteGame(id: string): Promise<ActionResult> {
+  try {
+    await requireAuth();
+
+    // Check if game has levels
+    const { data: levels } = await supabaseAdmin
+      .from('levels')
+      .select('id')
+      .eq('game_id', id);
+
+    if (levels && levels.length > 0) {
+      return {
+        success: false,
+        error: `This game has ${levels.length} level${levels.length > 1 ? 's' : ''}. Please delete all levels first.`,
+      };
+    }
+
+    const { error } = await supabaseAdmin.from('games').delete().eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return { success: false, error: 'Failed to delete game. Please try again.' };
+    }
+
+    revalidatePath('/ms-control-9x7k2p/games');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Delete game error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+export async function getGameLevelCount(id: string): Promise<{ success: boolean; count?: number; error?: string }> {
+  try {
+    await requireAuth();
+
+    const { data: levels } = await supabaseAdmin
+      .from('levels')
+      .select('id')
+      .eq('game_id', id);
+
+    return { success: true, count: (levels || []).length };
+  } catch (error) {
+    console.error('Get level count error:', error);
+    return { success: false, error: 'Failed to get level count.' };
+  }
 }

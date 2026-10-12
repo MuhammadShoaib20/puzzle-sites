@@ -5,6 +5,7 @@ import BackgroundDecor from '@/components/BackgroundDecor';
 import { getSettings } from '@/lib/db';
 import { getAdminPath } from '@/lib/admin-path';
 import type { Metadata } from 'next';
+import AdminToastProvider from '@/components/AdminToastProvider';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,7 +35,9 @@ export default async function AdminDashboardLayout({
           siteLogo={settings?.site_logo || null}
           adminPath={adminPath}
         />
-        <main className="admin-main">{children}</main>
+        <main className="admin-main">
+          <AdminToastProvider>{children}</AdminToastProvider>
+        </main>
       </div>
     </>
   );

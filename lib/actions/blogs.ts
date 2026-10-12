@@ -6,63 +6,107 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
 
-export async function createBlog(formData: FormData) {
-  await requireAuth();
+type ActionResult = {
+  success: boolean;
+  error?: string;
+  fieldErrors?: {
+    title?: string;
+    slug?: string;
+    content?: string;
+  };
+  data?: unknown;
+};
 
-  const title = formData.get('title') as string;
-  const slug = (formData.get('slug') as string) || makeSlug(title);
-  const game_id = (formData.get('game_id') as string) || null;
-  const content = (formData.get('content') as string) || '';
-  const cover_image = (formData.get('cover_image') as string) || null;
-  const meta_title = (formData.get('meta_title') as string) || null;
-  const meta_description = (formData.get('meta_description') as string) || null;
-  const keywordsRaw = formData.get('keywords') as string;
-  const keywords = keywordsRaw
-    ? keywordsRaw.split(',').map((k) => k.trim()).filter(Boolean)
-    : [];
-  const published = formData.get('published') === 'on';
+function validateBlogData(data: {
+  title: string;
+  slug: string;
+  content: string;
+}): { valid: boolean; fieldErrors?: ActionResult['fieldErrors'] } {
+  const fieldErrors: ActionResult['fieldErrors'] = {};
 
-  if (!title) return { error: 'Title is required.' };
+  // Validate title
+  if (!data.title || data.title.length < 3) {
+    fieldErrors.title = 'Title must be at least 3 characters.';
+  } else if (data.title.length > 200) {
+    fieldErrors.title = 'Title must be less than 200 characters.';
+  }
 
-  const { error } = await supabaseAdmin.from('blogs').insert({
-    title,
-    slug,
-    game_id: game_id || null,
-    content,
-    cover_image,
-    meta_title,
-    meta_description,
-    keywords,
-    published,
-  });
+  // Validate slug
+  if (!data.slug || data.slug.length < 3) {
+    fieldErrors.slug = 'Slug must be at least 3 characters.';
+  } else if (!/^[a-z0-9-]+$/.test(data.slug)) {
+    fieldErrors.slug = 'Slug can only contain lowercase letters, numbers, and hyphens.';
+  }
 
-  if (error) return { error: error.message };
+  // Validate content
+  if (!data.content || data.content.length < 10) {
+    fieldErrors.content = 'Content must be at least 10 characters.';
+  } else if (data.content.length > 50000) {
+    fieldErrors.content = 'Content must be less than 50,000 characters.';
+  }
 
-  revalidatePath('/ms-control-9x7k2p/blogs');
-  revalidatePath('/blog');
-  revalidatePath('/');
-  redirect('/ms-control-9x7k2p/blogs');
+  if (Object.keys(fieldErrors).length > 0) {
+    return { valid: false, fieldErrors };
+  }
+
+  return { valid: true };
 }
 
-export async function updateBlog(id: string, formData: FormData) {
-  await requireAuth();
-
-  const title = formData.get('title') as string;
-  const slug = formData.get('slug') as string;
-  const game_id = (formData.get('game_id') as string) || null;
-  const content = (formData.get('content') as string) || '';
-  const cover_image = (formData.get('cover_image') as string) || null;
-  const meta_title = (formData.get('meta_title') as string) || null;
-  const meta_description = (formData.get('meta_description') as string) || null;
-  const keywordsRaw = formData.get('keywords') as string;
-  const keywords = keywordsRaw
-    ? keywordsRaw.split(',').map((k) => k.trim()).filter(Boolean)
-    : [];
-  const published = formData.get('published') === 'on';
-
-  const { error } = await supabaseAdmin
+async function checkSlugExists(slug: string, excludeId?: string): Promise<boolean> {
+  const query = supabaseAdmin
     .from('blogs')
-    .update({
+    .select('id')
+    .eq('slug', slug);
+
+  if (excludeId) {
+    query.neq('id', excludeId);
+  }
+
+  const { data } = await query.limit(1);
+  return (data || []).length > 0;
+}
+
+async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkSlugExists(slug, excludeId)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
+export async function createBlog(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAuth();
+
+    let title = (formData.get('title') as string || '').trim();
+    let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
+    const game_id = (formData.get('game_id') as string) || null;
+    const content = (formData.get('content') as string || '').trim();
+    const cover_image = (formData.get('cover_image') as string) || null;
+    const meta_title = (formData.get('meta_title') as string) || null;
+    const meta_description = (formData.get('meta_description') as string) || null;
+    const keywordsRaw = formData.get('keywords') as string;
+    const keywords = keywordsRaw
+      ? keywordsRaw.split(',').map((k) => k.trim()).filter(Boolean)
+      : [];
+    const published = formData.get('published') === 'on';
+
+    // Server-side validation
+    const validation = validateBlogData({ title, slug, content });
+    if (!validation.valid) {
+      return { success: false, error: 'Please fix the errors below.', fieldErrors: validation.fieldErrors };
+    }
+
+    // Check for duplicate slug
+    if (await checkSlugExists(slug)) {
+      slug = await generateUniqueSlug(slug);
+    }
+
+    const { data: inserted, error } = await supabaseAdmin.from('blogs').insert({
       title,
       slug,
       game_id: game_id || null,
@@ -72,24 +116,104 @@ export async function updateBlog(id: string, formData: FormData) {
       meta_description,
       keywords,
       published,
-    })
-    .eq('id', id);
+    }).select().single();
 
-  if (error) return { error: error.message };
+    if (error) {
+      console.error('Supabase error:', error);
+      if (error.code === '23505') {
+        return { success: false, error: 'A blog with this slug already exists. Please choose a different one.' };
+      }
+      return { success: false, error: 'Failed to create blog. Please try again.' };
+    }
 
-  revalidatePath('/ms-control-9x7k2p/blogs');
-  revalidatePath(`/blog/${slug}`);
-  revalidatePath('/blog');
-  redirect('/ms-control-9x7k2p/blogs');
+    revalidatePath('/ms-control-9x7k2p/blogs');
+    revalidatePath('/blog');
+    revalidatePath('/');
+    return { success: true, data: inserted };
+  } catch (error) {
+    console.error('Create blog error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
-export async function deleteBlog(id: string) {
-  await requireAuth();
+export async function updateBlog(id: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAuth();
 
-  const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
-  if (error) return { error: error.message };
+    let title = (formData.get('title') as string || '').trim();
+    let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
+    const game_id = (formData.get('game_id') as string) || null;
+    const content = (formData.get('content') as string || '').trim();
+    const cover_image = (formData.get('cover_image') as string) || null;
+    const meta_title = (formData.get('meta_title') as string) || null;
+    const meta_description = (formData.get('meta_description') as string) || null;
+    const keywordsRaw = formData.get('keywords') as string;
+    const keywords = keywordsRaw
+      ? keywordsRaw.split(',').map((k) => k.trim()).filter(Boolean)
+      : [];
+    const published = formData.get('published') === 'on';
 
-  revalidatePath('/ms-control-9x7k2p/blogs');
-  revalidatePath('/blog');
-  revalidatePath('/');
+    // Server-side validation
+    const validation = validateBlogData({ title, slug, content });
+    if (!validation.valid) {
+      return { success: false, error: 'Please fix the errors below.', fieldErrors: validation.fieldErrors };
+    }
+
+    // Check for duplicate slug (excluding current blog)
+    if (await checkSlugExists(slug, id)) {
+      slug = await generateUniqueSlug(slug, id);
+    }
+
+    const { error } = await supabaseAdmin
+      .from('blogs')
+      .update({
+        title,
+        slug,
+        game_id: game_id || null,
+        content,
+        cover_image,
+        meta_title,
+        meta_description,
+        keywords,
+        published,
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      if (error.code === '23505') {
+        return { success: false, error: 'A blog with this slug already exists. Please choose a different one.' };
+      }
+      return { success: false, error: 'Failed to update blog. Please try again.' };
+    }
+
+    revalidatePath('/ms-control-9x7k2p/blogs');
+    revalidatePath(`/blog/${slug}`);
+    revalidatePath('/blog');
+    return { success: true };
+  } catch (error) {
+    console.error('Update blog error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+export async function deleteBlog(id: string): Promise<ActionResult> {
+  try {
+    await requireAuth();
+
+    const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return { success: false, error: 'Failed to delete blog. Please try again.' };
+    }
+
+    revalidatePath('/ms-control-9x7k2p/blogs');
+    revalidatePath('/blog');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Delete blog error:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
 }
