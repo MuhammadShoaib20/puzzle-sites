@@ -72,7 +72,7 @@ export default async function LevelPage({ params }: Props) {
   const currentIndex = allLevels.findIndex((item) => item.level_number === levelNumber);
   const prevLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
   const nextLevel = currentIndex < allLevels.length - 1 ? allLevels[currentIndex + 1] : null;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
   const startIdx = Math.max(0, currentIndex - 5);
   const endIdx = Math.min(allLevels.length, currentIndex + 15);
   const nearbyLevels = allLevels.slice(startIdx, endIdx);

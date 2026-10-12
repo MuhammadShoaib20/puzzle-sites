@@ -7,6 +7,7 @@ import { sendLoginNotification } from './email';
 import { headers } from 'next/headers';
 
 const ADMIN_PATH = process.env.ADMIN_SECRET_PATH || 'ms-control-9x7k2p';
+const SITE_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';
 
 async function getClientIP(): Promise<string> {
   try {

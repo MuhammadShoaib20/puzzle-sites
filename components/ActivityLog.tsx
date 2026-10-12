@@ -11,9 +11,10 @@ type Props = {
     lastSuccessfulLogin: string | null;
   };
   suspiciousIPs: string[];
+  adminPath: string;
 };
 
-export default function ActivityLog({ activities, summary, suspiciousIPs }: Props) {
+export default function ActivityLog({ activities, summary, suspiciousIPs, adminPath }: Props) {
   const [filter, setFilter] = useState<'all' | 'logins' | 'failures' | 'admin_actions'>('all');
 
   const filteredActivities = activities.filter((activity) => {

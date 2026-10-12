@@ -3,12 +3,14 @@ import { requireAuth } from '@/lib/require-auth';
 import PasswordChangeForm from '@/components/PasswordChangeForm';
 import ActivityLog from '@/components/ActivityLog';
 import { getRecentActivity, getActivitySummary, getSuspiciousIPs } from '@/lib/db';
+import { getAdminPath } from '@/lib/admin-path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function SecurityPage() {
   const session = await requireAuth();
+  const adminPath = getAdminPath();
 
   const [activities, summary, suspiciousIPs] = await Promise.all([
     getRecentActivity(20),
@@ -25,9 +27,9 @@ export default async function SecurityPage() {
         </div>
       </div>
 
-      <PasswordChangeForm />
+      <PasswordChangeForm adminPath={adminPath} />
 
-      <ActivityLog activities={activities} summary={summary} suspiciousIPs={suspiciousIPs} />
+      <ActivityLog activities={activities} summary={summary} suspiciousIPs={suspiciousIPs} adminPath={adminPath} />
 
       <div className="card p-6 space-y-6">
         <h2 className="text-lg font-bold border-b pb-3">Security Settings</h2>

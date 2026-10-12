@@ -6,7 +6,11 @@ import { changeAdminPassword, invalidateAllSessions } from '@/lib/actions/securi
 
 type ActionResult = { success?: boolean; error?: string };
 
-export default function PasswordChangeForm() {
+type Props = {
+  adminPath: string;
+};
+
+export default function PasswordChangeForm({ adminPath }: Props) {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [strengthText, setStrengthText] = useState('');
   const [passwordMatch, setPasswordMatch] = useState(true);
@@ -38,7 +42,7 @@ export default function PasswordChangeForm() {
     const result = await changeAdminPassword(formData);
     
     if (result.success) {
-      window.location.href = '/ms-control-9x7k2p/login?message=password_changed';
+      window.location.href = `/${adminPath}/login?message=password_changed`;
     } else if (result.error) {
       setChangeError(result.error);
     }
@@ -49,7 +53,7 @@ export default function PasswordChangeForm() {
     const result = await invalidateAllSessions();
     
     if (result.success) {
-      window.location.href = '/ms-control-9x7k2p/login?message=sessions_invalidated';
+      window.location.href = `/${adminPath}/login?message=sessions_invalidated`;
     } else if (result.error) {
       setLogoutError(result.error);
     }

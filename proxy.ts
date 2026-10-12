@@ -12,7 +12,9 @@ export default auth((req: NextRequest & { auth: unknown }) => {
   if (pathname === `/${ADMIN_PATH}/login`) {
     if (isLoggedIn) {
       // Agar already logged in hai to dashboard pe bhej do
-      return NextResponse.redirect(new URL(`/${ADMIN_PATH}/dashboard`, req.url));
+      const url = req.nextUrl.clone();
+      url.pathname = `/${ADMIN_PATH}/dashboard`;
+      return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
@@ -20,7 +22,9 @@ export default auth((req: NextRequest & { auth: unknown }) => {
   // Baaki saare /{ADMIN_PATH}/* routes protected hain
   if (pathname.startsWith(`/${ADMIN_PATH}`)) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL(`/${ADMIN_PATH}/login`, req.url));
+      const url = req.nextUrl.clone();
+      url.pathname = `/${ADMIN_PATH}/login`;
+      return NextResponse.redirect(url);
     }
   }
 

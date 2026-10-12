@@ -31,6 +31,10 @@ ADMIN_ACCESS_KEY=84729153
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
+**Important for Production (Vercel)**:
+- Set `NEXTAUTH_URL=https://puzzlewalkthroughs.com`
+- Set `NEXT_PUBLIC_SITE_URL=https://puzzlewalkthroughs.com`
+
 ## Setting Up Resend API for Email Notifications
 
 To receive email notifications when someone logs into your admin panel:
@@ -88,6 +92,8 @@ The site includes a GDPR-compliant cookie consent banner that:
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
 
 **IMPORTANT**: Add these environment variables in Vercel:
+- `NEXTAUTH_URL=https://puzzlewalkthroughs.com`
+- `NEXT_PUBLIC_SITE_URL=https://puzzlewalkthroughs.com`
 - `ADMIN_SECRET_PATH` (use a custom value, not the default)
 - `ADMIN_ACCESS_KEY` (use a custom 8-digit code)
 - `RESEND_API_KEY` (optional, for email notifications)

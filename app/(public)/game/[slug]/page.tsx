@@ -59,7 +59,7 @@ export default async function GamePage({ params }: Props) {
   const trailerId = game.youtube_trailer_url
     ? extractYoutubeId(game.youtube_trailer_url)
     : '';
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
   const popularLevels = [...levels]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
