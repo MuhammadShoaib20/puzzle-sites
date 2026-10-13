@@ -83,7 +83,10 @@ export default async function GamePage({ params }: Props) {
     { position: 2, name: game.name, item: `${siteUrl}/game/${game.slug}` },
   ]);
 
-  const faqSchema = generateFAQSchema(game.faq || []);
+  const validFaqs = (game.faq || []).filter(
+    (f) => f && typeof f.q === 'string' && typeof f.a === 'string' && f.q.trim() && f.a.trim()
+  );
+  const faqSchema = validFaqs.length > 0 ? generateFAQSchema(validFaqs) : null;
   const organizationSchema = generateOrganizationSchema();
 
   return (

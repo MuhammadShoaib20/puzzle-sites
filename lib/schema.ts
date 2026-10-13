@@ -121,17 +121,32 @@ export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
 export function generateFAQSchema(faqs: FAQ[]) {
   if (!faqs || faqs.length === 0) return null;
 
+  // Filter out invalid FAQs and normalize field names
+  const validFaqs = faqs
+    .map((faq) => {
+      // Handle both {q, a} and {question, answer} formats
+      const question = faq.q || (faq as any).question;
+      const answer = faq.a || (faq as any).answer;
+
+      if (!question || !answer) return null;
+
+      return {
+        '@type': 'Question' as const,
+        name: question,
+        acceptedAnswer: {
+          '@type': 'Answer' as const,
+          text: answer,
+        },
+      };
+    })
+    .filter((faq): faq is NonNullable<typeof faq> => faq !== null);
+
+  if (validFaqs.length === 0) return null;
+
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
-      '@type': 'Question',
-      name: faq.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.a,
-      },
-    })),
+    mainEntity: validFaqs,
   };
 }
 
