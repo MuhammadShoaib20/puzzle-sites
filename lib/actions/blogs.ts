@@ -82,7 +82,7 @@ export async function createBlog(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
 
-    let title = (formData.get('title') as string || '').trim();
+    const title = (formData.get('title') as string || '').trim();
     let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
     const game_id = (formData.get('game_id') as string) || null;
     const content = (formData.get('content') as string || '').trim();
@@ -140,7 +140,7 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
   try {
     await requireAuth();
 
-    let title = (formData.get('title') as string || '').trim();
+    const title = (formData.get('title') as string || '').trim();
     let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
     const game_id = (formData.get('game_id') as string) || null;
     const content = (formData.get('content') as string || '').trim();

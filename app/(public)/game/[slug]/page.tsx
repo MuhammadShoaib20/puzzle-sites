@@ -7,6 +7,7 @@ import {
   getLevelsByGame,
   getBlogsByGame,
   getSettings,
+  getAllGameSlugs,
 } from '@/lib/db';
 import { extractYoutubeId } from '@/lib/utils';
 import {
@@ -27,7 +28,13 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 60;
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const slugs = await getAllGameSlugs();
+  return slugs.map((item) => ({ slug: item.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

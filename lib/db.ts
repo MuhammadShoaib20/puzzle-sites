@@ -42,6 +42,19 @@ export async function getFeaturedGames(limit = 6): Promise<Game[]> {
   return (data || []) as Game[];
 }
 
+export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
+  const { data, error } = await supabase
+    .from('games')
+    .select('slug')
+    .eq('published', true);
+
+  if (error) {
+    console.error('getAllGameSlugs error:', error.message);
+    return [];
+  }
+  return (data || []) as { slug: string }[];
+}
+
 // ==========================================
 // LEVELS
 // ==========================================
@@ -143,6 +156,80 @@ export async function getLatestLevels(
   })[];
 }
 
+export async function getPopularLevelSlugs(limit = 100): Promise<{ game_slug: string; level_number: number }[]> {
+  const { data, error } = await supabase
+    .from('levels')
+    .select(`
+      level_number,
+      game:games!inner (slug, published)
+    `)
+    .eq('published', true)
+    .eq('game.published', true)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('getPopularLevelSlugs error:', error.message);
+    return [];
+  }
+
+  type Row = {
+    level_number: number;
+    game: { slug: string } | { slug: string }[] | null;
+  };
+
+  const rows = (data || []) as unknown as Row[];
+  const result: { game_slug: string; level_number: number }[] = [];
+
+  for (const row of rows) {
+    const game = Array.isArray(row.game) ? row.game[0] : row.game;
+    if (!game?.slug) continue;
+    result.push({
+      game_slug: game.slug,
+      level_number: row.level_number,
+    });
+  }
+
+  return result;
+}
+
+export async function getRecentLevelSlugs(limit = 100): Promise<{ game_slug: string; level_number: number }[]> {
+  const { data, error } = await supabase
+    .from('levels')
+    .select(`
+      level_number,
+      game:games!inner (slug, published)
+    `)
+    .eq('published', true)
+    .eq('game.published', true)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('getRecentLevelSlugs error:', error.message);
+    return [];
+  }
+
+  type Row = {
+    level_number: number;
+    game: { slug: string } | { slug: string }[] | null;
+  };
+
+  const rows = (data || []) as unknown as Row[];
+  const result: { game_slug: string; level_number: number }[] = [];
+
+  for (const row of rows) {
+    const game = Array.isArray(row.game) ? row.game[0] : row.game;
+    if (!game?.slug) continue;
+    result.push({
+      game_slug: game.slug,
+      level_number: row.level_number,
+    });
+  }
+
+  return result;
+}
+
 // ==========================================
 // BLOGS
 // ==========================================
@@ -192,6 +279,19 @@ export async function getLatestBlogs(limit = 6): Promise<Blog[]> {
 
   if (error) return [];
   return (data || []) as Blog[];
+}
+
+export async function getAllBlogSlugs(): Promise<{ slug: string }[]> {
+  const { data, error } = await supabase
+    .from('blogs')
+    .select('slug')
+    .eq('published', true);
+
+  if (error) {
+    console.error('getAllBlogSlugs error:', error.message);
+    return [];
+  }
+  return (data || []) as { slug: string }[];
 }
 
 // ==========================================
@@ -363,7 +463,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   }
 
   // Convert login attempts to activity entries
-  const loginEntries: ActivityEntry[] = (loginAttempts || []).map((attempt: any) => ({
+  const loginEntries: ActivityEntry[] = (loginAttempts || []).map((attempt) => ({
     id: attempt.id,
     type: 'login',
     action: attempt.success ? 'Successful login' : 'Failed login attempt',
@@ -375,7 +475,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   }));
 
   // Convert activity log to activity entries
-  const activityEntries: ActivityEntry[] = (activityLog || []).map((log: any) => ({
+  const activityEntries: ActivityEntry[] = (activityLog || []).map((log) => ({
     id: log.id,
     type: 'admin_action',
     action: log.action,
@@ -423,8 +523,8 @@ export async function getActivitySummary() {
     };
   }
 
-  const totalLoginsToday = (loginAttempts || []).filter((a: any) => a.success).length;
-  const failedAttemptsToday = (loginAttempts || []).filter((a: any) => !a.success).length;
+  const totalLoginsToday = (loginAttempts || []).filter((a) => a.success).length;
+  const failedAttemptsToday = (loginAttempts || []).filter((a) => !a.success).length;
 
   return {
     totalLoginsToday,
@@ -449,13 +549,13 @@ export async function getSuspiciousIPs(): Promise<string[]> {
 
   // Count failed attempts per IP
   const ipCounts = new Map<string, number>();
-  (data || []).forEach((attempt: any) => {
+  (data || []).forEach((attempt) => {
     const count = ipCounts.get(attempt.ip_address) || 0;
     ipCounts.set(attempt.ip_address, count + 1);
   });
 
   // Return IPs with 5+ failed attempts
   return Array.from(ipCounts.entries())
-    .filter(([_, count]) => count >= 5)
+    .filter(([, count]) => count >= 5)
     .map(([ip]) => ip);
 }

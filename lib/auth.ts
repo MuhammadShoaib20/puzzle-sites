@@ -59,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Get IP from server headers
         const ip = await getClientIP();
-        const userAgent = (credentials as any).userAgent || 'unknown';
+        const userAgent = (credentials as { userAgent?: string }).userAgent || 'unknown';
 
         // Check rate limit
         const rateLimitCheck = await checkRateLimit(email, ip);

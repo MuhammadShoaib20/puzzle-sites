@@ -6,6 +6,8 @@ import {
   getLevelByNumber,
   getLevelsByGame,
   getSettings,
+  getPopularLevelSlugs,
+  getRecentLevelSlugs,
 } from '@/lib/db';
 import {
   generateVideoObjectSchema,
@@ -21,7 +23,28 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
-export const revalidate = 60;
+export const revalidate = 86400;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const popular = await getPopularLevelSlugs(100);
+  const recent = await getRecentLevelSlugs(100);
+
+  const seen = new Set();
+  const params = [];
+
+  for (const item of [...popular, ...recent]) {
+    const key = `${item.game_slug}-${item.level_number}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    params.push({
+      slug: item.game_slug,
+      levelSlug: `level-${item.level_number}`,
+    });
+  }
+
+  return params;
+}
 
 function parseLevelNumber(levelSlug: string): number {
   const match = levelSlug.match(/^level-(\d+)$/);

@@ -1,20 +1,13 @@
-import type { Game, Level, Blog, FAQ } from '@/types';
+import type { Blog, FAQ } from '@/types';
 
 // ==========================================
 // SCHEMA TYPES
 // ==========================================
 
-interface ArticleSchemaInput {
-  headline: string;
-  description: string;
-  image?: string;
-  datePublished: string;
-  dateModified?: string;
-  canonicalUrl: string;
-}
-
-interface FAQSchemaInput {
-  faqs: FAQ[];
+interface BreadcrumbItem {
+  position: number;
+  name: string;
+  item: string;
 }
 
 interface VideoObjectSchemaInput {
@@ -125,8 +118,8 @@ export function generateFAQSchema(faqs: FAQ[]) {
   const validFaqs = faqs
     .map((faq) => {
       // Handle both {q, a} and {question, answer} formats
-      const question = faq.q || (faq as any).question;
-      const answer = faq.a || (faq as any).answer;
+      const question = faq.q || (faq as { question?: string }).question;
+      const answer = faq.a || (faq as { answer?: string }).answer;
 
       if (!question || !answer) return null;
 
@@ -221,7 +214,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
       .filter((p) => p.trim().length > 0)
       .slice(0, 10); // Limit to 10 steps
 
-    paragraphs.forEach((paragraph, index) => {
+    paragraphs.forEach((paragraph) => {
       steps.push({
         '@type': 'HowToStep',
         text: paragraph.trim(),

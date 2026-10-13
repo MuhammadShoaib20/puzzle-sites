@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getBlogBySlug } from '@/lib/db';
+import { getBlogBySlug, getAllBlogSlugs } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
 import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
@@ -10,6 +10,14 @@ import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const blogs = await getAllBlogSlugs();
+  return blogs.map((item) => ({ slug: item.slug }));
+}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
