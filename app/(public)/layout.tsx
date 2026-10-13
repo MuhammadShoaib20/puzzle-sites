@@ -3,7 +3,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
-import HomeScrollControls from '@/components/HomeScrollControls';
+import dynamic from 'next/dynamic';
+
+const HomeScrollControls = dynamic(
+  () => import('@/components/HomeScrollControls')
+);
 
 export const revalidate = 3600;
 

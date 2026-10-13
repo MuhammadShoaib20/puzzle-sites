@@ -129,6 +129,8 @@ export default async function GamePage({ params }: Props) {
                 alt={`${game.name} cover`}
                 fill
                 priority
+                fetchPriority="high"
+                quality={85}
                 sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 900px"
               />
             </div>
