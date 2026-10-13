@@ -559,3 +559,115 @@ export async function getSuspiciousIPs(): Promise<string[]> {
     .filter(([, count]) => count >= 5)
     .map(([ip]) => ip);
 }
+
+// ==========================================
+// RELATED CONTENT
+// ==========================================
+
+export async function getRelatedGames(
+  currentGameId: string,
+  limit = 4
+): Promise<Game[]> {
+  // First try to get games from same category
+  const currentGame = await supabase
+    .from('games')
+    .select('category_id')
+    .eq('id', currentGameId)
+    .single();
+
+  if (currentGame.data?.category_id) {
+    const { data: categoryGames } = await supabase
+      .from('games')
+      .select('*')
+      .eq('category_id', currentGame.data.category_id)
+      .eq('published', true)
+      .neq('id', currentGameId)
+      .order('views', { ascending: false })
+      .limit(limit);
+
+    if (categoryGames && categoryGames.length > 0) {
+      return categoryGames as Game[];
+    }
+  }
+
+  // Fallback: random published games
+  const { data: randomGames } = await supabase
+    .from('games')
+    .select('*')
+    .eq('published', true)
+    .neq('id', currentGameId)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (randomGames || []) as Game[];
+}
+
+export async function getRelatedBlogs(
+  currentBlogId: string,
+  gameId?: string,
+  limit = 3
+): Promise<Blog[]> {
+  if (gameId) {
+    // First try: same game blogs
+    const { data: gameBlogs } = await supabase
+      .from('blogs')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('published', true)
+      .neq('id', currentBlogId)
+      .order('views', { ascending: false })
+      .limit(limit);
+
+    if (gameBlogs && gameBlogs.length > 0) {
+      return gameBlogs as Blog[];
+    }
+  }
+
+  // Fallback: latest blogs
+  const { data: latestBlogs } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('published', true)
+    .neq('id', currentBlogId)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (latestBlogs || []) as Blog[];
+}
+
+export async function getRelatedLevels(
+  gameId: string,
+  currentLevelNumber: number,
+  limit = 5
+): Promise<Level[]> {
+  // Get adjacent levels (current - 2 to current + 2)
+  const minLevel = Math.max(1, currentLevelNumber - 2);
+  const maxLevel = currentLevelNumber + 2;
+
+  const { data: adjacentLevels } = await supabase
+    .from('levels')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('published', true)
+    .gte('level_number', minLevel)
+    .lte('level_number', maxLevel)
+    .neq('level_number', currentLevelNumber)
+    .order('level_number', { ascending: true })
+    .limit(limit);
+
+  if (adjacentLevels && adjacentLevels.length >= limit) {
+    return adjacentLevels as Level[];
+  }
+
+  // Fallback: popular levels from same game
+  const { data: popularLevels } = await supabase
+    .from('levels')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('published', true)
+    .neq('level_number', currentLevelNumber)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (popularLevels || []) as Level[];
+}

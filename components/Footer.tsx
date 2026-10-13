@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Category, Settings } from '@/types';
-import { getFooterPages } from '@/lib/db';
+import { getFooterPages, getFeaturedGames } from '@/lib/db';
 import { openCookieBanner } from '@/components/CookieConsentBanner';
 
 type Props = {
@@ -20,7 +20,10 @@ function isSafeExternalUrl(value?: string): value is string {
 }
 
 export default async function Footer({ settings, categories }: Props) {
-  const pages = await getFooterPages();
+  const [pages, popularGames] = await Promise.all([
+    getFooterPages(),
+    getFeaturedGames(5),
+  ]);
   const siteName = settings?.site_name || 'PuzzleWalkthroughs';
   const siteLogo = settings?.site_logo || null;
   const siteDescription =
@@ -110,6 +113,25 @@ export default async function Footer({ settings, categories }: Props) {
                     className="footer-link"
                   >
                     {category.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Popular Games */}
+          {popularGames.length > 0 && (
+            <div>
+              <div className="footer-title">Popular games</div>
+              <div className="footer-links">
+                {popularGames.map((game) => (
+                  <Link
+                    key={game.id}
+                    href={`/game/${game.slug}`}
+                    prefetch={false}
+                    className="footer-link"
+                  >
+                    {game.name}
                   </Link>
                 ))}
               </div>

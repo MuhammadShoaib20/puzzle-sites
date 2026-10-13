@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getBlogBySlug, getAllBlogSlugs } from '@/lib/db';
+import { getBlogBySlug, getAllBlogSlugs, getRelatedBlogs } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
 import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
@@ -44,6 +44,10 @@ export default async function BlogDetailPage({ params }: Props) {
   if (!blog) notFound();
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+
+  const [relatedBlogs] = await Promise.all([
+    getRelatedBlogs(blog.id, blog.game_id, 3),
+  ]);
 
   const articleSchema = generateArticleSchema({
     ...blog,
@@ -100,6 +104,29 @@ export default async function BlogDetailPage({ params }: Props) {
           className="prose max-w-none text-[16px]"
           dangerouslySetInnerHTML={{ __html: sanitize(blog.content || '') }}
         />
+
+        {relatedBlogs.length > 0 && (
+          <section className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
+            <h2 className="section-title mb-5">Related guides</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {relatedBlogs.map((relatedBlog) => (
+                <Link
+                  key={relatedBlog.id}
+                  href={`/blog/${relatedBlog.slug}`}
+                  prefetch={false}
+                  className="card card-hover p-4"
+                >
+                  <h3 className="font-bold text-[15px] mb-2" style={{ color: 'var(--ink)' }}>
+                    {relatedBlog.title}
+                  </h3>
+                  <p className="text-sm line-clamp-2" style={{ color: 'var(--muted)' }}>
+                    {relatedBlog.meta_description || relatedBlog.content?.slice(0, 100)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
           <Link href="/blog" className="btn btn-secondary">

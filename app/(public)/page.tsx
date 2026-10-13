@@ -6,10 +6,11 @@ import GameCard from '@/components/GameCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
 import JsonLd from '@/components/JsonLd';
+import type { Level } from '@/types';
 
 export const revalidate = 60;
 
-type LevelWithGame = import('@/types').Level & {
+type LevelWithGame = Level & {
   game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
 };
 
@@ -185,6 +186,46 @@ export default async function HomePage() {
             {blogs.map((blog) => (
               <BlogCard key={blog.id} blog={blog} />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* ============= POPULAR WALKTHROUGHS ============= */}
+      {levels.length > 0 && (
+        <section className="container-page section">
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Popular walkthroughs</h2>
+              <p className="section-sub">Most viewed level solutions</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {(levels as LevelWithGame[]).slice(0, 6).map((level) => {
+              const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
+              if (!gameData?.slug) return null;
+              return (
+                <Link
+                  key={level.id}
+                  href={`/game/${gameData.slug}/level-${level.level_number}`}
+                  prefetch={false}
+                  className="card card-hover level-row"
+                >
+                  <div className="level-badge">{level.level_number}</div>
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      className="font-bold text-[15px] line-clamp-1"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {level.title || `Level ${level.level_number}`}
+                    </h3>
+                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
+                      {gameData.name} · {level.views} views
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

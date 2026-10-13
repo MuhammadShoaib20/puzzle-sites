@@ -256,6 +256,15 @@ export default async function LevelPage({ params }: Props) {
               <div />
             )}
           </nav>
+
+          <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
+            <Link
+              href={`/game/${game.slug}`}
+              className="btn btn-secondary btn-block"
+            >
+              🎮 Complete {game.name} guide
+            </Link>
+          </div>
         </main>
 
         <aside className="sidebar">

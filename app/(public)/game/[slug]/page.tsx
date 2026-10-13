@@ -8,6 +8,7 @@ import {
   getBlogsByGame,
   getSettings,
   getAllGameSlugs,
+  getRelatedGames,
 } from '@/lib/db';
 import { extractYoutubeId } from '@/lib/utils';
 import {
@@ -64,10 +65,11 @@ export default async function GamePage({ params }: Props) {
   const game = await getGameBySlug(slug);
   if (!game) notFound();
 
-  const [levels, blogs, settings] = await Promise.all([
+  const [levels, blogs, settings, relatedGames] = await Promise.all([
     getLevelsByGame(game.id),
     getBlogsByGame(game.id),
     getSettings(),
+    getRelatedGames(game.id, 4),
   ]);
 
   const links = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
@@ -230,6 +232,40 @@ export default async function GamePage({ params }: Props) {
           )}
 
           <PopularLevels gameSlug={game.slug} levels={popularLevels} />
+
+          {relatedGames.length > 0 && (
+            <div className="card p-4 sm:p-5">
+              <h3 className="text-[14px] sm:text-[15px] font-bold mb-3 sm:mb-4">Related games</h3>
+              <div className="flex flex-col gap-2">
+                {relatedGames.map((relatedGame) => (
+                  <Link
+                    key={relatedGame.id}
+                    href={`/game/${relatedGame.slug}`}
+                    prefetch={false}
+                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+                  >
+                    <span
+                      className="rounded-xl grid place-items-center shrink-0 text-xs font-bold text-white"
+                      style={{
+                        width: 'clamp(32px, 4vw, 36px)',
+                        height: 'clamp(32px, 4vw, 36px)',
+                        background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                        fontFamily: 'var(--font-display), sans-serif',
+                      }}
+                    >
+                      {relatedGame.total_levels || 0}
+                    </span>
+                    <span
+                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {relatedGame.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {settings?.adsense_footer && (
             <div className="hidden lg:block">
