@@ -9,6 +9,7 @@ const body = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-body',
+  preload: false,
 });
 
 const display = Sora({
@@ -16,6 +17,7 @@ const display = Sora({
   display: 'swap',
   weight: ['500', '600', '700', '800'],
   variable: '--font-display',
+  preload: true,
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';

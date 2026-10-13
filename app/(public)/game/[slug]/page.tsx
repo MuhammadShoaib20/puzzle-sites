@@ -24,6 +24,7 @@ import LevelSearchGrid from '@/components/LevelSearchGrid';
 import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
+import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -128,20 +129,14 @@ export default async function GamePage({ params }: Props) {
                 alt={`${game.name} cover`}
                 fill
                 priority
-                sizes="(max-width: 1024px) 100vw, 900px"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 900px"
               />
             </div>
           )}
 
           {trailerId && (
             <div className="video-frame mb-6">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailerId}`}
-                title={`${game.name} trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
+              <LazyYouTube videoId={trailerId} title={`${game.name} trailer`} />
             </div>
           )}
 

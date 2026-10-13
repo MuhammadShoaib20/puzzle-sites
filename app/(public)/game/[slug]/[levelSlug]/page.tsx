@@ -19,6 +19,7 @@ import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
+import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
@@ -160,12 +161,9 @@ export default async function LevelPage({ params }: Props) {
           </p>
 
           <div className="video-frame mb-6">
-            <iframe
-              src={`https://www.youtube.com/embed/${level.youtube_id}`}
+            <LazyYouTube
+              videoId={level.youtube_id}
               title={`${game.name} Level ${level.level_number}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
             />
           </div>
 
