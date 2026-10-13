@@ -139,6 +139,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
               key={level.id}
               id={`level-tile-${level.level_number}`}
               href={`/game/${gameSlug}/level-${level.level_number}`}
+              prefetch={false}
               className="level-tile"
               title={level.title || `Level ${level.level_number}`}
             >

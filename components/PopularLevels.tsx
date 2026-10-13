@@ -23,6 +23,7 @@ export default function PopularLevels({
           <Link
             key={item.id}
             href={`/game/${gameSlug}/level-${item.level_number}`}
+            prefetch={false}
             className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
           >
             <span

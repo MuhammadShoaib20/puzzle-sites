@@ -26,6 +26,7 @@ export default function LevelButtons({ gameSlug, levels }: Props) {
         <Link
           key={level.id}
           href={`/game/${gameSlug}/level-${level.level_number}`}
+          prefetch={false}
           className="level-tile"
         >
           {level.level_number}

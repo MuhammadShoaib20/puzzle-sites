@@ -8,6 +8,7 @@ export default function GameCard({ game, index = 0 }: Props) {
   return (
     <Link
       href={`/game/${game.slug}`}
+      prefetch={false}
       className="card card-hover game-card animate-fade-in-up"
       style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
     >

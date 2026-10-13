@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/utils';
 
 export default function BlogCard({ blog }: { blog: Blog }) {
   return (
-    <Link href={`/blog/${blog.slug}`} className="card card-hover blog-card">
+    <Link href={`/blog/${blog.slug}`} prefetch={false} className="card card-hover blog-card">
       <div className="blog-thumb">
         {blog.cover_image ? (
           <Image
