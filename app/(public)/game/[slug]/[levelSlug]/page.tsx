@@ -7,10 +7,16 @@ import {
   getLevelsByGame,
   getSettings,
 } from '@/lib/db';
+import {
+  generateVideoObjectSchema,
+  generateBreadcrumbSchema,
+  generateHowToSchema,
+} from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import PopularLevels from '@/components/PopularLevels';
+import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
@@ -80,43 +86,35 @@ export default async function LevelPage({ params }: Props) {
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
 
-  const videoSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'VideoObject',
+  const videoSchema = generateVideoObjectSchema({
     name: `${game.name} Level ${level.level_number} Walkthrough`,
     description: level.description || level.title || '',
-    thumbnailUrl: `https://i.ytimg.com/vi/${level.youtube_id}/maxresdefault.jpg`,
+    youtubeUrl: level.youtube_url,
     uploadDate: level.created_at,
-    embedUrl: `https://www.youtube.com/embed/${level.youtube_id}`,
-    contentUrl: level.youtube_url,
-  };
+  });
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: game.name, item: `${siteUrl}/game/${game.slug}` },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: `Level ${level.level_number}`,
-        item: `${siteUrl}/game/${game.slug}/level-${level.level_number}`,
-      },
-    ],
-  };
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { position: 1, name: 'Home', item: siteUrl },
+    { position: 2, name: game.name, item: `${siteUrl}/game/${game.slug}` },
+    {
+      position: 3,
+      name: `Level ${level.level_number}`,
+      item: `${siteUrl}/game/${game.slug}/level-${level.level_number}`,
+    },
+  ]);
+
+  const howToSchema = generateHowToSchema({
+    gameName: game.name,
+    levelNumber: level.level_number,
+    walkthrough: level.walkthrough,
+  });
 
   return (
     <div className="animate-fade-in-up">
       <ViewTracker type="level" id={level.id} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <JsonLd data={videoSchema} />
+      <JsonLd data={breadcrumbSchema} />
+      <JsonLd data={howToSchema} />
 
       <div className="container-page pt-5">
         <Breadcrumb

@@ -9,6 +9,12 @@ import {
   getSettings,
 } from '@/lib/db';
 import { extractYoutubeId } from '@/lib/utils';
+import {
+  generateVideoGameSchema,
+  generateBreadcrumbSchema,
+  generateFAQSchema,
+  generateOrganizationSchema,
+} from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -16,6 +22,7 @@ import BlogCard from '@/components/BlogCard';
 import LevelSearchGrid from '@/components/LevelSearchGrid';
 import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
+import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -64,60 +71,28 @@ export default async function GamePage({ params }: Props) {
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
 
-  const videoGameSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'VideoGame',
+  const videoGameSchema = generateVideoGameSchema({
     name: game.name,
     description: game.short_description,
     image: game.cover_image,
-    applicationCategory: 'GameApplication',
-    operatingSystem: game.operating_system || 'Android, iOS',
-  };
+    operatingSystem: game.operating_system,
+  });
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: game.name,
-        item: `${siteUrl}/game/${game.slug}`,
-      },
-    ],
-  };
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { position: 1, name: 'Home', item: siteUrl },
+    { position: 2, name: game.name, item: `${siteUrl}/game/${game.slug}` },
+  ]);
 
-  const faqSchema =
-    game.faq && game.faq.length > 0
-      ? {
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          mainEntity: game.faq.map((faq) => ({
-            '@type': 'Question',
-            name: faq.q,
-            acceptedAnswer: { '@type': 'Answer', text: faq.a },
-          })),
-        }
-      : null;
+  const faqSchema = generateFAQSchema(game.faq || []);
+  const organizationSchema = generateOrganizationSchema();
 
   return (
     <div className="animate-fade-in-up">
       <ViewTracker type="game" id={game.id} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoGameSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      {faqSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-        />
-      )}
+      <JsonLd data={videoGameSchema} />
+      <JsonLd data={breadcrumbSchema} />
+      <JsonLd data={organizationSchema} />
+      {faqSchema && <JsonLd data={faqSchema} />}
 
       <div className="container-page pt-5">
         <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: game.name }]} />

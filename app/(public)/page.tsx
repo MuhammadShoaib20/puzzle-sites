@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { getAllGames, getLatestLevels, getLatestBlogs } from '@/lib/db';
+import { generateWebsiteSchema, generateOrganizationSchema } from '@/lib/schema';
 import NavbarSearch from '@/components/NavbarSearch';
 import GameCard from '@/components/GameCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
+import JsonLd from '@/components/JsonLd';
 
 export const revalidate = 60;
 
@@ -31,8 +33,13 @@ export default async function HomePage() {
 
   const totalLevels = games.reduce((sum, g) => sum + (g.total_levels || 0), 0);
 
+  const websiteSchema = generateWebsiteSchema();
+  const organizationSchema = generateOrganizationSchema();
+
   return (
     <div>
+      <JsonLd data={websiteSchema} />
+      <JsonLd data={organizationSchema} />
       {/* ============= HERO ============= */}
       <section className="hero">
         <div className="hero-dots" />

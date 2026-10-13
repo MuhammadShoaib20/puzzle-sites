@@ -3,8 +3,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getBlogBySlug } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
+import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
+import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -33,22 +35,24 @@ export default async function BlogDetailPage({ params }: Props) {
   const blog = await getBlogBySlug(slug);
   if (!blog) notFound();
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: blog.title,
-    description: blog.meta_description,
-    image: blog.cover_image,
-    datePublished: blog.created_at,
-  };
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+
+  const articleSchema = generateArticleSchema({
+    ...blog,
+    canonicalUrl: `${siteUrl}/blog/${blog.slug}`,
+  });
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { position: 1, name: 'Home', item: siteUrl },
+    { position: 2, name: 'Blog', item: `${siteUrl}/blog` },
+    { position: 3, name: blog.title, item: `${siteUrl}/blog/${blog.slug}` },
+  ]);
 
   return (
     <article className="animate-fade-in-up">
       <ViewTracker type="blog" id={blog.id} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={articleSchema} />
+      <JsonLd data={breadcrumbSchema} />
 
       <div className="container-narrow pt-6">
         <Breadcrumb
