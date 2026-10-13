@@ -231,7 +231,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
 }
 
 // ==========================================
-// HELPER FUNCTION
+// HELPER FUNCTIONS
 // ==========================================
 
 function extractYoutubeId(url: string): string {
@@ -243,4 +243,60 @@ function extractYoutubeId(url: string): string {
     if (match) return match[1];
   }
   return '';
+}
+
+function decodeHtmlEntities(text: string): string {
+  const entityMap: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&apos;': "'",
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&#x2F;': '/',
+    '&#x3D;': '=',
+    '&#60;': '<',
+    '&#62;': '>',
+    '&#34;': '"',
+    '&nbsp;': ' ',
+  };
+
+  return text.replace(/&[a-zA-Z0-9#]+;/g, (entity) => {
+    return entityMap[entity] || entity;
+  });
+}
+
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
+
+export function extractFaqsFromHtml(html: string): Array<{ q: string; a: string }> {
+  const faqs: Array<{ q: string; a: string }> = [];
+
+  // Match h3 tags followed by p tags
+  const h3Pattern = /<h3[^>]*>(.*?)<\/h3>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = h3Pattern.exec(html)) !== null && faqs.length < 10) {
+    const questionHtml = match[1];
+    const question = decodeHtmlEntities(stripHtmlTags(questionHtml)).trim();
+
+    if (!question) continue;
+
+    // Find the next p tag after this h3
+    const afterH3 = html.slice(match.index + match[0].length);
+    const pMatch = afterH3.match(/<p[^>]*>(.*?)<\/p>/i);
+
+    if (pMatch) {
+      const answerHtml = pMatch[1];
+      const answer = decodeHtmlEntities(stripHtmlTags(answerHtml)).trim();
+
+      if (answer) {
+        faqs.push({ q: question, a: answer });
+      }
+    }
+  }
+
+  return faqs;
 }

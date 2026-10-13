@@ -159,7 +159,7 @@ export default async function HomePage() {
                       {level.title || `Level ${level.level_number}`}
                     </h3>
                     <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name} · {level.views} views
+                      {gameData.name}
                     </p>
                   </div>
                 </Link>
@@ -220,7 +220,7 @@ export default async function HomePage() {
                       {level.title || `Level ${level.level_number}`}
                     </h3>
                     <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name} · {level.views} views
+                      {gameData.name}
                     </p>
                   </div>
                 </Link>

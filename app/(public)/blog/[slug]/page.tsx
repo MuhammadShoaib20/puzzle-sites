@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getBlogBySlug, getAllBlogSlugs, getRelatedBlogs } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
-import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
+import { generateArticleSchema, generateBreadcrumbSchema, extractFaqsFromHtml, generateFAQSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import JsonLd from '@/components/JsonLd';
@@ -60,11 +60,15 @@ export default async function BlogDetailPage({ params }: Props) {
     { position: 3, name: blog.title, item: `${siteUrl}/blog/${blog.slug}` },
   ]);
 
+  const faqs = extractFaqsFromHtml(blog.content || '');
+  const faqSchema = faqs.length > 0 ? generateFAQSchema(faqs) : null;
+
   return (
     <article className="animate-fade-in-up">
       <ViewTracker type="blog" id={blog.id} />
       <JsonLd data={articleSchema} />
       <JsonLd data={breadcrumbSchema} />
+      {faqSchema && <JsonLd data={faqSchema} />}
 
       <div className="container-narrow pt-6">
         <Breadcrumb
@@ -84,8 +88,6 @@ export default async function BlogDetailPage({ params }: Props) {
           style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
         >
           <span>Published {formatDate(blog.created_at)}</span>
-          <span aria-hidden="true">•</span>
-          <span>{blog.views} views</span>
         </div>
 
         {blog.cover_image && (

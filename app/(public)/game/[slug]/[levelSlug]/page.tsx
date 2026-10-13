@@ -157,7 +157,7 @@ export default async function LevelPage({ params }: Props) {
           </h1>
 
           <p className="text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
-            {level.views} views · {new Date(level.created_at).toLocaleDateString()}
+            {new Date(level.created_at).toLocaleDateString()}
           </p>
 
           <div className="video-frame mb-6">

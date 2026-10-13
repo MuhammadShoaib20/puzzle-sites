@@ -153,6 +153,7 @@ components/
   HomeScrollControls.tsx
   ImageUpload.tsx
   JsonLd.tsx
+  LazyYouTube.tsx
   LevelButtons.tsx
   LevelForm.tsx
   LevelSearchGrid.tsx
@@ -265,7 +266,7 @@ export default async function AboutPage() {
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getBlogBySlug } from '@/lib/db';
+import { getBlogBySlug, getAllBlogSlugs, getRelatedBlogs } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
 import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
@@ -274,6 +275,14 @@ import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const blogs = await getAllBlogSlugs();
+  return blogs.map((item) => ({ slug: item.slug }));
+}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -300,6 +309,10 @@ export default async function BlogDetailPage({ params }: Props) {
   if (!blog) notFound();
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+
+  const [relatedBlogs] = await Promise.all([
+    getRelatedBlogs(blog.id, blog.game_id, 3),
+  ]);
 
   const articleSchema = generateArticleSchema({
     ...blog,
@@ -356,6 +369,29 @@ export default async function BlogDetailPage({ params }: Props) {
           className="prose max-w-none text-[16px]"
           dangerouslySetInnerHTML={{ __html: sanitize(blog.content || '') }}
         />
+
+        {relatedBlogs.length > 0 && (
+          <section className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
+            <h2 className="section-title mb-5">Related guides</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {relatedBlogs.map((relatedBlog) => (
+                <Link
+                  key={relatedBlog.id}
+                  href={`/blog/${relatedBlog.slug}`}
+                  prefetch={false}
+                  className="card card-hover p-4"
+                >
+                  <h3 className="font-bold text-[15px] mb-2" style={{ color: 'var(--ink)' }}>
+                    {relatedBlog.title}
+                  </h3>
+                  <p className="text-sm line-clamp-2" style={{ color: 'var(--muted)' }}>
+                    {relatedBlog.meta_description || relatedBlog.content?.slice(0, 100)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
           <Link href="/blog" className="btn btn-secondary">
@@ -496,6 +532,8 @@ import {
   getLevelByNumber,
   getLevelsByGame,
   getSettings,
+  getPopularLevelSlugs,
+  getRecentLevelSlugs,
 } from '@/lib/db';
 import {
   generateVideoObjectSchema,
@@ -507,11 +545,33 @@ import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
+import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
-export const revalidate = 60;
+export const revalidate = 86400;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const popular = await getPopularLevelSlugs(100);
+  const recent = await getRecentLevelSlugs(100);
+
+  const seen = new Set();
+  const params = [];
+
+  for (const item of [...popular, ...recent]) {
+    const key = `${item.game_slug}-${item.level_number}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    params.push({
+      slug: item.game_slug,
+      levelSlug: `level-${item.level_number}`,
+    });
+  }
+
+  return params;
+}
 
 function parseLevelNumber(levelSlug: string): number {
   const match = levelSlug.match(/^level-(\d+)$/);
@@ -627,12 +687,9 @@ export default async function LevelPage({ params }: Props) {
           </p>
 
           <div className="video-frame mb-6">
-            <iframe
-              src={`https://www.youtube.com/embed/${level.youtube_id}`}
+            <LazyYouTube
+              videoId={level.youtube_id}
               title={`${game.name} Level ${level.level_number}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
             />
           </div>
 
@@ -725,6 +782,15 @@ export default async function LevelPage({ params }: Props) {
               <div />
             )}
           </nav>
+
+          <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
+            <Link
+              href={`/game/${game.slug}`}
+              className="btn btn-secondary btn-block"
+            >
+              🎮 Complete {game.name} guide
+            </Link>
+          </div>
         </main>
 
         <aside className="sidebar">
@@ -758,6 +824,8 @@ import {
   getLevelsByGame,
   getBlogsByGame,
   getSettings,
+  getAllGameSlugs,
+  getRelatedGames,
 } from '@/lib/db';
 import { extractYoutubeId } from '@/lib/utils';
 import {
@@ -774,11 +842,18 @@ import LevelSearchGrid from '@/components/LevelSearchGrid';
 import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
+import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 60;
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const slugs = await getAllGameSlugs();
+  return slugs.map((item) => ({ slug: item.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -807,10 +882,11 @@ export default async function GamePage({ params }: Props) {
   const game = await getGameBySlug(slug);
   if (!game) notFound();
 
-  const [levels, blogs, settings] = await Promise.all([
+  const [levels, blogs, settings, relatedGames] = await Promise.all([
     getLevelsByGame(game.id),
     getBlogsByGame(game.id),
     getSettings(),
+    getRelatedGames(game.id, 4),
   ]);
 
   const links = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
@@ -834,7 +910,10 @@ export default async function GamePage({ params }: Props) {
     { position: 2, name: game.name, item: `${siteUrl}/game/${game.slug}` },
   ]);
 
-  const faqSchema = generateFAQSchema(game.faq || []);
+  const validFaqs = (game.faq || []).filter(
+    (f) => f && typeof f.q === 'string' && typeof f.a === 'string' && f.q.trim() && f.a.trim()
+  );
+  const faqSchema = validFaqs.length > 0 ? generateFAQSchema(validFaqs) : null;
   const organizationSchema = generateOrganizationSchema();
 
   return (
@@ -869,20 +948,16 @@ export default async function GamePage({ params }: Props) {
                 alt={`${game.name} cover`}
                 fill
                 priority
-                sizes="(max-width: 1024px) 100vw, 900px"
+                fetchPriority="high"
+                quality={85}
+                sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 900px"
               />
             </div>
           )}
 
           {trailerId && (
             <div className="video-frame mb-6">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailerId}`}
-                title={`${game.name} trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
+              <LazyYouTube videoId={trailerId} title={`${game.name} trailer`} />
             </div>
           )}
 
@@ -938,7 +1013,7 @@ export default async function GamePage({ params }: Props) {
           <LevelSearchGrid gameSlug={game.slug} levels={levels} />
 
           {blogs.length > 0 && (
-            <section className="section">
+            <section className="section" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px 200px' }}>
               <h2 className="section-title mb-5">Guides &amp; tips for {game.name}</h2>
               <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
                 {blogs.map((blog) => (
@@ -974,6 +1049,40 @@ export default async function GamePage({ params }: Props) {
           )}
 
           <PopularLevels gameSlug={game.slug} levels={popularLevels} />
+
+          {relatedGames.length > 0 && (
+            <div className="card p-4 sm:p-5">
+              <h3 className="text-[14px] sm:text-[15px] font-bold mb-3 sm:mb-4">Related games</h3>
+              <div className="flex flex-col gap-2">
+                {relatedGames.map((relatedGame) => (
+                  <Link
+                    key={relatedGame.id}
+                    href={`/game/${relatedGame.slug}`}
+                    prefetch={false}
+                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+                  >
+                    <span
+                      className="rounded-xl grid place-items-center shrink-0 text-xs font-bold text-white"
+                      style={{
+                        width: 'clamp(32px, 4vw, 36px)',
+                        height: 'clamp(32px, 4vw, 36px)',
+                        background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                        fontFamily: 'var(--font-display), sans-serif',
+                      }}
+                    >
+                      {relatedGame.total_levels || 0}
+                    </span>
+                    <span
+                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {relatedGame.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {settings?.adsense_footer && (
             <div className="hidden lg:block">
@@ -1147,7 +1256,13 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
-import HomeScrollControls from '@/components/HomeScrollControls';
+import dynamic from 'next/dynamic';
+
+const HomeScrollControls = dynamic(
+  () => import('@/components/HomeScrollControls')
+);
+
+export const revalidate = 3600;
 
 export default async function PublicLayout({
   children,
@@ -1192,10 +1307,11 @@ import GameCard from '@/components/GameCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
 import JsonLd from '@/components/JsonLd';
+import type { Level } from '@/types';
 
 export const revalidate = 60;
 
-type LevelWithGame = import('@/types').Level & {
+type LevelWithGame = Level & {
   game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
 };
 
@@ -1371,6 +1487,46 @@ export default async function HomePage() {
             {blogs.map((blog) => (
               <BlogCard key={blog.id} blog={blog} />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* ============= POPULAR WALKTHROUGHS ============= */}
+      {levels.length > 0 && (
+        <section className="container-page section">
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Popular walkthroughs</h2>
+              <p className="section-sub">Most viewed level solutions</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {(levels as LevelWithGame[]).slice(0, 6).map((level) => {
+              const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
+              if (!gameData?.slug) return null;
+              return (
+                <Link
+                  key={level.id}
+                  href={`/game/${gameData.slug}/level-${level.level_number}`}
+                  prefetch={false}
+                  className="card card-hover level-row"
+                >
+                  <div className="level-badge">{level.level_number}</div>
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      className="font-bold text-[15px] line-clamp-1"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {level.title || `Level ${level.level_number}`}
+                    </h3>
+                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
+                      {gameData.name} · {level.views} views
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
@@ -3455,6 +3611,12 @@ img { max-width: 100%; }
   grid-template-columns: repeat(auto-fill, minmax(clamp(44px, 6vw, 58px), 1fr));
   gap: clamp(0.4rem, 1vw, 0.7rem);
 }
+
+/* Level grid virtualization - only render visible tiles */
+.level-grid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: 60px 60px;
+}
 .level-tile {
   display: flex;
   align-items: center;
@@ -4350,6 +4512,7 @@ const body = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-body',
+  preload: false,
 });
 
 const display = Sora({
@@ -4357,6 +4520,7 @@ const display = Sora({
   display: 'swap',
   weight: ['500', '600', '700', '800'],
   variable: '--font-display',
+  preload: true,
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';
@@ -5238,7 +5402,7 @@ import { formatDate } from '@/lib/utils';
 
 export default function BlogCard({ blog }: { blog: Blog }) {
   return (
-    <Link href={`/blog/${blog.slug}`} className="card card-hover blog-card">
+    <Link href={`/blog/${blog.slug}`} prefetch={false} className="card card-hover blog-card">
       <div className="blog-thumb">
         {blog.cover_image ? (
           <Image
@@ -6687,7 +6851,7 @@ export default function EmptyState({ emoji = '🎮', title, text }: Props) {
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Category, Settings } from '@/types';
-import { getFooterPages } from '@/lib/db';
+import { getFooterPages, getFeaturedGames } from '@/lib/db';
 import { openCookieBanner } from '@/components/CookieConsentBanner';
 
 type Props = {
@@ -6706,7 +6870,10 @@ function isSafeExternalUrl(value?: string): value is string {
 }
 
 export default async function Footer({ settings, categories }: Props) {
-  const pages = await getFooterPages();
+  const [pages, popularGames] = await Promise.all([
+    getFooterPages(),
+    getFeaturedGames(5),
+  ]);
   const siteName = settings?.site_name || 'PuzzleWalkthroughs';
   const siteLogo = settings?.site_logo || null;
   const siteDescription =
@@ -6802,6 +6969,25 @@ export default async function Footer({ settings, categories }: Props) {
             </div>
           )}
 
+          {/* Popular Games */}
+          {popularGames.length > 0 && (
+            <div>
+              <div className="footer-title">Popular games</div>
+              <div className="footer-links">
+                {popularGames.map((game) => (
+                  <Link
+                    key={game.id}
+                    href={`/game/${game.slug}`}
+                    prefetch={false}
+                    className="footer-link"
+                  >
+                    {game.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Follow (only if no pills shown in brand block, keep a hint for admin) */}
           <div className="footer-cta">
             <div className="footer-title">Stuck on a level?</div>
@@ -6843,6 +7029,7 @@ export default function GameCard({ game, index = 0 }: Props) {
   return (
     <Link
       href={`/game/${game.slug}`}
+      prefetch={false}
       className="card card-hover game-card animate-fade-in-up"
       style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
     >
@@ -7612,6 +7799,64 @@ export default function JsonLd({ data }: { data: object }) {
 }
 </file>
 
+<file path="components/LazyYouTube.tsx">
+'use client';
+
+import { useState } from 'react';
+
+interface LazyYouTubeProps {
+  videoId: string;
+  title: string;
+  className?: string;
+}
+
+export default function LazyYouTube({ videoId, title, className = '' }: LazyYouTubeProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  if (isLoaded) {
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`relative w-full aspect-video cursor-pointer group ${className}`}
+      onClick={() => setIsLoaded(true)}
+      aria-label={`Play video: ${title}`}
+    >
+      <img
+        src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+        alt={title}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        fetchPriority="low"
+      />
+      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-600 rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity" />
+          <svg
+            className="relative w-16 h-16 text-white fill-current"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+    </button>
+  );
+}
+</file>
+
 <file path="components/LevelButtons.tsx">
 import Link from 'next/link';
 
@@ -7641,6 +7886,7 @@ export default function LevelButtons({ gameSlug, levels }: Props) {
         <Link
           key={level.id}
           href={`/game/${gameSlug}/level-${level.level_number}`}
+          prefetch={false}
           className="level-tile"
         >
           {level.level_number}
@@ -7970,6 +8216,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
               key={level.id}
               id={`level-tile-${level.level_number}`}
               href={`/game/${gameSlug}/level-${level.level_number}`}
+              prefetch={false}
               className="level-tile"
               title={level.title || `Level ${level.level_number}`}
             >
@@ -8805,6 +9052,7 @@ export default function PopularLevels({
           <Link
             key={item.id}
             href={`/game/${gameSlug}/level-${item.level_number}`}
+            prefetch={false}
             className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
           >
             <span
@@ -9341,7 +9589,7 @@ export async function createBlog(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
 
-    let title = (formData.get('title') as string || '').trim();
+    const title = (formData.get('title') as string || '').trim();
     let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
     const game_id = (formData.get('game_id') as string) || null;
     const content = (formData.get('content') as string || '').trim();
@@ -9399,7 +9647,7 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
   try {
     await requireAuth();
 
-    let title = (formData.get('title') as string || '').trim();
+    const title = (formData.get('title') as string || '').trim();
     let slug = ((formData.get('slug') as string) || makeSlug(title)).trim();
     const game_id = (formData.get('game_id') as string) || null;
     const content = (formData.get('content') as string || '').trim();
@@ -10547,7 +10795,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Get IP from server headers
         const ip = await getClientIP();
-        const userAgent = (credentials as any).userAgent || 'unknown';
+        const userAgent = (credentials as { userAgent?: string }).userAgent || 'unknown';
 
         // Check rate limit
         const rateLimitCheck = await checkRateLimit(email, ip);
@@ -10688,6 +10936,19 @@ export async function getFeaturedGames(limit = 6): Promise<Game[]> {
   return (data || []) as Game[];
 }
 
+export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
+  const { data, error } = await supabase
+    .from('games')
+    .select('slug')
+    .eq('published', true);
+
+  if (error) {
+    console.error('getAllGameSlugs error:', error.message);
+    return [];
+  }
+  return (data || []) as { slug: string }[];
+}
+
 // ==========================================
 // LEVELS
 // ==========================================
@@ -10789,6 +11050,80 @@ export async function getLatestLevels(
   })[];
 }
 
+export async function getPopularLevelSlugs(limit = 100): Promise<{ game_slug: string; level_number: number }[]> {
+  const { data, error } = await supabase
+    .from('levels')
+    .select(`
+      level_number,
+      game:games!inner (slug, published)
+    `)
+    .eq('published', true)
+    .eq('game.published', true)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('getPopularLevelSlugs error:', error.message);
+    return [];
+  }
+
+  type Row = {
+    level_number: number;
+    game: { slug: string } | { slug: string }[] | null;
+  };
+
+  const rows = (data || []) as unknown as Row[];
+  const result: { game_slug: string; level_number: number }[] = [];
+
+  for (const row of rows) {
+    const game = Array.isArray(row.game) ? row.game[0] : row.game;
+    if (!game?.slug) continue;
+    result.push({
+      game_slug: game.slug,
+      level_number: row.level_number,
+    });
+  }
+
+  return result;
+}
+
+export async function getRecentLevelSlugs(limit = 100): Promise<{ game_slug: string; level_number: number }[]> {
+  const { data, error } = await supabase
+    .from('levels')
+    .select(`
+      level_number,
+      game:games!inner (slug, published)
+    `)
+    .eq('published', true)
+    .eq('game.published', true)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('getRecentLevelSlugs error:', error.message);
+    return [];
+  }
+
+  type Row = {
+    level_number: number;
+    game: { slug: string } | { slug: string }[] | null;
+  };
+
+  const rows = (data || []) as unknown as Row[];
+  const result: { game_slug: string; level_number: number }[] = [];
+
+  for (const row of rows) {
+    const game = Array.isArray(row.game) ? row.game[0] : row.game;
+    if (!game?.slug) continue;
+    result.push({
+      game_slug: game.slug,
+      level_number: row.level_number,
+    });
+  }
+
+  return result;
+}
+
 // ==========================================
 // BLOGS
 // ==========================================
@@ -10838,6 +11173,19 @@ export async function getLatestBlogs(limit = 6): Promise<Blog[]> {
 
   if (error) return [];
   return (data || []) as Blog[];
+}
+
+export async function getAllBlogSlugs(): Promise<{ slug: string }[]> {
+  const { data, error } = await supabase
+    .from('blogs')
+    .select('slug')
+    .eq('published', true);
+
+  if (error) {
+    console.error('getAllBlogSlugs error:', error.message);
+    return [];
+  }
+  return (data || []) as { slug: string }[];
 }
 
 // ==========================================
@@ -11009,7 +11357,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   }
 
   // Convert login attempts to activity entries
-  const loginEntries: ActivityEntry[] = (loginAttempts || []).map((attempt: any) => ({
+  const loginEntries: ActivityEntry[] = (loginAttempts || []).map((attempt) => ({
     id: attempt.id,
     type: 'login',
     action: attempt.success ? 'Successful login' : 'Failed login attempt',
@@ -11021,7 +11369,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   }));
 
   // Convert activity log to activity entries
-  const activityEntries: ActivityEntry[] = (activityLog || []).map((log: any) => ({
+  const activityEntries: ActivityEntry[] = (activityLog || []).map((log) => ({
     id: log.id,
     type: 'admin_action',
     action: log.action,
@@ -11069,8 +11417,8 @@ export async function getActivitySummary() {
     };
   }
 
-  const totalLoginsToday = (loginAttempts || []).filter((a: any) => a.success).length;
-  const failedAttemptsToday = (loginAttempts || []).filter((a: any) => !a.success).length;
+  const totalLoginsToday = (loginAttempts || []).filter((a) => a.success).length;
+  const failedAttemptsToday = (loginAttempts || []).filter((a) => !a.success).length;
 
   return {
     totalLoginsToday,
@@ -11095,15 +11443,127 @@ export async function getSuspiciousIPs(): Promise<string[]> {
 
   // Count failed attempts per IP
   const ipCounts = new Map<string, number>();
-  (data || []).forEach((attempt: any) => {
+  (data || []).forEach((attempt) => {
     const count = ipCounts.get(attempt.ip_address) || 0;
     ipCounts.set(attempt.ip_address, count + 1);
   });
 
   // Return IPs with 5+ failed attempts
   return Array.from(ipCounts.entries())
-    .filter(([_, count]) => count >= 5)
+    .filter(([, count]) => count >= 5)
     .map(([ip]) => ip);
+}
+
+// ==========================================
+// RELATED CONTENT
+// ==========================================
+
+export async function getRelatedGames(
+  currentGameId: string,
+  limit = 4
+): Promise<Game[]> {
+  // First try to get games from same category
+  const currentGame = await supabase
+    .from('games')
+    .select('category_id')
+    .eq('id', currentGameId)
+    .single();
+
+  if (currentGame.data?.category_id) {
+    const { data: categoryGames } = await supabase
+      .from('games')
+      .select('*')
+      .eq('category_id', currentGame.data.category_id)
+      .eq('published', true)
+      .neq('id', currentGameId)
+      .order('views', { ascending: false })
+      .limit(limit);
+
+    if (categoryGames && categoryGames.length > 0) {
+      return categoryGames as Game[];
+    }
+  }
+
+  // Fallback: random published games
+  const { data: randomGames } = await supabase
+    .from('games')
+    .select('*')
+    .eq('published', true)
+    .neq('id', currentGameId)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (randomGames || []) as Game[];
+}
+
+export async function getRelatedBlogs(
+  currentBlogId: string,
+  gameId?: string,
+  limit = 3
+): Promise<Blog[]> {
+  if (gameId) {
+    // First try: same game blogs
+    const { data: gameBlogs } = await supabase
+      .from('blogs')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('published', true)
+      .neq('id', currentBlogId)
+      .order('views', { ascending: false })
+      .limit(limit);
+
+    if (gameBlogs && gameBlogs.length > 0) {
+      return gameBlogs as Blog[];
+    }
+  }
+
+  // Fallback: latest blogs
+  const { data: latestBlogs } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('published', true)
+    .neq('id', currentBlogId)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (latestBlogs || []) as Blog[];
+}
+
+export async function getRelatedLevels(
+  gameId: string,
+  currentLevelNumber: number,
+  limit = 5
+): Promise<Level[]> {
+  // Get adjacent levels (current - 2 to current + 2)
+  const minLevel = Math.max(1, currentLevelNumber - 2);
+  const maxLevel = currentLevelNumber + 2;
+
+  const { data: adjacentLevels } = await supabase
+    .from('levels')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('published', true)
+    .gte('level_number', minLevel)
+    .lte('level_number', maxLevel)
+    .neq('level_number', currentLevelNumber)
+    .order('level_number', { ascending: true })
+    .limit(limit);
+
+  if (adjacentLevels && adjacentLevels.length >= limit) {
+    return adjacentLevels as Level[];
+  }
+
+  // Fallback: popular levels from same game
+  const { data: popularLevels } = await supabase
+    .from('levels')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('published', true)
+    .neq('level_number', currentLevelNumber)
+    .order('views', { ascending: false })
+    .limit(limit);
+
+  return (popularLevels || []) as Level[];
 }
 </file>
 
@@ -11320,23 +11780,16 @@ export function sanitizeAdsense(code: string): string {
 </file>
 
 <file path="lib/schema.ts">
-import type { Game, Level, Blog, FAQ } from '@/types';
+import type { Blog, FAQ } from '@/types';
 
 // ==========================================
 // SCHEMA TYPES
 // ==========================================
 
-interface ArticleSchemaInput {
-  headline: string;
-  description: string;
-  image?: string;
-  datePublished: string;
-  dateModified?: string;
-  canonicalUrl: string;
-}
-
-interface FAQSchemaInput {
-  faqs: FAQ[];
+interface BreadcrumbItem {
+  position: number;
+  name: string;
+  item: string;
 }
 
 interface VideoObjectSchemaInput {
@@ -11443,17 +11896,32 @@ export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
 export function generateFAQSchema(faqs: FAQ[]) {
   if (!faqs || faqs.length === 0) return null;
 
+  // Filter out invalid FAQs and normalize field names
+  const validFaqs = faqs
+    .map((faq) => {
+      // Handle both {q, a} and {question, answer} formats
+      const question = faq.q || (faq as { question?: string }).question;
+      const answer = faq.a || (faq as { answer?: string }).answer;
+
+      if (!question || !answer) return null;
+
+      return {
+        '@type': 'Question' as const,
+        name: question,
+        acceptedAnswer: {
+          '@type': 'Answer' as const,
+          text: answer,
+        },
+      };
+    })
+    .filter((faq): faq is NonNullable<typeof faq> => faq !== null);
+
+  if (validFaqs.length === 0) return null;
+
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
-      '@type': 'Question',
-      name: faq.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.a,
-      },
-    })),
+    mainEntity: validFaqs,
   };
 }
 
@@ -11528,7 +11996,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
       .filter((p) => p.trim().length > 0)
       .slice(0, 10); // Limit to 10 steps
 
-    paragraphs.forEach((paragraph, index) => {
+    paragraphs.forEach((paragraph) => {
       steps.push({
         '@type': 'HowToStep',
         text: paragraph.trim(),
@@ -12541,6 +13009,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.supabase.co' },
     ],
     formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   poweredByHeader: false,
   compress: true,
@@ -12586,6 +13056,24 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: '/game/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        source: '/blog/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
         source: `/${ADMIN_PATH}/:path*`,
         headers: [
           {
@@ -12606,6 +13094,12 @@ export default nextConfig;
   "name": "puzzle-site",
   "version": "0.1.0",
   "private": true,
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
