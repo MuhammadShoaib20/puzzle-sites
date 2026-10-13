@@ -923,6 +923,12 @@ img { max-width: 100%; }
   grid-template-columns: repeat(auto-fill, minmax(clamp(44px, 6vw, 58px), 1fr));
   gap: clamp(0.4rem, 1vw, 0.7rem);
 }
+
+/* Level grid virtualization - only render visible tiles */
+.level-grid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: 60px 60px;
+}
 .level-tile {
   display: flex;
   align-items: center;

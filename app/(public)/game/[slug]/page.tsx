@@ -129,7 +129,7 @@ export default async function GamePage({ params }: Props) {
                 alt={`${game.name} cover`}
                 fill
                 priority
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 900px"
+                sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 900px"
               />
             </div>
           )}
@@ -192,7 +192,7 @@ export default async function GamePage({ params }: Props) {
           <LevelSearchGrid gameSlug={game.slug} levels={levels} />
 
           {blogs.length > 0 && (
-            <section className="section">
+            <section className="section" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px 200px' }}>
               <h2 className="section-title mb-5">Guides &amp; tips for {game.name}</h2>
               <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
                 {blogs.map((blog) => (
