@@ -1,3 +1,5 @@
+'use client';
+
 import { useActionState, useState } from 'react';
 import type { Settings } from '@/types';
 import ImageUpload from './ImageUpload';
