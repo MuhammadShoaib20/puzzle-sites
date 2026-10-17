@@ -1,16 +1,39 @@
+import { useActionState, useState } from 'react';
 import type { Settings } from '@/types';
 import ImageUpload from './ImageUpload';
 
-type ActionResult = { error?: string } | void;
+type ActionResult = { error?: string; success?: boolean };
 
 type Props = {
-  action: (formData: FormData) => Promise<ActionResult> | ActionResult;
+  action: (formData: FormData) => Promise<ActionResult | void>;
   settings: Settings | null;
 };
 
 export default function SettingsForm({ action, settings }: Props) {
+  const [ahrefsDataKey, setAhrefsDataKey] = useState(
+    settings?.ahrefs_data_key || ''
+  );
+  const [state, formAction, isPending] = useActionState(
+    async (_previousState: ActionResult | null, formData: FormData) =>
+      (await action(formData)) ?? null,
+    null
+  );
+
   return (
-    <form action={action as never} className="space-y-6">
+    <form action={formAction} className="space-y-6">
+      {state?.error && (
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          Could not save settings: {state.error}
+          {state.error.includes('ahrefs_data_key') &&
+            ' Apply the Ahrefs database migration in the Supabase SQL Editor, then try again.'}
+        </div>
+      )}
+      {state?.success && (
+        <div role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-700">
+          Settings saved successfully.
+        </div>
+      )}
+
       {/* ================= SITE INFO ================= */}
       <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Site Info</h2>
@@ -166,7 +189,8 @@ export default function SettingsForm({ action, settings }: Props) {
           <input
             type="text"
             name="ahrefs_data_key"
-            defaultValue={settings?.ahrefs_data_key || ''}
+            value={ahrefsDataKey}
+            onChange={(event) => setAhrefsDataKey(event.target.value)}
             placeholder="Paste your Ahrefs Web Analytics data key"
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
           />
@@ -241,9 +265,10 @@ export default function SettingsForm({ action, settings }: Props) {
       <div className="flex items-center gap-3">
         <button
           type="submit"
+          disabled={isPending}
           className="btn btn-primary"
         >
-          💾 Save Settings
+          {isPending ? 'Saving…' : '💾 Save Settings'}
         </button>
       </div>
     </form>

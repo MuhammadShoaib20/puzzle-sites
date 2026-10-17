@@ -65,4 +65,5 @@ export async function updateSettings(formData: FormData) {
   revalidatePath('/ms-control-9x7k2p/settings');
   revalidatePath('/');
   revalidatePath('/game', 'layout');
+  return { success: true };
 }
