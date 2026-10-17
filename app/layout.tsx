@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
-import Script from 'next/script';
 import ConsentAnalytics from '@/components/ConsentAnalytics';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
 import { getSettings } from '@/lib/db';
@@ -90,18 +89,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${body.variable} ${display.variable}`}>
-      <head />
+      <head>
+        {ahrefsDataKey && (
+          <script
+            src="https://analytics.ahrefs.com/analytics.js"
+            data-key={ahrefsDataKey}
+            async
+          />
+        )}
+      </head>
       <body>
         <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
         {children}
         <CookieConsentBanner />
-        {ahrefsDataKey && (
-          <Script
-            src="https://analytics.ahrefs.com/analytics.js"
-            data-key={ahrefsDataKey}
-            strategy="afterInteractive"
-          />
-        )}
       </body>
     </html>
   );
