@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   youtube_button_text text NOT NULL DEFAULT 'Watch on YouTube',
   switch_youtube_enabled boolean NOT NULL DEFAULT true,
   google_analytics_id text,
+  ahrefs_data_key text,
   google_search_console text,
   social_links jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now()

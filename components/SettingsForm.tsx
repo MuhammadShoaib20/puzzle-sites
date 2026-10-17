@@ -161,6 +161,19 @@ export default function SettingsForm({ action, settings }: Props) {
 
         <div>
           <label className="block text-sm font-medium mb-1">
+            Ahrefs Data Key
+          </label>
+          <input
+            type="text"
+            name="ahrefs_data_key"
+            defaultValue={settings?.ahrefs_data_key || ''}
+            placeholder="Paste your Ahrefs Web Analytics data key"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
             Google Search Console Verification Code
           </label>
           <input

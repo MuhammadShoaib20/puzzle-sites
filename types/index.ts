@@ -134,6 +134,7 @@ export interface Settings {
   youtube_button_text: string;
   switch_youtube_enabled: boolean;
   google_analytics_id?: string;
+  ahrefs_data_key?: string;
   google_search_console?: string;
   social_links: Record<string, string>;
   updated_at?: string;

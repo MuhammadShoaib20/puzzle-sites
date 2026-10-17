@@ -12,6 +12,8 @@ Review it against the actual database before using it as a production restore.
 - `migrations/20261009_add_operating_system.sql` — adds the per-game platform field.
 - `migrations/20261012_pages_cms.sql` — adds the Pages CMS table, published-page read
   policy, and the initial About, Contact, Privacy, and Terms pages.
+- `migrations/20261018_add_ahrefs_data_key.sql` — adds the Ahrefs Web Analytics key to
+  site settings.
 
 ## Existing project
 
@@ -24,6 +26,9 @@ to rerun because it uses `IF NOT EXISTS` and fills null values.
 Apply `migrations/20261012_pages_cms.sql` in the Supabase SQL Editor to enable the
 Pages CMS. It is safe to rerun; seed rows are inserted only when their slug does not
 already exist, so existing page content is preserved.
+
+Apply `migrations/20261018_add_ahrefs_data_key.sql` in the Supabase SQL Editor to add
+the Ahrefs Web Analytics setting to an existing project. It is safe to rerun.
 
 ## New project
 

@@ -20,6 +20,11 @@ export async function updateSettings(formData: FormData) {
   const switch_youtube_enabled = formData.get('switch_youtube_enabled') === 'on';
   const google_analytics_id =
     (formData.get('google_analytics_id') as string) || null;
+  const rawAhrefsDataKey = formData.get('ahrefs_data_key');
+  if (rawAhrefsDataKey !== null && typeof rawAhrefsDataKey !== 'string') {
+    return { error: 'Invalid Ahrefs Data Key.' };
+  }
+  const ahrefs_data_key = rawAhrefsDataKey?.trim() || null;
   const google_search_console =
     (formData.get('google_search_console') as string) || null;
 
@@ -48,6 +53,7 @@ export async function updateSettings(formData: FormData) {
       youtube_button_text,
       switch_youtube_enabled,
       google_analytics_id,
+      ahrefs_data_key,
       google_search_console,
       social_links,
       updated_at: new Date().toISOString(),
