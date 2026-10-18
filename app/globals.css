@@ -1658,7 +1658,7 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 .level-search {
   position: relative;
   width: 100%;
-  max-width: 200px;
+  max-width: 260px;
   flex-shrink: 0;
 }
 
@@ -1747,12 +1747,135 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 .level-search-jump {
   color: var(--primary-dark);
   font-weight: 700;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .level-search-jump:hover {
   color: var(--primary);
+}
+
+.level-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-sm);
+}
+
+.level-page-numbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.level-page-number,
+.level-page-arrow {
+  min-width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms, border-color 140ms, color 140ms, transform 140ms;
+}
+
+.level-page-number:hover,
+.level-page-arrow:not(:disabled):hover {
+  border-color: var(--primary-light);
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+}
+
+.level-page-number.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(14, 165, 233, 0.22);
+}
+
+.level-page-arrow {
+  padding: 0 0.8rem;
+  border-color: var(--line);
+  background: #fff;
+}
+
+.level-page-arrow:disabled {
+  color: var(--muted-light);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.level-page-ellipsis {
+  width: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.level-pagination-footer {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.level-pagination-footer .level-pagination {
+  margin-bottom: 0;
+}
+
+.level-page-summary {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.level-page-summary strong {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .level-pagination {
+    gap: 0.35rem;
+    padding: 0.45rem;
+  }
+
+  .level-page-numbers {
+    gap: 0.15rem;
+  }
+
+  .level-page-number,
+  .level-page-arrow {
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .level-page-arrow {
+    padding: 0 0.55rem;
+  }
+
+  .level-page-arrow-label {
+    display: none;
+  }
 }
 
 /* Flash effect when jumping to a level */
