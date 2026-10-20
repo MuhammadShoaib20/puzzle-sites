@@ -930,6 +930,8 @@ img { max-width: 100%; }
   contain-intrinsic-size: 60px 60px;
 }
 .level-range-pagination {
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   gap: 0.6rem;
   margin: 0 0 1.5rem;
@@ -945,6 +947,8 @@ img { max-width: 100%; }
   font-weight: 700;
 }
 .level-range-pagination-links {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -963,6 +967,25 @@ img { max-width: 100%; }
 .level-range-pagination-links a:hover {
   border-color: var(--primary-light);
   background: var(--primary-soft);
+}
+@media (max-width: 767px) {
+  .level-range-pagination {
+    gap: 0.45rem;
+    padding: 0.7rem 0.75rem;
+  }
+  .level-range-pagination-links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 0.1rem 0 0.35rem;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .level-range-pagination-links a {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.6rem;
+    white-space: nowrap;
+  }
 }
 .level-tile {
   display: flex;
