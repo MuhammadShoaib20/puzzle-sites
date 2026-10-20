@@ -49,7 +49,7 @@ export default async function HomePage() {
         <div className="hero-blob b3" />
 
         <div className="container-narrow relative text-center">
-          <h1 className="hero-title animate-fade-in-up">
+          <h1 className="hero-title">
             Stuck on level 6? Watch how it&apos;s solved.
           </h1>
           <p className="hero-sub animate-fade-in-up" style={{ animationDelay: '90ms' }}>

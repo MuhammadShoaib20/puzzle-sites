@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
-import Script from 'next/script';
+import DelayedAdSense from '@/components/DelayedAdSense';
 import ConsentAnalytics from '@/components/ConsentAnalytics';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
 import { getSettings } from '@/lib/db';
@@ -103,12 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body>
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2631095859749439"
-          crossOrigin="anonymous"
-          strategy="lazyOnload"
-        />
+        <DelayedAdSense />
         <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
         {children}
         <CookieConsentBanner />
