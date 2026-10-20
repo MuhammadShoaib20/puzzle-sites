@@ -66,7 +66,7 @@ export async function getPublishedLevelSummariesByGame(
   const pageSize = 1000;
   const result: PublishedLevelSummary[] = [];
 
-  for (let from = 0; ; from += pageSize) {
+  for (let from = 0; ; ) {
     const { data, error } = await supabase
       .from('levels')
       .select('id, level_number, title, views')
@@ -82,8 +82,9 @@ export async function getPublishedLevelSummariesByGame(
     }
 
     const batch = (data || []) as PublishedLevelSummary[];
+    if (batch.length === 0) break;
     result.push(...batch);
-    if (batch.length < pageSize) break;
+    from += batch.length;
   }
 
   return result;
@@ -95,7 +96,7 @@ export async function getAllPublishedLevelsForSitemap(): Promise<
   const pageSize = 1000;
   const result: { game_slug: string; level_number: number; created_at: string }[] = [];
 
-  for (let from = 0; ; from += pageSize) {
+  for (let from = 0; ; ) {
     const { data, error } = await supabase
       .from('levels')
       .select(`
@@ -130,7 +131,8 @@ export async function getAllPublishedLevelsForSitemap(): Promise<
       });
     }
 
-    if (rows.length < pageSize) break;
+    if (rows.length === 0) break;
+    from += rows.length;
   }
 
   return result;

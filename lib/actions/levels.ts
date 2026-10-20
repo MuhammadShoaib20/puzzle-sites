@@ -314,6 +314,8 @@ export async function bulkImportLevels(
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePath('/game/[slug]', 'page');
+  revalidatePath('/game/[slug]/[levelSlug]', 'page');
 
   return { success: true, inserted: newLevels.length, skipped, invalid };
 }
