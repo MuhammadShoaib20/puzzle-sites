@@ -1,2 +1,1 @@
-# Replace the placeholder publisher ID with the Google AdSense publisher ID after approval.
-google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-2631095859749439, DIRECT, f08c47fec0942fa0
