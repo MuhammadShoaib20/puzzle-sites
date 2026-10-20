@@ -24,7 +24,7 @@ export default function PopularLevels({
             key={item.id}
             href={`/game/${gameSlug}/level-${item.level_number}`}
             prefetch={false}
-            className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+            className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-(--primary-soft) group"
           >
             <span
               className="rounded-xl grid place-items-center shrink-0 text-[12px] sm:text-[13px] font-bold text-white"
@@ -39,7 +39,7 @@ export default function PopularLevels({
               {item.level_number}
             </span>
             <span
-              className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+              className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-(--primary-dark)"
               style={{ color: 'var(--ink)' }}
             >
               {item.title || `Level ${item.level_number}`}

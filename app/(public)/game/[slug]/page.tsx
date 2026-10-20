@@ -244,7 +244,7 @@ export default async function GamePage({ params }: Props) {
                     key={relatedGame.id}
                     href={`/game/${relatedGame.slug}`}
                     prefetch={false}
-                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-(--primary-soft) group"
                   >
                     <span
                       className="rounded-xl grid place-items-center shrink-0 text-xs font-bold text-white"
@@ -258,7 +258,7 @@ export default async function GamePage({ params }: Props) {
                       {relatedGame.total_levels || 0}
                     </span>
                     <span
-                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-(--primary-dark)"
                       style={{ color: 'var(--ink)' }}
                     >
                       {relatedGame.name}
