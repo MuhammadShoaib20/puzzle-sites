@@ -107,7 +107,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2631095859749439"
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
         {children}
