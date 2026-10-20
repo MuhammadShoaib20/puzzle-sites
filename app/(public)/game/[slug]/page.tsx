@@ -251,7 +251,7 @@ export default async function GamePage({ params }: Props) {
                       style={{
                         width: 'clamp(32px, 4vw, 36px)',
                         height: 'clamp(32px, 4vw, 36px)',
-                        background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                        background: 'linear-gradient(180deg, #075985, #0369A1)',
                         fontFamily: 'var(--font-display), sans-serif',
                       }}
                     >

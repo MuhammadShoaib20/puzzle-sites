@@ -31,7 +31,7 @@ export default function PopularLevels({
               style={{
                 width: 'clamp(34px, 5vw, 40px)',
                 height: 'clamp(34px, 5vw, 40px)',
-                background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                background: 'linear-gradient(180deg, #075985, #0369A1)',
                 boxShadow: '0 3px 0 #0369A1',
                 fontFamily: 'var(--font-display), sans-serif',
               }}

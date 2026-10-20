@@ -84,7 +84,7 @@ export default function CookieConsentBanner() {
                     <span className="font-semibold text-gray-900 dark:text-white">MS Digital System</span>.
                     <Link
                       href="/privacy"
-                      className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-medium hover:underline ml-1 transition-colors"
+                      className="text-sky-700 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium hover:underline ml-1 transition-colors"
                     >
                       Learn more in our Privacy Policy
                     </Link>
@@ -103,7 +103,7 @@ export default function CookieConsentBanner() {
               </button>
               <button
                 onClick={handleAccept}
-                className="px-4 sm:px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg shadow-sky-500/25"
+                className="px-4 sm:px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-700 to-indigo-700 hover:from-sky-800 hover:to-indigo-800 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg shadow-sky-500/25"
               >
                 Accept
               </button>
