@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import {
   getGameBySlug,
   getLevelByNumber,
-  getLevelsByGame,
+  getPublishedLevelSummariesByGame,
   getSettings,
   getPopularLevelSlugs,
   getRecentLevelSlugs,
@@ -95,7 +95,7 @@ export default async function LevelPage({ params }: Props) {
   if (!level) notFound();
 
   const [allLevels, settings] = await Promise.all([
-    getLevelsByGame(game.id),
+    getPublishedLevelSummariesByGame(game.id),
     getSettings(),
   ]);
 

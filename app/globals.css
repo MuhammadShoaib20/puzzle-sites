@@ -929,6 +929,41 @@ img { max-width: 100%; }
   content-visibility: auto;
   contain-intrinsic-size: 60px 60px;
 }
+.level-range-pagination {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-sm);
+}
+.level-range-pagination-label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.level-range-pagination-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.level-range-pagination-links a {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--primary-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 140ms, border-color 140ms;
+}
+.level-range-pagination-links a:hover {
+  border-color: var(--primary-light);
+  background: var(--primary-soft);
+}
 .level-tile {
   display: flex;
   align-items: center;
@@ -1758,148 +1793,4 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 
 .level-search-jump:hover {
   color: var(--primary);
-}
-
-.level-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  width: 100%;
-  margin: 0 0 1rem;
-  padding: 0.7rem;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: var(--shadow-sm);
-}
-
-.level-page-numbers {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-}
-
-.level-page-number,
-.level-page-arrow {
-  min-width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--ink-soft);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 140ms, border-color 140ms, color 140ms, transform 140ms;
-}
-
-.level-page-number:hover,
-.level-page-arrow:not(:disabled):hover {
-  border-color: var(--primary-light);
-  background: var(--primary-soft);
-  color: var(--primary-deep);
-}
-
-.level-page-number.active {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff;
-  box-shadow: 0 3px 8px rgba(14, 165, 233, 0.22);
-}
-
-.level-page-arrow {
-  padding: 0 0.8rem;
-  border-color: var(--line);
-  background: #fff;
-}
-
-.level-page-arrow:disabled {
-  color: var(--muted-light);
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.level-page-ellipsis {
-  width: 24px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.level-pagination-footer {
-  display: grid;
-  justify-items: center;
-  gap: 0.65rem;
-  margin-top: 1.25rem;
-}
-
-.level-pagination-footer .level-pagination {
-  margin-bottom: 0;
-}
-
-.level-page-summary {
-  color: var(--muted);
-  font-size: 0.86rem;
-}
-
-.level-page-summary strong {
-  color: var(--ink-soft);
-  font-weight: 700;
-}
-
-@media (max-width: 480px) {
-  .level-pagination {
-    gap: 0.35rem;
-    padding: 0.45rem;
-  }
-
-  .level-page-numbers {
-    gap: 0.15rem;
-  }
-
-  .level-page-number,
-  .level-page-arrow {
-    min-width: 36px;
-    height: 36px;
-  }
-
-  .level-page-arrow {
-    padding: 0 0.55rem;
-  }
-
-  .level-page-arrow-label {
-    display: none;
-  }
-}
-
-/* Flash effect when jumping to a level */
-.level-tile-flash {
-  animation: tileFlash 1.2s ease;
-}
-
-@keyframes tileFlash {
-  0%, 100% {
-    box-shadow: 0 0 0 var(--line);
-    transform: translateY(0) scale(1);
-  }
-  25%, 75% {
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35), 0 4px 12px rgba(124, 58, 237, 0.4);
-    transform: translateY(-4px) scale(1.08);
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary-dark);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.25);
-    transform: translateY(-6px) scale(1.12);
-    background: var(--primary-dark);
-    color: #fff;
-    border-color: var(--primary-dark);
-  }
 }

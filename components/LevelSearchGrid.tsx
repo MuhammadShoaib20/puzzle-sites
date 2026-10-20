@@ -1,32 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-const LEVELS_PER_PAGE = 1000;
-
-function getPageItems(page: number, pageCount: number): Array<number | 'ellipsis'> {
-  if (pageCount <= 5) {
-    return Array.from({ length: pageCount }, (_, index) => index + 1);
-  }
-
-  const pages = [...new Set([1, page - 1, page, page + 1, pageCount])]
-    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pageCount)
-    .sort((a, b) => a - b);
-
-  return pages.flatMap((pageNumber, index) => {
-    const previousPage = pages[index - 1];
-    return [
-      ...(previousPage && pageNumber - previousPage > 1 ? ['ellipsis' as const] : []),
-      pageNumber,
-    ];
-  });
-}
+import { useMemo, useState } from 'react';
 
 type Level = {
   id: string;
   level_number: number;
-  title?: string | null;
+  title?: string;
+  views: number;
 };
 
 type Props = {
@@ -34,11 +15,55 @@ type Props = {
   levels: Level[];
 };
 
+type LevelRange = {
+  start: number;
+  end: number;
+  firstLevel: number;
+};
+
+function getLevelRanges(levels: Level[]): LevelRange[] {
+  const firstLevels = new Map<number, number>();
+
+  for (const level of levels) {
+    if (level.level_number < 1) continue;
+    const start = Math.floor((level.level_number - 1) / 100) * 100 + 1;
+    if (!firstLevels.has(start)) firstLevels.set(start, level.level_number);
+  }
+
+  const highestLevel = levels.reduce(
+    (highest, level) => Math.max(highest, level.level_number),
+    0
+  );
+
+  return [...firstLevels.entries()]
+    .sort(([firstStart], [secondStart]) => firstStart - secondStart)
+    .map(([start, firstLevel]) => ({
+      start,
+      end: Math.min(start + 99, highestLevel),
+      firstLevel,
+    }));
+}
+
+export function LevelRangePagination({ levels }: { levels: Level[] }) {
+  const ranges = getLevelRanges(levels);
+  if (ranges.length === 0) return null;
+
+  return (
+    <nav className="level-range-pagination" aria-label="Level pagination">
+      <span className="level-range-pagination-label">Jump to levels:</span>
+      <div className="level-range-pagination-links">
+        {ranges.map(({ start, end, firstLevel }) => (
+          <a key={start} href={`#level-tile-${firstLevel}`}>
+            Level {start}–{end}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 export default function LevelSearchGrid({ gameSlug, levels }: Props) {
   const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [jumpRequest, setJumpRequest] = useState(0);
-  const pendingJump = useRef<number | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim();
@@ -63,54 +88,11 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
     return levels.find((l) => l.level_number === num) || null;
   }, [levels, query]);
 
-  const isSearching = query.trim().length > 0;
-  const highestLevelNumber = levels.reduce(
-    (highest, level) => Math.max(highest, level.level_number),
-    0
-  );
-  const pageCount = isSearching
-    ? Math.max(1, Math.ceil(filtered.length / LEVELS_PER_PAGE))
-    : Math.max(1, Math.ceil(highestLevelNumber / LEVELS_PER_PAGE));
-  const currentPage = Math.min(page, pageCount);
-  const pageItems = getPageItems(currentPage, pageCount);
-  const visibleLevels = isSearching
-    ? filtered.slice((currentPage - 1) * LEVELS_PER_PAGE, currentPage * LEVELS_PER_PAGE)
-    : filtered.filter(
-        (level) =>
-          level.level_number > (currentPage - 1) * LEVELS_PER_PAGE &&
-          level.level_number <= currentPage * LEVELS_PER_PAGE
-      );
-  const firstVisibleLevel =
-    isSearching && filtered.length === 0
-      ? 0
-      : (currentPage - 1) * LEVELS_PER_PAGE + 1;
-  const lastVisibleLevel = isSearching
-    ? Math.min(currentPage * LEVELS_PER_PAGE, filtered.length)
-    : currentPage * LEVELS_PER_PAGE;
-
-  useEffect(() => {
-    if (pendingJump.current === null) return;
-
-    const element = document.getElementById(`level-tile-${pendingJump.current}`);
-    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    element?.classList.add('level-tile-flash');
-    if (element) {
-      window.setTimeout(() => element.classList.remove('level-tile-flash'), 1200);
-    }
-    pendingJump.current = null;
-  }, [currentPage, jumpRequest]);
-
   function jumpToExactMatch() {
     if (!exactMatch) return;
-
-    const matchIndex = filtered.findIndex(
-      (level) => level.level_number === exactMatch.level_number
-    );
-    if (matchIndex < 0) return;
-
-    pendingJump.current = exactMatch.level_number;
-    setJumpRequest((request) => request + 1);
-    setPage(Math.floor(matchIndex / LEVELS_PER_PAGE) + 1);
+    document
+      .getElementById(`level-tile-${exactMatch.level_number}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -118,55 +100,6 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
       e.preventDefault();
       jumpToExactMatch();
     }
-  }
-
-  function renderPagination() {
-    if (pageCount <= 1) return null;
-
-    return (
-      <nav className="level-pagination" aria-label="Level pages">
-        <button
-          type="button"
-          className="level-page-arrow"
-          onClick={() => setPage(currentPage - 1)}
-          disabled={currentPage === 1}
-          aria-label="Previous page"
-        >
-          <span aria-hidden="true">←</span>
-          <span className="level-page-arrow-label">Previous</span>
-        </button>
-        <div className="level-page-numbers">
-          {pageItems.map((item, index) =>
-            item === 'ellipsis' ? (
-              <span className="level-page-ellipsis" key={`ellipsis-${index}`} aria-hidden="true">
-                …
-              </span>
-            ) : (
-              <button
-                key={item}
-                type="button"
-                className={`level-page-number${currentPage === item ? ' active' : ''}`}
-                onClick={() => setPage(item)}
-                aria-label={`Go to page ${item}`}
-                aria-current={currentPage === item ? 'page' : undefined}
-              >
-                {item}
-              </button>
-            )
-          )}
-        </div>
-        <button
-          type="button"
-          className="level-page-arrow"
-          onClick={() => setPage(currentPage + 1)}
-          disabled={currentPage === pageCount}
-          aria-label="Next page"
-        >
-          <span className="level-page-arrow-label">Next</span>
-          <span aria-hidden="true">→</span>
-        </button>
-      </nav>
-    );
   }
 
   return (
@@ -199,10 +132,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
             type="text"
             inputMode="numeric"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Find or go to a level…"
             aria-label="Search levels"
@@ -211,10 +141,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
           {query && (
             <button
               type="button"
-              onClick={() => {
-                setQuery('');
-                setPage(1);
-              }}
+              onClick={() => setQuery('')}
               className="level-search-clear"
               aria-label="Clear level search"
             >
@@ -250,8 +177,6 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
         </p>
       )}
 
-      {renderPagination()}
-
       {filtered.length === 0 ? (
         <div className="empty-state">
           <div className="emoji">🔍</div>
@@ -262,7 +187,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
       ) : (
         <>
           <div className="level-grid">
-            {visibleLevels.map((level) => (
+            {filtered.map((level) => (
               <Link
                 key={level.id}
                 id={`level-tile-${level.level_number}`}
@@ -275,23 +200,6 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
               </Link>
             ))}
           </div>
-          {pageCount > 1 && (
-            <div className="level-pagination-footer">
-              {isSearching ? (
-                <p className="level-page-summary">
-                  Showing <strong>{firstVisibleLevel}–{lastVisibleLevel}</strong> of{' '}
-                  <strong>{filtered.length}</strong> matching levels
-                </p>
-              ) : (
-                <p className="level-page-summary">
-                  Levels <strong>{firstVisibleLevel}–{lastVisibleLevel}</strong>
-                  {' · '}
-                  <strong>{visibleLevels.length}</strong> walkthroughs
-                </p>
-              )}
-              {renderPagination()}
-            </div>
-          )}
         </>
       )}
     </section>

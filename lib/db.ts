@@ -58,16 +58,35 @@ export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
 // ==========================================
 // LEVELS
 // ==========================================
-export async function getLevelsByGame(gameId: string): Promise<Level[]> {
-  const { data, error } = await supabase
-    .from('levels')
-    .select('*')
-    .eq('game_id', gameId)
-    .eq('published', true)
-    .order('level_number', { ascending: true });
+export type PublishedLevelSummary = Pick<Level, 'id' | 'level_number' | 'title' | 'views'>;
 
-  if (error) return [];
-  return (data || []) as Level[];
+export async function getPublishedLevelSummariesByGame(
+  gameId: string
+): Promise<PublishedLevelSummary[]> {
+  const pageSize = 1000;
+  const result: PublishedLevelSummary[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('levels')
+      .select('id, level_number, title, views')
+      .eq('game_id', gameId)
+      .eq('published', true)
+      .order('level_number', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error('getPublishedLevelSummariesByGame error:', error.message);
+      return [];
+    }
+
+    const batch = (data || []) as PublishedLevelSummary[];
+    result.push(...batch);
+    if (batch.length < pageSize) break;
+  }
+
+  return result;
 }
 
 export async function getAllPublishedLevelsForSitemap(): Promise<

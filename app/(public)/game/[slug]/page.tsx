@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   getGameBySlug,
-  getLevelsByGame,
+  getPublishedLevelSummariesByGame,
   getBlogsByGame,
   getSettings,
   getAllGameSlugs,
@@ -21,7 +21,7 @@ import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import BlogCard from '@/components/BlogCard';
-import LevelSearchGrid from '@/components/LevelSearchGrid';
+import LevelSearchGrid, { LevelRangePagination } from '@/components/LevelSearchGrid';
 import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
@@ -66,7 +66,7 @@ export default async function GamePage({ params }: Props) {
   if (!game) notFound();
 
   const [levels, blogs, settings, relatedGames] = await Promise.all([
-    getLevelsByGame(game.id),
+    getPublishedLevelSummariesByGame(game.id),
     getBlogsByGame(game.id),
     getSettings(),
     getRelatedGames(game.id, 4),
@@ -114,6 +114,8 @@ export default async function GamePage({ params }: Props) {
       <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
           <h1 className="page-title mb-4">{game.name} — All Levels Walkthrough</h1>
+
+          <LevelRangePagination levels={levels} />
 
           {game.short_description && (
             <p
