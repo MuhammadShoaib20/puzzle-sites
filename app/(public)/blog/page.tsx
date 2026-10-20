@@ -30,8 +30,8 @@ export default async function BlogPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {blogs.map((blog) => (
-            <BlogCard key={blog.id} blog={blog} />
+          {blogs.map((blog, index) => (
+            <BlogCard key={blog.id} blog={blog} preload={index < 2} />
           ))}
         </div>
       )}

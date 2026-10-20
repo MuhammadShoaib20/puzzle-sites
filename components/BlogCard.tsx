@@ -3,16 +3,24 @@ import Image from 'next/image';
 import type { Blog } from '@/types';
 import { formatDate } from '@/lib/utils';
 
-export default function BlogCard({ blog }: { blog: Blog }) {
+export default function BlogCard({
+  blog,
+  preload = false,
+}: {
+  blog: Blog;
+  preload?: boolean;
+}) {
   return (
     <Link href={`/blog/${blog.slug}`} prefetch={false} className="card card-hover blog-card">
       <div className="blog-thumb">
         {blog.cover_image ? (
           <Image
             src={blog.cover_image}
-            alt={blog.title}
+            alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 33vw"
+            quality={70}
+            {...(preload ? { preload: true } : { loading: 'lazy' })}
           />
         ) : (
           <span aria-hidden="true">📝</span>

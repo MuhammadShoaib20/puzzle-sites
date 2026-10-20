@@ -201,8 +201,8 @@ export default async function GamePage({ params }: Props) {
             <section className="section" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px 200px' }}>
               <h2 className="section-title mb-5">Guides &amp; tips for {game.name}</h2>
               <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
-                {blogs.map((blog) => (
-                  <BlogCard key={blog.id} blog={blog} />
+                {blogs.map((blog, index) => (
+                  <BlogCard key={blog.id} blog={blog} preload={index < 2} />
                 ))}
               </div>
             </section>

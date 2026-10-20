@@ -3,11 +3,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
-import dynamic from 'next/dynamic';
-
-const HomeScrollControls = dynamic(
-  () => import('@/components/HomeScrollControls')
-);
+import HomeScrollControlsLoader from '@/components/HomeScrollControlsLoader';
 
 export const revalidate = 3600;
 
@@ -25,7 +21,7 @@ export default async function PublicLayout({
     <>
       <BackgroundDecor />
       <div className="site-content min-h-screen flex flex-col">
-      <HomeScrollControls />
+      <HomeScrollControlsLoader />
       <Navbar settings={settings} />
       {settings?.adsense_header && (
         <div className="container-page">

@@ -37,9 +37,9 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
                   alt=""
                   width={40}
                   height={40}
+                  sizes="40px"
                   className="brand-logo"
-                  priority
-                  unoptimized
+                  preload
                 />
               </span>
             ) : (

@@ -13,8 +13,8 @@
   /* Text */
   --ink: #0F172A;
   --ink-soft: #334155;
-  --muted: #64748B;
-  --muted-light: #94A3B8;
+  --muted: #475569;
+  --muted-light: #64748B;
 
   /* Brand — sky blue */
   --primary: #0EA5E9;
@@ -321,7 +321,7 @@ img { max-width: 100%; }
 
 .btn-primary {
   color: #fff;
-  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  background: linear-gradient(135deg, #075985 0%, #0369A1 100%);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
@@ -330,7 +330,7 @@ img { max-width: 100%; }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   pointer-events: none;
 }
 .btn-primary:hover {
@@ -361,7 +361,7 @@ img { max-width: 100%; }
 }
 
 .btn-accent {
-  color: #fff;
+  color: var(--ink);
   background: linear-gradient(135deg, #FDBA74 0%, #FB923C 100%);
   box-shadow: var(--shadow-md);
   position: relative;
@@ -383,7 +383,7 @@ img { max-width: 100%; }
 
 .btn-youtube {
   color: #fff;
-  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
@@ -399,7 +399,7 @@ img { max-width: 100%; }
 .btn-youtube:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 
 /* Legacy names */
-.btn-teal { color: #fff; background: linear-gradient(180deg, #38BDF8, #0EA5E9); box-shadow: 0 5px 0 #0369A1; }
+.btn-teal { color: #fff; background: linear-gradient(180deg, #075985, #0369A1); box-shadow: 0 5px 0 #0369A1; }
 .btn-teal:active { transform: translateY(4px); box-shadow: 0 1px 0 #0369A1; }
 .btn-ghost { background: transparent; color: var(--ink); margin-bottom: 0; }
 .btn-ghost:hover { background: var(--primary-soft); }
