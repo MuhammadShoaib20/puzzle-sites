@@ -14,6 +14,8 @@ Review it against the actual database before using it as a production restore.
   policy, and the initial About, Contact, Privacy, and Terms pages.
 - `migrations/20261018_add_ahrefs_data_key.sql` — adds the Ahrefs Web Analytics key to
   site settings.
+- `migrations/20261021_add_level_updated_at.sql` — adds level modification timestamps
+  for accurate sitemap `lastModified` values.
 
 ## Existing project
 
@@ -29,6 +31,10 @@ already exist, so existing page content is preserved.
 
 Apply `migrations/20261018_add_ahrefs_data_key.sql` in the Supabase SQL Editor to add
 the Ahrefs Web Analytics setting to an existing project. It is safe to rerun.
+
+Apply `migrations/20261021_add_level_updated_at.sql` in the Supabase SQL Editor before
+deploying the matching sitemap change. The sitemap remains available without it, but
+will temporarily use each level's `created_at` value and log a warning.
 
 ## New project
 

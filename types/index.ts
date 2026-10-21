@@ -67,6 +67,7 @@ export interface Level {
   views: number;
   published: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 // ==========================================

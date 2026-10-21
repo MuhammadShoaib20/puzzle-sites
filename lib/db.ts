@@ -55,6 +55,122 @@ export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
   return (data || []) as { slug: string }[];
 }
 
+type SitemapPageResult<T> = {
+  data: T[] | null;
+  error: { message: string; code?: string } | null;
+};
+
+async function getAllSitemapRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<SitemapPageResult<T>>,
+  queryName: string
+): Promise<T[]> {
+  const pageSize = 1000;
+  const result: T[] = [];
+
+  for (let from = 0; ; ) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) {
+      throw new Error(`${queryName} failed: ${error.message}`);
+    }
+
+    const batch = data || [];
+    result.push(...batch);
+    if (batch.length < pageSize) break;
+    from += batch.length;
+  }
+
+  return result;
+}
+
+export async function getAllPublishedGamesForSitemap(): Promise<
+  Pick<Game, 'id' | 'slug' | 'created_at' | 'updated_at'>[]
+> {
+  return getAllSitemapRows<Pick<Game, 'id' | 'slug' | 'created_at' | 'updated_at'>>(
+    (from, to) =>
+      supabase
+        .from('games')
+        .select('id, slug, created_at, updated_at')
+        .eq('published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedGamesForSitemap'
+  );
+}
+
+export async function getPublishedLevelsForGameForSitemap(
+  gameId: string,
+  gameSlug: string
+): Promise<
+  { game_slug: string; level_number: number; created_at: string; updated_at?: string }[]
+> {
+  let selectUpdatedAt = true;
+  type SitemapLevel = {
+    game_slug: string;
+    level_number: number;
+    created_at: string;
+    updated_at?: string;
+  };
+
+  return getAllSitemapRows<SitemapLevel>(
+    async (from, to) => {
+      let rows: Omit<SitemapLevel, 'game_slug'>[] | null = null;
+
+      if (selectUpdatedAt) {
+        const response = await supabase
+          .from('levels')
+          .select('level_number, created_at, updated_at')
+          .eq('game_id', gameId)
+          .eq('published', true)
+          .order('level_number', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to);
+
+        if (
+          response.error &&
+          (response.error.code === '42703' ||
+            response.error.code === 'PGRST204' ||
+            response.error.message.includes('levels.updated_at'))
+        ) {
+          console.warn(
+            'levels.updated_at is unavailable; apply the levels updated_at migration. Using created_at for sitemap lastModified.'
+          );
+          selectUpdatedAt = false;
+        } else if (response.error) {
+          return { data: null, error: response.error };
+        } else {
+          rows = response.data;
+        }
+      }
+
+      if (!selectUpdatedAt) {
+        const response = await supabase
+          .from('levels')
+          .select('level_number, created_at')
+          .eq('game_id', gameId)
+          .eq('published', true)
+          .order('level_number', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (response.error) {
+          return { data: null, error: response.error };
+        }
+        rows = response.data;
+      }
+
+      return {
+        data: (rows || []).map((level) => ({
+          game_slug: gameSlug,
+          level_number: level.level_number,
+          created_at: level.created_at,
+          updated_at: level.updated_at,
+        })),
+        error: null,
+      };
+    },
+    'getPublishedLevelsForGameForSitemap'
+  );
+}
+
 // ==========================================
 // LEVELS
 // ==========================================
@@ -85,54 +201,6 @@ export async function getPublishedLevelSummariesByGame(
     if (batch.length === 0) break;
     result.push(...batch);
     from += batch.length;
-  }
-
-  return result;
-}
-
-export async function getAllPublishedLevelsForSitemap(): Promise<
-  { game_slug: string; level_number: number; created_at: string }[]
-> {
-  const pageSize = 1000;
-  const result: { game_slug: string; level_number: number; created_at: string }[] = [];
-
-  for (let from = 0; ; ) {
-    const { data, error } = await supabase
-      .from('levels')
-      .select(`
-        level_number,
-        created_at,
-        game:games!inner (slug, published)
-      `)
-      .eq('published', true)
-      .eq('game.published', true)
-      .order('created_at', { ascending: false })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error('getAllPublishedLevelsForSitemap error:', error.message);
-      return [];
-    }
-
-    type Row = {
-      level_number: number;
-      created_at: string;
-      game: { slug: string } | { slug: string }[] | null;
-    };
-
-    const rows = (data || []) as unknown as Row[];
-    for (const row of rows) {
-      const game = Array.isArray(row.game) ? row.game[0] : row.game;
-      if (!game?.slug) continue;
-      result.push({
-        game_slug: game.slug,
-        level_number: row.level_number,
-        created_at: row.created_at,
-      });
-    }
-
-    if (rows.length === 0) break;
-    from += rows.length;
   }
 
   return result;
@@ -265,6 +333,21 @@ export async function getAllBlogs(): Promise<Blog[]> {
   return (data || []) as Blog[];
 }
 
+export async function getAllPublishedBlogsForSitemap(): Promise<
+  Pick<Blog, 'slug' | 'created_at'>[]
+> {
+  return getAllSitemapRows<Pick<Blog, 'slug' | 'created_at'>>(
+    (from, to) =>
+      supabase
+        .from('blogs')
+        .select('slug, created_at')
+        .eq('published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedBlogsForSitemap'
+  );
+}
+
 export async function getBlogBySlug(slug: string): Promise<Blog | null> {
   const { data, error } = await supabase
     .from('blogs')
@@ -352,17 +435,16 @@ export async function getFooterPages(): Promise<Page[]> {
 export async function getAllPublishedPagesForSitemap(): Promise<
   Pick<Page, 'slug' | 'created_at' | 'updated_at'>[]
 > {
-  const { data, error } = await supabase
-    .from('pages')
-    .select('slug, created_at, updated_at')
-    .eq('is_published', true)
-    .order('slug', { ascending: true });
-
-  if (error) {
-    console.error('getAllPublishedPagesForSitemap error:', error.message);
-    return [];
-  }
-  return (data || []) as Pick<Page, 'slug' | 'created_at' | 'updated_at'>[];
+  return getAllSitemapRows<Pick<Page, 'slug' | 'created_at' | 'updated_at'>>(
+    (from, to) =>
+      supabase
+        .from('pages')
+        .select('slug, created_at, updated_at')
+        .eq('is_published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedPagesForSitemap'
+  );
 }
 
 // ==========================================
@@ -376,6 +458,18 @@ export async function getAllCategories(): Promise<Category[]> {
 
   if (error) return [];
   return (data || []) as Category[];
+}
+
+export async function getAllCategoriesForSitemap(): Promise<Category[]> {
+  return getAllSitemapRows<Category>(
+    (from, to) =>
+      supabase
+        .from('categories')
+        .select('*')
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllCategoriesForSitemap'
+  );
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
