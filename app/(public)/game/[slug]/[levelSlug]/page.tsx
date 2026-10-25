@@ -64,9 +64,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!level) return {};
 
   const title = level.meta_title || `${game.name} Level ${level.level_number} Walkthrough & Solution`;
+  const developer =
+    typeof game === 'object' && game && 'developer' in game
+      ? String((game as Record<string, unknown>).developer ?? '').trim()
+      : '';
   const description =
     level.meta_description ||
-    `Complete walkthrough for ${game.name} Level ${level.level_number}.`;
+    `Stuck on ${game.name} Level ${level.level_number}? Watch our full video walkthrough and get pro tips to beat this ${developer || 'game'} level fast. Complete solution inside!`;
 
   return {
     title,

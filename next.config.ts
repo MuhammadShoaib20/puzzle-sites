@@ -4,6 +4,9 @@ import path from 'path';
 const ADMIN_PATH = process.env.ADMIN_SECRET_PATH || 'ms-control-9x7k2p';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    agentUpgrade: 'security',
+  },
   turbopack: {
     root: path.join(__dirname),
   },
