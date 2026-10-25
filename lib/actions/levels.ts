@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { extractYoutubeId } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
+import { getAdminUrl } from '@/lib/admin-path';
 
 async function getGameSlug(gameId: string): Promise<{ slug: string } | { error: string }> {
   const { data: game, error } = await supabaseAdmin
@@ -266,7 +267,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels/${levelId}/edit`);
   revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
-  redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  redirect(getAdminUrl(`/games/${gameId}/levels/${levelId}/edit`));
 }
 
 // ==========================================

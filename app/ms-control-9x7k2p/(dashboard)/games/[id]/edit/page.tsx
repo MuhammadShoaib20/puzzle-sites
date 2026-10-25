@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { updateGame } from '@/lib/actions/games';
 import GameForm from '@/components/GameForm';
+import { getAdminPath } from '@/lib/admin-path';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export default async function EditGamePage({ params }: Props) {
   if (!game) notFound();
 
   const action = updateGame.bind(null, id);
+  const redirectPath = `/${getAdminPath()}/games/${id}/edit`;
 
   return (
     <div className="admin-page animate-fade-in-up" style={{ maxWidth: 900 }}>
@@ -28,7 +30,12 @@ export default async function EditGamePage({ params }: Props) {
       </Link>
       <h1 className="admin-title mt-2 mb-8">Edit {game.name}</h1>
 
-      <GameForm action={action} game={game} submitLabel="Update game" />
+      <GameForm
+        action={action}
+        game={game}
+        submitLabel="Update game"
+        redirectPath={redirectPath}
+      />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import PageForm from '@/components/PageForm';
 import { createPage } from '@/lib/actions/pages';
 
+export const dynamic = 'force-dynamic';
+
 export default function NewPagePage() {
   return (
     <div className="p-8 max-w-4xl">
