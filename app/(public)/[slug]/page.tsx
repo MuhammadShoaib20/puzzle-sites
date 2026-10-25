@@ -6,6 +6,8 @@ import { getPageMetadata } from '@/lib/page-metadata';
 
 type Props = { params: Promise<{ slug: string }> };
 
+export const revalidate = false;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   return getPageMetadata(await getPageBySlug(slug));

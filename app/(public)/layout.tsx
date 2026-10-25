@@ -5,7 +5,7 @@ import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
 import HomeScrollControlsLoader from '@/components/HomeScrollControlsLoader';
 
-export const revalidate = 3600;
+export const revalidate = false;
 
 export default async function PublicLayout({
   children,

@@ -6,6 +6,46 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { extractYoutubeId } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
 
+async function getGameSlug(gameId: string): Promise<{ slug: string } | { error: string }> {
+  const { data: game, error } = await supabaseAdmin
+    .from('games')
+    .select('slug')
+    .eq('id', gameId)
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!game) return { error: 'Game not found.' };
+  return { slug: game.slug };
+}
+
+function getLevelNumbers(levels: unknown[]): number[] {
+  return [
+    ...new Set(
+      levels.flatMap((item) => {
+        if (
+          item &&
+          typeof item === 'object' &&
+          'level_number' in item &&
+          typeof item.level_number === 'number' &&
+          Number.isInteger(item.level_number)
+        ) {
+          return [item.level_number];
+        }
+        return [];
+      })
+    ),
+  ];
+}
+
+function revalidatePublicLevelPaths(gameSlug: string, levelNumbers: number[]) {
+  revalidatePath('/');
+  revalidatePath('/sitemap.xml');
+  revalidatePath(`/game/${gameSlug}`);
+  for (const levelNumber of new Set(levelNumbers)) {
+    revalidatePath(`/game/${gameSlug}/level-${levelNumber}`);
+  }
+}
+
 // ==========================================
 // BULK EDIT ALL LEVELS AT ONCE
 // ==========================================
@@ -23,6 +63,9 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
       return { error: 'Invalid levels data.' };
     }
 
+    const game = await getGameSlug(gameId);
+    if ('error' in game) return { error: game.error };
+
     // Upsert all levels (insert or update based on game_id, level_number)
     const { error } = await supabaseAdmin
       .from('levels')
@@ -36,7 +79,7 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
     await updateGameLevelCount(gameId);
 
     revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
-    revalidatePath(`/game/[slug]`);
+    revalidatePublicLevelPaths(game.slug, getLevelNumbers(levels));
     redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
   } catch (e) {
     return { error: 'Failed to parse levels data.' };
@@ -56,6 +99,9 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
   if (isNaN(from) || isNaN(to) || from < 1 || to < from || to > 1000) {
     return { error: 'Invalid range. From must be >= 1, To >= From, max 1000.' };
   }
+
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
 
   // Existing levels ki list nikalo
   const { data: existing } = await supabaseAdmin
@@ -104,6 +150,10 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePublicLevelPaths(
+    game.slug,
+    newLevels.map((level) => level.level_number)
+  );
   redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
@@ -132,6 +182,9 @@ export async function createLevel(gameId: string, formData: FormData) {
     return { error: 'Invalid YouTube URL.' };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
   const { error } = await supabaseAdmin.from('levels').insert({
     game_id: gameId,
     level_number,
@@ -156,6 +209,7 @@ export async function createLevel(gameId: string, formData: FormData) {
   await updateGameLevelCount(gameId);
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePublicLevelPaths(game.slug, [level_number]);
   redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
@@ -179,6 +233,17 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
     return { error: 'Invalid YouTube URL.' };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
+  const { data: existingLevel, error: lookupError } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('id', levelId)
+    .maybeSingle();
+  if (lookupError) return { error: lookupError.message };
+  if (!existingLevel) return { error: 'Level not found.' };
+
   const { error } = await supabaseAdmin
     .from('levels')
     .update({
@@ -200,6 +265,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels/${levelId}/edit`);
+  revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
   redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
@@ -208,6 +274,17 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
 // ==========================================
 export async function deleteLevel(levelId: string, gameId: string) {
   await requireAuth();
+
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
+  const { data: existingLevel, error: lookupError } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('id', levelId)
+    .maybeSingle();
+  if (lookupError) return { error: lookupError.message };
+  if (!existingLevel) return { error: 'Level not found.' };
 
   const { error } = await supabaseAdmin.from('levels').delete().eq('id', levelId);
 
@@ -219,6 +296,7 @@ export async function deleteLevel(levelId: string, gameId: string) {
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
 }
 
 // ==========================================
@@ -304,6 +382,9 @@ export async function bulkImportLevels(
     return { error: `No valid levels to import. Skipped: ${skipped}, Invalid: ${invalid}` };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
   const { error } = await supabaseAdmin.from('levels').insert(newLevels);
 
   if (error) {
@@ -314,8 +395,10 @@ export async function bulkImportLevels(
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
-  revalidatePath('/game/[slug]', 'page');
-  revalidatePath('/game/[slug]/[levelSlug]', 'page');
+  revalidatePublicLevelPaths(
+    game.slug,
+    newLevels.map((level) => level.level_number)
+  );
 
   return { success: true, inserted: newLevels.length, skipped, invalid };
 }

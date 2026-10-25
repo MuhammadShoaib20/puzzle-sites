@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
@@ -78,6 +77,15 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
   return slug;
 }
 
+function revalidateBlogPaths(...slugs: string[]) {
+  revalidatePath('/');
+  revalidatePath('/blog');
+  revalidatePath('/sitemap.xml');
+  for (const slug of new Set(slugs)) {
+    revalidatePath(`/blog/${slug}`);
+  }
+}
+
 export async function createBlog(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
@@ -125,10 +133,8 @@ export async function createBlog(formData: FormData): Promise<ActionResult> {
       }
       return { success: false, error: 'Failed to create blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath('/blog');
-    revalidatePath('/');
+    revalidateBlogPaths(slug);
     return { success: true, data: inserted };
   } catch (error) {
     console.error('Create blog error:', error);
@@ -164,6 +170,20 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
       slug = await generateUniqueSlug(slug, id);
     }
 
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('blogs')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find blog. Please try again.' };
+    }
+    if (!existing) {
+      return { success: false, error: 'Blog not found.' };
+    }
+
     const { error } = await supabaseAdmin
       .from('blogs')
       .update({
@@ -186,10 +206,8 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
       }
       return { success: false, error: 'Failed to update blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath(`/blog/${slug}`);
-    revalidatePath('/blog');
+    revalidateBlogPaths(existing.slug, slug);
     return { success: true };
   } catch (error) {
     console.error('Update blog error:', error);
@@ -201,16 +219,28 @@ export async function deleteBlog(id: string): Promise<ActionResult> {
   try {
     await requireAuth();
 
+    const { data: blog, error: lookupError } = await supabaseAdmin
+      .from('blogs')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find blog. Please try again.' };
+    }
+    if (!blog) {
+      return { success: false, error: 'Blog not found.' };
+    }
+
     const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
 
     if (error) {
       console.error('Supabase error:', error);
       return { success: false, error: 'Failed to delete blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath('/blog');
-    revalidatePath('/');
+    revalidateBlogPaths(blog.slug);
     return { success: true };
   } catch (error) {
     console.error('Delete blog error:', error);

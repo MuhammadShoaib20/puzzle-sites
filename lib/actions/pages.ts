@@ -37,11 +37,11 @@ function getPageValues(formData: FormData) {
   };
 }
 
-function revalidatePagePaths(slug?: string) {
+function revalidatePagePaths(...slugs: string[]) {
   revalidatePath('/ms-control-9x7k2p/pages');
   revalidatePath('/sitemap.xml');
-  revalidatePath('/', 'layout');
-  if (slug) {
+  revalidatePath('/');
+  for (const slug of new Set(slugs)) {
     revalidatePath(`/${slug}`);
     if (slug === 'privacy') revalidatePath('/privacy-policy');
   }
@@ -83,8 +83,7 @@ export async function updatePage(id: string, formData: FormData) {
     .eq('id', id);
   if (error) return { error: error.message };
 
-  revalidatePagePaths(existingPage.slug);
-  revalidatePagePaths(result.values.slug);
+  revalidatePagePaths(existingPage.slug, result.values.slug);
   redirect('/ms-control-9x7k2p/pages');
 }
 

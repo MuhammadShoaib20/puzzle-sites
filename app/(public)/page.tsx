@@ -8,7 +8,7 @@ import EmptyState from '@/components/EmptyState';
 import JsonLd from '@/components/JsonLd';
 import type { Level } from '@/types';
 
-export const revalidate = 60;
+export const revalidate = false;
 
 type LevelWithGame = Level & {
   game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];

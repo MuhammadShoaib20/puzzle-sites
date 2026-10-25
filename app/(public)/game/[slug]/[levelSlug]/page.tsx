@@ -24,7 +24,7 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
-export const revalidate = 86400;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

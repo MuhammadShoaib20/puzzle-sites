@@ -30,7 +30,7 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

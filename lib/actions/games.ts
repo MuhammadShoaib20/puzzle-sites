@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
@@ -180,6 +179,17 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
   return slug;
 }
 
+function revalidateGamePaths(levelNumbers: number[], ...slugs: string[]) {
+  revalidatePath('/');
+  revalidatePath('/sitemap.xml');
+  for (const slug of new Set(slugs)) {
+    revalidatePath(`/game/${slug}`);
+    for (const levelNumber of new Set(levelNumbers)) {
+      revalidatePath(`/game/${slug}/level-${levelNumber}`);
+    }
+  }
+}
+
 export async function createGame(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
@@ -213,7 +223,7 @@ export async function createGame(formData: FormData): Promise<ActionResult> {
     }
 
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath('/');
+    revalidateGamePaths([], slug);
     return { success: true, data: inserted };
   } catch (error) {
     console.error('Create game error:', error);
@@ -239,6 +249,30 @@ export async function updateGame(id: string, formData: FormData): Promise<Action
       slug = await generateUniqueSlug(slug, id);
     }
 
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('games')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find game. Please try again.' };
+    }
+    if (!existing) {
+      return { success: false, error: 'Game not found.' };
+    }
+
+    const { data: existingLevels, error: levelsError } = await supabaseAdmin
+      .from('levels')
+      .select('level_number')
+      .eq('game_id', id);
+
+    if (levelsError) {
+      console.error('Supabase error:', levelsError);
+      return { success: false, error: 'Failed to find game levels. Please try again.' };
+    }
+
     const { error } = await supabaseAdmin
       .from('games')
       .update({
@@ -255,10 +289,12 @@ export async function updateGame(id: string, formData: FormData): Promise<Action
       }
       return { success: false, error: 'Failed to update game. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath(`/game/${slug}`);
-    revalidatePath('/');
+    revalidateGamePaths(
+      existingLevels.map((level) => level.level_number),
+      existing.slug,
+      slug
+    );
     return { success: true };
   } catch (error) {
     console.error('Update game error:', error);
@@ -283,6 +319,20 @@ export async function deleteGame(id: string): Promise<ActionResult> {
       };
     }
 
+    const { data: game, error: lookupError } = await supabaseAdmin
+      .from('games')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find game. Please try again.' };
+    }
+    if (!game) {
+      return { success: false, error: 'Game not found.' };
+    }
+
     const { error } = await supabaseAdmin.from('games').delete().eq('id', id);
 
     if (error) {
@@ -291,7 +341,7 @@ export async function deleteGame(id: string): Promise<ActionResult> {
     }
 
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath('/');
+    revalidateGamePaths([], game.slug);
     return { success: true };
   } catch (error) {
     console.error('Delete game error:', error);
