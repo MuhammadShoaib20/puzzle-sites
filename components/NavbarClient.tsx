@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import NavbarSearch from './NavbarSearch';
 
 const LINKS = [
@@ -20,7 +20,23 @@ type Props = {
 
 export default function NavbarClient({ siteName, siteLogo }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+
+  // The menu is "open for" a specific path, so it closes by itself on every
+  // route change (no effect needed).
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const open = openFor === pathname;
+  const closeMenu = () => setOpenFor(null);
+  const toggleMenu = () => setOpenFor(open ? null : pathname);
+
+  // Close with the Escape key
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenFor(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
@@ -28,48 +44,58 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
   return (
     <header className="site-nav">
       <div className="container-page">
-        <div className="nav-inner">
-          <Link href="/" className="brand" onClick={() => setOpen(false)}>
+        <div className="nv-bar">
+          <Link href="/" className="nv-brand" onClick={closeMenu}>
             {siteLogo ? (
-              <span className="brand-logo-frame">
+              <span className="nv-logo">
                 <Image
                   src={siteLogo}
                   alt=""
                   width={40}
                   height={40}
                   sizes="40px"
-                  className="brand-logo"
+                  className="nv-logo-img"
                   preload
                 />
               </span>
             ) : (
-              <span className="brand-mark" aria-hidden="true">🧩</span>
+              <span className="nv-mark" aria-hidden="true">
+                🧩
+              </span>
             )}
-            <span className="brand-name">{siteName}</span>
+            <span className="nv-name">{siteName}</span>
           </Link>
 
-          <div className="hidden lg:block flex-1 max-w-sm mx-auto">
+          {/* Desktop search */}
+          <div className="nv-search">
             <NavbarSearch />
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 ml-auto" aria-label="Main">
-            {LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          {/* Desktop links */}
+          <nav className="nv-links" aria-label="Main">
+            {LINKS.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`nv-link ${active ? 'active' : ''}`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
+          {/* Menu button (phones + tablets) */}
           <button
             type="button"
-            className="menu-btn md:hidden ml-auto"
+            className="menu-btn nv-menu"
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
+            aria-controls="nv-mobile-panel"
+            onClick={toggleMenu}
           >
             <span className={`menu-lines ${open ? 'open' : ''}`} aria-hidden="true">
               <span />
@@ -80,23 +106,27 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         </div>
 
         {/* Mobile / tablet panel */}
-        <div className={`mobile-panel md:hidden ${open ? 'open' : ''}`}>
+        <div id="nv-mobile-panel" className={`mobile-panel nv-panel ${open ? 'open' : ''}`}>
           <div className="mobile-panel-inner" inert={!open}>
-            <div className="pb-4">
-              <NavbarSearch onDone={() => setOpen(false)} />
+            <div className="nv-panel-body">
+              <NavbarSearch onDone={closeMenu} />
+              <nav className="nv-mobile-links" aria-label="Mobile">
+                {LINKS.map((link) => {
+                  const active = isActive(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={closeMenu}
+                      aria-current={active ? 'page' : undefined}
+                      className={`nv-mlink ${active ? 'active' : ''}`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
             </div>
-            <nav className="mobile-links" aria-label="Mobile">
-              {LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
           </div>
         </div>
       </div>

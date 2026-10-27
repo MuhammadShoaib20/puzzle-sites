@@ -10,11 +10,14 @@ import type { Level } from '@/types';
 
 export const revalidate = false;
 
+type GameRef = { id: string; name: string; slug: string };
+
 type LevelWithGame = Level & {
-  game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
+  game: GameRef | GameRef[];
 };
 
-const TILES: { n: string; kind: '' | 'solved' | 'stuck' }[] = [
+// Decorative "level board" shown in the hero. Level 6 is the one you're stuck on.
+const BOARD: { n: string; kind: '' | 'solved' | 'stuck' }[] = [
   { n: '1', kind: 'solved' },
   { n: '2', kind: 'solved' },
   { n: '3', kind: 'solved' },
@@ -23,7 +26,30 @@ const TILES: { n: string; kind: '' | 'solved' | 'stuck' }[] = [
   { n: '?', kind: 'stuck' },
   { n: '7', kind: '' },
   { n: '8', kind: '' },
+  { n: '9', kind: '' },
+  { n: '10', kind: '' },
+  { n: '11', kind: '' },
+  { n: '12', kind: '' },
 ];
+
+function LevelLink({ level }: { level: LevelWithGame }) {
+  const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
+  if (!gameData?.slug) return null;
+
+  return (
+    <Link
+      href={`/game/${gameData.slug}/level-${level.level_number}`}
+      prefetch={false}
+      className="lv-link"
+    >
+      <span className="lv-num">{level.level_number}</span>
+      <span className="lv-text">
+        <span className="lv-title">{level.title || `Level ${level.level_number}`}</span>
+        <span className="lv-game">{gameData.name}</span>
+      </span>
+    </Link>
+  );
+}
 
 export default async function HomePage() {
   const [games, levels, blogs] = await Promise.all([
@@ -38,78 +64,79 @@ export default async function HomePage() {
   const organizationSchema = generateOrganizationSchema();
 
   return (
-    <div>
+    <div className="home">
       <JsonLd data={websiteSchema} />
       <JsonLd data={organizationSchema} />
+
       {/* ============= HERO ============= */}
-      <section className="hero">
-        <div className="hero-dots" />
-        <div className="hero-blob b1" />
-        <div className="hero-blob b2" />
-        <div className="hero-blob b3" />
+      <section className="home-hero">
+        <div className="container-page home-hero-grid">
+          <div className="home-hero-copy">
+            <h1 className="home-title">Stuck on level 6? Watch how it&apos;s solved.</h1>
+            <p className="home-lead">
+              Video walkthroughs and step-by-step solutions for every level of your favourite
+              puzzle games.
+            </p>
 
-        <div className="container-narrow relative text-center">
-          <h1 className="hero-title">
-            Stuck on level 6? Watch how it&apos;s solved.
-          </h1>
-          <p className="hero-sub animate-fade-in-up" style={{ animationDelay: '90ms' }}>
-            Video walkthroughs and step-by-step solutions for every level of your favourite puzzle games.
-          </p>
-
-          <div
-            className="max-w-xl mx-auto mt-8 animate-fade-in-up"
-            style={{ animationDelay: '170ms' }}
-          >
-            <NavbarSearch big placeholder="Search a game, e.g. Fish Jam" />
-          </div>
-
-          <div
-            className="hero-actions flex gap-3 sm:gap-4 justify-center flex-wrap mt-8 sm:mt-10 animate-fade-in-up"
-            style={{ animationDelay: '260ms' }}
-          >
-            <Link href="#all-games" className="btn btn-primary btn-lg">
-              Browse games
-            </Link>
-            <Link href="/blog" className="btn btn-secondary btn-lg">
-              Read guides
-            </Link>
-          </div>
-
-          <div className="tile-strip" aria-hidden="true">
-            {TILES.map((tile, i) => (
-              <span
-                key={tile.n + i}
-                className={`tile ${tile.kind}`}
-                style={{ animationDelay: `${300 + i * 80}ms` }}
-              >
-                {tile.n}
-              </span>
-            ))}
-          </div>
-
-          <div className="stats-row animate-fade-in-up" style={{ animationDelay: '340ms' }}>
-            <div className="stat">
-              <b>{games.length}</b>
-              <span>Games</span>
+            <div className="home-search">
+              <NavbarSearch big placeholder="Search a game, e.g. Fish Jam" />
             </div>
-            <div className="stat">
-              <b>{totalLevels}</b>
-              <span>Levels</span>
+
+            <div className="home-actions">
+              <Link href="#all-games" className="btn btn-primary btn-lg">
+                Browse games
+              </Link>
+              <Link href="/blog" className="btn btn-secondary btn-lg">
+                Read guides
+              </Link>
             </div>
-            <div className="stat">
-              <b>Free</b>
-              <span>Video guides</span>
+
+            <div className="home-stats">
+              <div className="home-stat">
+                <b>{games.length}</b>
+                <span>{games.length === 1 ? 'game' : 'games'}</span>
+              </div>
+              <div className="home-stat">
+                <b>{totalLevels}</b>
+                <span>levels</span>
+              </div>
+              <div className="home-stat">
+                <b>Free</b>
+                <span>video guides</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="level-board" aria-hidden="true">
+            <div className="board-head">
+              <span className="board-live" />
+              <span>Level 6 solution is ready</span>
+            </div>
+            <div className="board-grid">
+              {BOARD.map((tile, i) => (
+                <span
+                  key={tile.n}
+                  className={`board-tile ${tile.kind}`}
+                  style={{ animationDelay: `${120 + i * 55}ms` }}
+                >
+                  {tile.n}
+                </span>
+              ))}
+            </div>
+            <div className="board-foot">
+              <span className="board-play" />
+              <span>Watch the full video solution</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ============= ALL GAMES ============= */}
-      <section id="all-games" className="container-page section" style={{ scrollMarginTop: 100 }}>
-        <div className="section-head">
+      <section id="all-games" className="container-page home-section">
+        <div className="home-head">
           <div>
-            <h2 className="section-title">All games</h2>
-            <p className="section-sub">
+            <h2 className="home-h2">All games</h2>
+            <p className="home-sub">
               {games.length} {games.length === 1 ? 'game' : 'games'} with level-by-level guides
             </p>
           </div>
@@ -132,50 +159,29 @@ export default async function HomePage() {
 
       {/* ============= LATEST LEVELS ============= */}
       {levels.length > 0 && (
-        <section className="container-page section">
-          <div className="section-head">
+        <section className="container-page home-section home-lazy">
+          <div className="home-head">
             <div>
-              <h2 className="section-title">Latest levels</h2>
-              <p className="section-sub">Fresh walkthroughs added recently</p>
+              <h2 className="home-h2">Latest levels</h2>
+              <p className="home-sub">Fresh walkthroughs added recently</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {(levels as LevelWithGame[]).map((level) => {
-              const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
-              if (!gameData?.slug) return null;
-              return (
-                <Link
-                  key={level.id}
-                  href={`/game/${gameData.slug}/level-${level.level_number}`}
-                  className="card card-hover level-row"
-                >
-                  <div className="level-badge">{level.level_number}</div>
-                  <div className="min-w-0 flex-1">
-                    <h3
-                      className="font-bold text-[15px] line-clamp-1"
-                      style={{ color: 'var(--ink)' }}
-                    >
-                      {level.title || `Level ${level.level_number}`}
-                    </h3>
-                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="lv-grid">
+            {(levels as LevelWithGame[]).map((level) => (
+              <LevelLink key={level.id} level={level} />
+            ))}
           </div>
         </section>
       )}
 
       {/* ============= LATEST BLOGS ============= */}
       {blogs.length > 0 && (
-        <section className="container-page section">
-          <div className="section-head">
+        <section className="container-page home-section home-lazy">
+          <div className="home-head">
             <div>
-              <h2 className="section-title">Latest guides</h2>
-              <p className="section-sub">Tips, tricks and walkthrough articles</p>
+              <h2 className="home-h2">Latest guides</h2>
+              <p className="home-sub">Tips, tricks and walkthrough articles</p>
             </div>
             <Link href="/blog" className="link-arrow">
               View all →
@@ -190,52 +196,14 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ============= POPULAR WALKTHROUGHS ============= */}
-      {levels.length > 0 && (
-        <section className="container-page section">
-          <div className="section-head">
-            <div>
-              <h2 className="section-title">Popular walkthroughs</h2>
-              <p className="section-sub">Most viewed level solutions</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {(levels as LevelWithGame[]).slice(0, 6).map((level) => {
-              const gameData = Array.isArray(level.game) ? level.game[0] : level.game;
-              if (!gameData?.slug) return null;
-              return (
-                <Link
-                  key={level.id}
-                  href={`/game/${gameData.slug}/level-${level.level_number}`}
-                  prefetch={false}
-                  className="card card-hover level-row"
-                >
-                  <div className="level-badge">{level.level_number}</div>
-                  <div className="min-w-0 flex-1">
-                    <h3
-                      className="font-bold text-[15px] line-clamp-1"
-                      style={{ color: 'var(--ink)' }}
-                    >
-                      {level.title || `Level ${level.level_number}`}
-                    </h3>
-                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {/* ============= CTA ============= */}
-      <section className="container-page section" style={{ marginBottom: 0 }}>
-        <div className="cta-band">
-          <h2>Can&apos;t find your game?</h2>
-          <p>Tell us which puzzle game you&apos;re stuck on and we&apos;ll add its walkthrough.</p>
-          <Link href="/contact" className="btn btn-accent btn-lg btn-stack">
+      <section className="container-page home-section home-lazy home-section-last">
+        <div className="home-cta">
+          <div>
+            <h2>Can&apos;t find your game?</h2>
+            <p>Tell us which puzzle game you&apos;re stuck on and we&apos;ll add its walkthrough.</p>
+          </div>
+          <Link href="/contact" className="btn btn-accent btn-lg">
             Request a game
           </Link>
         </div>

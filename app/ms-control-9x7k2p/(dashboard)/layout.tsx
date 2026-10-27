@@ -1,17 +1,26 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
-import BackgroundDecor from '@/components/BackgroundDecor';
 import { getSettings } from '@/lib/db';
 import { getAdminPath } from '@/lib/admin-path';
 import type { Metadata } from 'next';
 import AdminToastProvider from '@/components/AdminToastProvider';
+import PwaInstallButton from '@/components/PwaInstallButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export const metadata: Metadata = {
   robots: 'noindex, nofollow, noarchive, nosnippet',
+  manifest: '/admin-manifest',
+  icons: {
+    apple: [{ url: '/pw-admin-icon', sizes: '512x512', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'PW Admin',
+    statusBarStyle: 'default',
+  },
 };
 
 const ADMIN_PATH = process.env.ADMIN_SECRET_PATH || 'ms-control-9x7k2p';
@@ -28,7 +37,7 @@ export default async function AdminDashboardLayout({
 
   return (
     <>
-      <BackgroundDecor />
+      <PwaInstallButton />
       <div className="admin-shell">
         <AdminSidebar
           siteName={settings?.site_name || 'PuzzleWalkthroughs'}

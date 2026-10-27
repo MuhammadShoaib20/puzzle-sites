@@ -62,16 +62,12 @@ export default function LoginForm({ siteName, siteLogo, adminPath, message }: Pr
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, #D4ECFF 0%, #F3F9FF 100%)' }}
+      style={{ background: 'var(--bg)' }}
     >
-      <div className="hero-dots" />
-      <div className="hero-blob b1" />
-      <div className="hero-blob b2" />
-
       <form
         onSubmit={handleSubmit}
         className="card p-7 sm:p-9 w-full max-w-md relative animate-fade-in-up"
-        style={{ boxShadow: 'var(--shadow-lg)' }}
+        style={{ boxShadow: 'var(--shadow-sm)' }}
       >
         {/* Logo / Brand */}
         <div className="flex justify-center mb-5">

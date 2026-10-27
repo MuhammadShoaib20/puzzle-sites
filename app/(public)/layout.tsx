@@ -2,7 +2,6 @@ import { getSettings, getAllCategories } from '@/lib/db';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AdSlot from '@/components/AdSlot';
-import BackgroundDecor from '@/components/BackgroundDecor';
 import HomeScrollControlsLoader from '@/components/HomeScrollControlsLoader';
 
 export const revalidate = false;
@@ -19,7 +18,6 @@ export default async function PublicLayout({
 
   return (
     <>
-      <BackgroundDecor />
       <div className="site-content min-h-screen flex flex-col">
       <HomeScrollControlsLoader />
       <Navbar settings={settings} />

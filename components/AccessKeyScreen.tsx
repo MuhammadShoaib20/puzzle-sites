@@ -72,22 +72,22 @@ export default function AccessKeyScreen({ correctKey, onSuccess }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
+        <div className="card p-8" style={{ boxShadow: 'var(--shadow-sm)' }}>
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-2xl flex items-center justify-center">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)' }}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Required</h1>
-            <p className="text-gray-600 dark:text-gray-400">Enter your access key to continue</p>
+            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--ink)' }}>Access Required</h1>
+            <p style={{ color: 'var(--muted)' }}>Enter your access key to continue</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="access-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="access-key" className="block text-sm font-medium mb-2" style={{ color: 'var(--ink-soft)' }}>
                 Access Key
               </label>
               <input
@@ -97,22 +97,23 @@ export default function AccessKeyScreen({ correctKey, onSuccess }: Props) {
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="Enter 8-digit code"
                 maxLength={8}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3"
+                style={{ borderRadius: '12px', border: '1.5px solid #94A3B8', background: '#fff', color: 'var(--ink)' }}
                 disabled={loading}
                 autoFocus
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="p-3 rounded-lg" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5' }}>
+                <p className="text-sm" style={{ color: '#B91C1C' }}>{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading || key.length !== 8}
-              className="w-full py-3 px-4 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary btn-block"
             >
               {loading ? 'Verifying...' : 'Continue'}
             </button>

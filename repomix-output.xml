@@ -142,6 +142,7 @@ components/
   BulkImportForm.tsx
   ConsentAnalytics.tsx
   CookieConsentBanner.tsx
+  DelayedAdSense.tsx
   DeleteBlogButton.tsx
   DeleteGameButton.tsx
   DeleteLevelButton.tsx
@@ -151,6 +152,7 @@ components/
   GameCard.tsx
   GameForm.tsx
   HomeScrollControls.tsx
+  HomeScrollControlsLoader.tsx
   ImageUpload.tsx
   JsonLd.tsx
   LazyYouTube.tsx
@@ -205,6 +207,8 @@ supabase/
     20261012_admin_security.sql
     20261012_pages_cms.sql
     20261012_remove_clarity_from_privacy.sql
+    20261018_add_ahrefs_data_key.sql
+    20261021_add_level_updated_at.sql
   README.md
   schema.sql
 types/
@@ -228,6 +232,8 @@ import { getPageBySlug } from '@/lib/db';
 import { getPageMetadata } from '@/lib/page-metadata';
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = false;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -268,7 +274,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getBlogBySlug, getAllBlogSlugs, getRelatedBlogs } from '@/lib/db';
 import { formatDate } from '@/lib/utils';
-import { generateArticleSchema, generateBreadcrumbSchema } from '@/lib/schema';
+import { generateArticleSchema, generateBreadcrumbSchema, extractFaqsFromHtml, generateFAQSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import JsonLd from '@/components/JsonLd';
@@ -276,7 +282,7 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 3600;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
@@ -325,11 +331,15 @@ export default async function BlogDetailPage({ params }: Props) {
     { position: 3, name: blog.title, item: `${siteUrl}/blog/${blog.slug}` },
   ]);
 
+  const faqs = extractFaqsFromHtml(blog.content || '');
+  const faqSchema = faqs.length > 0 ? generateFAQSchema(faqs) : null;
+
   return (
     <article className="animate-fade-in-up">
       <ViewTracker type="blog" id={blog.id} />
       <JsonLd data={articleSchema} />
       <JsonLd data={breadcrumbSchema} />
+      {faqSchema && <JsonLd data={faqSchema} />}
 
       <div className="container-narrow pt-6">
         <Breadcrumb
@@ -349,8 +359,6 @@ export default async function BlogDetailPage({ params }: Props) {
           style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
         >
           <span>Published {formatDate(blog.created_at)}</span>
-          <span aria-hidden="true">•</span>
-          <span>{blog.views} views</span>
         </div>
 
         {blog.cover_image && (
@@ -415,7 +423,7 @@ export const metadata: Metadata = {
   description: 'Read the latest puzzle game walkthroughs, tips and tricks.',
 };
 
-export const revalidate = 60;
+export const revalidate = false;
 
 export default async function BlogPage() {
   const blogs = await getAllBlogs();
@@ -437,8 +445,8 @@ export default async function BlogPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {blogs.map((blog) => (
-            <BlogCard key={blog.id} blog={blog} />
+          {blogs.map((blog, index) => (
+            <BlogCard key={blog.id} blog={blog} preload={index < 2} />
           ))}
         </div>
       )}
@@ -530,7 +538,7 @@ import type { Metadata } from 'next';
 import {
   getGameBySlug,
   getLevelByNumber,
-  getLevelsByGame,
+  getPublishedLevelSummariesByGame,
   getSettings,
   getPopularLevelSlugs,
   getRecentLevelSlugs,
@@ -550,7 +558,7 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
-export const revalidate = 86400;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
@@ -590,9 +598,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!level) return {};
 
   const title = level.meta_title || `${game.name} Level ${level.level_number} Walkthrough & Solution`;
+  const developer =
+    typeof game === 'object' && game && 'developer' in game
+      ? String((game as Record<string, unknown>).developer ?? '').trim()
+      : '';
   const description =
     level.meta_description ||
-    `Complete walkthrough for ${game.name} Level ${level.level_number}.`;
+    `Stuck on ${game.name} Level ${level.level_number}? Watch our full video walkthrough and get pro tips to beat this ${developer || 'game'} level fast. Complete solution inside!`;
 
   return {
     title,
@@ -621,7 +633,7 @@ export default async function LevelPage({ params }: Props) {
   if (!level) notFound();
 
   const [allLevels, settings] = await Promise.all([
-    getLevelsByGame(game.id),
+    getPublishedLevelSummariesByGame(game.id),
     getSettings(),
   ]);
 
@@ -683,7 +695,7 @@ export default async function LevelPage({ params }: Props) {
           </h1>
 
           <p className="text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
-            {level.views} views · {new Date(level.created_at).toLocaleDateString()}
+            {new Date(level.created_at).toLocaleDateString()}
           </p>
 
           <div className="video-frame mb-6">
@@ -821,7 +833,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   getGameBySlug,
-  getLevelsByGame,
+  getPublishedLevelSummariesByGame,
   getBlogsByGame,
   getSettings,
   getAllGameSlugs,
@@ -838,7 +850,7 @@ import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import BlogCard from '@/components/BlogCard';
-import LevelSearchGrid from '@/components/LevelSearchGrid';
+import LevelSearchGrid, { LevelRangePagination } from '@/components/LevelSearchGrid';
 import ScrollToLevelsButton from '@/components/ScrollToLevelsButton';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
@@ -847,7 +859,7 @@ import { sanitize } from '@/lib/sanitize';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 3600;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
@@ -883,7 +895,7 @@ export default async function GamePage({ params }: Props) {
   if (!game) notFound();
 
   const [levels, blogs, settings, relatedGames] = await Promise.all([
-    getLevelsByGame(game.id),
+    getPublishedLevelSummariesByGame(game.id),
     getBlogsByGame(game.id),
     getSettings(),
     getRelatedGames(game.id, 4),
@@ -931,6 +943,8 @@ export default async function GamePage({ params }: Props) {
       <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
           <h1 className="page-title mb-4">{game.name} — All Levels Walkthrough</h1>
+
+          <LevelRangePagination levels={levels} />
 
           {game.short_description && (
             <p
@@ -1016,8 +1030,8 @@ export default async function GamePage({ params }: Props) {
             <section className="section" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px 200px' }}>
               <h2 className="section-title mb-5">Guides &amp; tips for {game.name}</h2>
               <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
-                {blogs.map((blog) => (
-                  <BlogCard key={blog.id} blog={blog} />
+                {blogs.map((blog, index) => (
+                  <BlogCard key={blog.id} blog={blog} preload={index < 2} />
                 ))}
               </div>
             </section>
@@ -1059,21 +1073,21 @@ export default async function GamePage({ params }: Props) {
                     key={relatedGame.id}
                     href={`/game/${relatedGame.slug}`}
                     prefetch={false}
-                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+                    className="flex items-center gap-2.5 p-2 rounded-xl transition-colors hover:bg-(--primary-soft) group"
                   >
                     <span
                       className="rounded-xl grid place-items-center shrink-0 text-xs font-bold text-white"
                       style={{
                         width: 'clamp(32px, 4vw, 36px)',
                         height: 'clamp(32px, 4vw, 36px)',
-                        background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                        background: 'linear-gradient(180deg, #075985, #0369A1)',
                         fontFamily: 'var(--font-display), sans-serif',
                       }}
                     >
                       {relatedGame.total_levels || 0}
                     </span>
                     <span
-                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+                      className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-(--primary-dark)"
                       style={{ color: 'var(--ink)' }}
                     >
                       {relatedGame.name}
@@ -1256,13 +1270,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AdSlot from '@/components/AdSlot';
 import BackgroundDecor from '@/components/BackgroundDecor';
-import dynamic from 'next/dynamic';
+import HomeScrollControlsLoader from '@/components/HomeScrollControlsLoader';
 
-const HomeScrollControls = dynamic(
-  () => import('@/components/HomeScrollControls')
-);
-
-export const revalidate = 3600;
+export const revalidate = false;
 
 export default async function PublicLayout({
   children,
@@ -1278,7 +1288,7 @@ export default async function PublicLayout({
     <>
       <BackgroundDecor />
       <div className="site-content min-h-screen flex flex-col">
-      <HomeScrollControls />
+      <HomeScrollControlsLoader />
       <Navbar settings={settings} />
       {settings?.adsense_header && (
         <div className="container-page">
@@ -1309,7 +1319,7 @@ import EmptyState from '@/components/EmptyState';
 import JsonLd from '@/components/JsonLd';
 import type { Level } from '@/types';
 
-export const revalidate = 60;
+export const revalidate = false;
 
 type LevelWithGame = Level & {
   game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
@@ -1350,7 +1360,7 @@ export default async function HomePage() {
         <div className="hero-blob b3" />
 
         <div className="container-narrow relative text-center">
-          <h1 className="hero-title animate-fade-in-up">
+          <h1 className="hero-title">
             Stuck on level 6? Watch how it&apos;s solved.
           </h1>
           <p className="hero-sub animate-fade-in-up" style={{ animationDelay: '90ms' }}>
@@ -1460,7 +1470,7 @@ export default async function HomePage() {
                       {level.title || `Level ${level.level_number}`}
                     </h3>
                     <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name} · {level.views} views
+                      {gameData.name}
                     </p>
                   </div>
                 </Link>
@@ -1484,8 +1494,8 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {blogs.map((blog) => (
-              <BlogCard key={blog.id} blog={blog} />
+            {blogs.map((blog, index) => (
+              <BlogCard key={blog.id} blog={blog} preload={index < 2} />
             ))}
           </div>
         </section>
@@ -1521,7 +1531,7 @@ export default async function HomePage() {
                       {level.title || `Level ${level.level_number}`}
                     </h3>
                     <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--muted)' }}>
-                      {gameData.name} · {level.views} views
+                      {gameData.name}
                     </p>
                   </div>
                 </Link>
@@ -2005,6 +2015,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { updateGame } from '@/lib/actions/games';
 import GameForm from '@/components/GameForm';
+import { getAdminPath } from '@/lib/admin-path';
 
 export const dynamic = 'force-dynamic';
 
@@ -2022,6 +2033,7 @@ export default async function EditGamePage({ params }: Props) {
   if (!game) notFound();
 
   const action = updateGame.bind(null, id);
+  const redirectPath = `/${getAdminPath()}/games/${id}/edit`;
 
   return (
     <div className="admin-page animate-fade-in-up" style={{ maxWidth: 900 }}>
@@ -2030,7 +2042,12 @@ export default async function EditGamePage({ params }: Props) {
       </Link>
       <h1 className="admin-title mt-2 mb-8">Edit {game.name}</h1>
 
-      <GameForm action={action} game={game} submitLabel="Update game" />
+      <GameForm
+        action={action}
+        game={game}
+        submitLabel="Update game"
+        redirectPath={redirectPath}
+      />
     </div>
   );
 }
@@ -2399,6 +2416,8 @@ export default async function EditPagePage({ params }: Props) {
 import PageForm from '@/components/PageForm';
 import { createPage } from '@/lib/actions/pages';
 
+export const dynamic = 'force-dynamic';
+
 export default function NewPagePage() {
   return (
     <div className="p-8 max-w-4xl">
@@ -2701,12 +2720,12 @@ export default function Error({
   /* Text */
   --ink: #0F172A;
   --ink-soft: #334155;
-  --muted: #64748B;
-  --muted-light: #94A3B8;
+  --muted: #475569;
+  --muted-light: #5B6778;
 
   /* Brand — sky blue */
   --primary: #0EA5E9;
-  --primary-dark: #0284C7;
+  --primary-dark: #0369A1;
   --primary-deep: #0369A1;
   --primary-light: #7DD3FC;
   --primary-soft: #E0F2FE;
@@ -2714,12 +2733,12 @@ export default function Error({
 
   /* Accent — sunny orange (used sparingly for energy) */
   --accent: #FB923C;
-  --accent-dark: #EA580C;
+  --accent-dark: #C2410C;
   --accent-soft: #FFF7ED;
 
   /* Lines */
-  --line: #E2E8F0;
-  --line-soft: #F1F5F9;
+  --line: #CBD5E1;
+  --line-soft: #E2E8F0;
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -2826,10 +2845,10 @@ p  { font-size: clamp(0.95rem, 1.5vw, 1.05rem); }
 
 img { max-width: 100%; }
 
-::selection { background: var(--primary); color: #fff; }
+::selection { background: var(--primary-deep); color: #fff; }
 
 :focus-visible {
-  outline: 3px solid var(--primary-light);
+  outline: 3px solid var(--primary-deep);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -3009,7 +3028,7 @@ img { max-width: 100%; }
 
 .btn-primary {
   color: #fff;
-  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  background: linear-gradient(135deg, #075985 0%, #0369A1 100%);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
@@ -3018,7 +3037,7 @@ img { max-width: 100%; }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   pointer-events: none;
 }
 .btn-primary:hover {
@@ -3049,7 +3068,7 @@ img { max-width: 100%; }
 }
 
 .btn-accent {
-  color: #fff;
+  color: var(--ink);
   background: linear-gradient(135deg, #FDBA74 0%, #FB923C 100%);
   box-shadow: var(--shadow-md);
   position: relative;
@@ -3071,7 +3090,7 @@ img { max-width: 100%; }
 
 .btn-youtube {
   color: #fff;
-  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
@@ -3087,7 +3106,7 @@ img { max-width: 100%; }
 .btn-youtube:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 
 /* Legacy names */
-.btn-teal { color: #fff; background: linear-gradient(180deg, #38BDF8, #0EA5E9); box-shadow: 0 5px 0 #0369A1; }
+.btn-teal { color: #fff; background: linear-gradient(180deg, #075985, #0369A1); box-shadow: 0 5px 0 #0369A1; }
 .btn-teal:active { transform: translateY(4px); box-shadow: 0 1px 0 #0369A1; }
 .btn-ghost { background: transparent; color: var(--ink); margin-bottom: 0; }
 .btn-ghost:hover { background: var(--primary-soft); }
@@ -3237,7 +3256,7 @@ img { max-width: 100%; }
   font-family: var(--font-display), sans-serif;
   font-weight: 800;
   font-size: clamp(0.95rem, 1.8vw, 1.15rem);
-  background: linear-gradient(135deg, #38BDF8, #0284C7);
+  background: linear-gradient(135deg, #075985, #0369A1);
   box-shadow: var(--shadow-md);
   transition: transform 220ms ease;
   letter-spacing: -0.02em;
@@ -3400,15 +3419,15 @@ img { max-width: 100%; }
   font-size: 0.9rem;
   outline: none;
   background: #fff;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid #7B8797;
   color: var(--ink);
   transition: border-color 160ms, box-shadow 160ms, background 160ms;
 }
 .search-input::placeholder { color: var(--muted-light); }
 .search-input:focus {
   background: #fff;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+  border-color: var(--primary-deep);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.16);
 }
 .search-icon {
   position: absolute;
@@ -3522,11 +3541,11 @@ img { max-width: 100%; }
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
 }
-.tile.solved { background: linear-gradient(135deg, #38BDF8, #0EA5E9); color: #fff; border-color: #0284C7; box-shadow: var(--shadow-md); }
+.tile.solved { background: linear-gradient(135deg, #075985, #0369A1); color: #fff; border-color: #075985; box-shadow: var(--shadow-md); }
 .tile.stuck {
-  background: linear-gradient(135deg, #FDBA74, #FB923C);
+  background: linear-gradient(135deg, #9A3412, #C2410C);
   color: #fff;
-  border-color: #EA580C;
+  border-color: #9A3412;
   box-shadow: var(--shadow-md);
   animation: tilePop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 2.8s ease-in-out 1.4s infinite;
 }
@@ -3574,7 +3593,7 @@ img { max-width: 100%; }
   padding: clamp(1.5rem, 5vw, 3.5rem);
   text-align: center;
   color: #fff;
-  background: linear-gradient(135deg, #0284C7 0%, #0EA5E9 50%, #38BDF8 100%);
+  background: linear-gradient(135deg, #075985 0%, #0369A1 50%, #075985 100%);
   box-shadow: var(--shadow-xl);
 }
 .cta-band::before, .cta-band::after {
@@ -3617,6 +3636,64 @@ img { max-width: 100%; }
   content-visibility: auto;
   contain-intrinsic-size: 60px 60px;
 }
+.level-range-pagination {
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-sm);
+}
+.level-range-pagination-label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.level-range-pagination-links {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.level-range-pagination-links a {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--primary-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 140ms, border-color 140ms;
+}
+.level-range-pagination-links a:hover {
+  border-color: var(--primary-light);
+  background: var(--primary-soft);
+}
+@media (max-width: 767px) {
+  .level-range-pagination {
+    gap: 0.45rem;
+    padding: 0.7rem 0.75rem;
+  }
+  .level-range-pagination-links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 0.1rem 0 0.35rem;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .level-range-pagination-links a {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.6rem;
+    white-space: nowrap;
+  }
+}
 .level-tile {
   display: flex;
   align-items: center;
@@ -3642,8 +3719,8 @@ img { max-width: 100%; }
 .level-tile:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 .level-tile.current {
   color: #fff;
-  background: linear-gradient(180deg, #38BDF8, #0EA5E9);
-  border-color: #0284C7;
+  background: linear-gradient(180deg, #075985, #0369A1);
+  border-color: #075985;
   box-shadow: 0 4px 0 #0369A1, 0 10px 16px -6px rgba(14,165,233,.55);
 }
 
@@ -3710,7 +3787,7 @@ img { max-width: 100%; }
   transition: transform 280ms ease, background 200ms;
 }
 .faq-item[open] { border-color: var(--primary-light); }
-.faq-item[open] .chev { transform: rotate(180deg); background: var(--primary); color: #fff; }
+.faq-item[open] .chev { transform: rotate(180deg); background: var(--primary-deep); color: #fff; }
 .faq-item p { margin-top: 0.8rem; color: var(--ink-soft); line-height: 1.75; font-size: 0.95rem; }
 
 .breadcrumb {
@@ -3860,7 +3937,7 @@ img { max-width: 100%; }
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: background 160ms, transform 160ms;
 }
-.social-pill:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
+.social-pill:hover { background: var(--primary-deep); color: #fff; transform: translateY(-2px); }
 @media (max-width: 380px) {
   .footer-grid { grid-template-columns: 1fr; }
   .footer-grid > div:first-child { grid-column: auto; }
@@ -4309,7 +4386,7 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 10px;
   color: #fff;
-  background: linear-gradient(145deg, #38BDF8, #0284C7);
+  background: linear-gradient(145deg, #075985, #0369A1);
   box-shadow: 0 3px 9px rgba(3, 105, 161, 0.22);
   cursor: pointer;
   transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
@@ -4319,7 +4396,7 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   box-shadow: 0 5px 12px rgba(3, 105, 161, 0.3);
 }
 .home-scroll-button:focus-visible {
-  outline: 3px solid #7DD3FC;
+  outline: 3px solid var(--primary-deep);
   outline-offset: 3px;
 }
 .home-scroll-button:disabled {
@@ -4346,7 +4423,7 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 .level-search {
   position: relative;
   width: 100%;
-  max-width: 200px;
+  max-width: 260px;
   flex-shrink: 0;
 }
 
@@ -4373,7 +4450,7 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
   font-size: 0.9rem;
   outline: none;
   background: #fff;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid #7B8797;
   color: var(--ink);
   transition: border-color 160ms, box-shadow 160ms, background 160ms;
 }
@@ -4383,8 +4460,8 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 }
 
 .level-search-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  border-color: var(--primary-deep);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.16);
 }
 
 /* Hide the number spinner */
@@ -4435,38 +4512,17 @@ input[type="text"]:focus, input[type="url"]:focus, input[type="email"]:focus, in
 .level-search-jump {
   color: var(--primary-dark);
   font-weight: 700;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .level-search-jump:hover {
-  color: var(--primary);
-}
-
-/* Flash effect when jumping to a level */
-.level-tile-flash {
-  animation: tileFlash 1.2s ease;
-}
-
-@keyframes tileFlash {
-  0%, 100% {
-    box-shadow: 0 0 0 var(--line);
-    transform: translateY(0) scale(1);
-  }
-  25%, 75% {
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35), 0 4px 12px rgba(124, 58, 237, 0.4);
-    transform: translateY(-4px) scale(1.08);
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary-dark);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.25);
-    transform: translateY(-6px) scale(1.12);
-    background: var(--primary-dark);
-    color: #fff;
-    border-color: var(--primary-dark);
-  }
+  color: var(--primary-deep);
 }
 </file>
 
@@ -4503,6 +4559,7 @@ export default function Icon() {
 <file path="app/layout.tsx">
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
+import DelayedAdSense from '@/components/DelayedAdSense';
 import ConsentAnalytics from '@/components/ConsentAnalytics';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
 import { getSettings } from '@/lib/db';
@@ -4543,6 +4600,9 @@ export const metadata: Metadata = {
   authors: [{ name: 'Puzzle Walkthroughs' }],
   creator: 'Puzzle Walkthroughs',
   publisher: 'Puzzle Walkthroughs',
+  other: {
+    'google-adsense-account': 'ca-pub-2631095859749439',
+  },
   formatDetection: {
     email: false,
     address: false,
@@ -4588,11 +4648,21 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSettings();
+  const ahrefsDataKey = settings?.ahrefs_data_key?.trim();
 
   return (
     <html lang="en" className={`${body.variable} ${display.variable}`}>
-      <head />
+      <head>
+        {ahrefsDataKey && (
+          <script
+            src="https://analytics.ahrefs.com/analytics.js"
+            data-key={ahrefsDataKey}
+            async
+          />
+        )}
+      </head>
       <body>
+        <DelayedAdSense />
         <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
         {children}
         <CookieConsentBanner />
@@ -4724,25 +4794,29 @@ export default function robots(): MetadataRoute.Robots {
 <file path="app/sitemap.ts">
 import type { MetadataRoute } from 'next';
 import {
-  getAllGames,
-  getAllBlogs,
-  getAllCategories,
-  getAllPublishedLevelsForSitemap,
+  getAllPublishedGamesForSitemap,
+  getAllPublishedBlogsForSitemap,
+  getAllCategoriesForSitemap,
+  getPublishedLevelsForGameForSitemap,
   getAllPublishedPagesForSitemap,
 } from '@/lib/db';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, blogs, categories, allLevels, pages] = await Promise.all([
-    getAllGames(),
-    getAllBlogs(),
-    getAllCategories(),
-    getAllPublishedLevelsForSitemap(),
+  const [games, blogs, categories, pages] = await Promise.all([
+    getAllPublishedGamesForSitemap(),
+    getAllPublishedBlogsForSitemap(),
+    getAllCategoriesForSitemap(),
     getAllPublishedPagesForSitemap(),
   ]);
+  const allLevels = (
+    await Promise.all(
+      games.map((game) => getPublishedLevelsForGameForSitemap(game.id, game.slug))
+    )
+  ).flat();
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -4750,12 +4824,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/blog`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
   ];
 
-  const pageUrls: MetadataRoute.Sitemap = pages.map((page) => ({
-    url: `${SITE_URL}/${page.slug}`,
-    lastModified: new Date(page.updated_at || page.created_at),
-    changeFrequency: 'monthly',
-    priority: 0.5,
-  }));
+  const pageUrlsBySlug = new Map(
+    ['about', 'contact', 'privacy', 'terms'].map((slug) => [
+      slug,
+      {
+        url: `${SITE_URL}/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      },
+    ])
+  );
+  for (const page of pages) {
+    pageUrlsBySlug.set(page.slug, {
+      url: `${SITE_URL}/${page.slug}`,
+      lastModified: new Date(page.updated_at || page.created_at),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    });
+  }
+  const pageUrls: MetadataRoute.Sitemap = [...pageUrlsBySlug.values()];
 
   const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
     url: `${SITE_URL}/category/${category.slug}`,
@@ -4767,16 +4855,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Game pages
   const gamePages: MetadataRoute.Sitemap = games.map((g) => ({
     url: `${SITE_URL}/game/${g.slug}`,
-    lastModified: new Date(g.created_at),
+    lastModified: new Date(g.updated_at || g.created_at),
     changeFrequency: 'weekly',
-    priority: 0.9,
+    priority: 0.8,
   }));
 
   const levelPages: MetadataRoute.Sitemap = allLevels.map((level) => ({
     url: `${SITE_URL}/game/${level.game_slug}/level-${level.level_number}`,
-    lastModified: new Date(level.created_at),
+    lastModified: new Date(level.updated_at || level.created_at),
     changeFrequency: 'weekly',
-    priority: 0.7,
+    priority: 0.6,
   }));
 
   // Blog pages
@@ -4784,7 +4872,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${SITE_URL}/blog/${b.slug}`,
     lastModified: new Date(b.created_at),
     changeFrequency: 'weekly',
-    priority: 0.8,
+    priority: 0.7,
   }));
 
   return [
@@ -5400,16 +5488,24 @@ import Image from 'next/image';
 import type { Blog } from '@/types';
 import { formatDate } from '@/lib/utils';
 
-export default function BlogCard({ blog }: { blog: Blog }) {
+export default function BlogCard({
+  blog,
+  preload = false,
+}: {
+  blog: Blog;
+  preload?: boolean;
+}) {
   return (
     <Link href={`/blog/${blog.slug}`} prefetch={false} className="card card-hover blog-card">
       <div className="blog-thumb">
         {blog.cover_image ? (
           <Image
             src={blog.cover_image}
-            alt={blog.title}
+            alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 33vw"
+            quality={70}
+            {...(preload ? { preload: true } : { loading: 'lazy' })}
           />
         ) : (
           <span aria-hidden="true">📝</span>
@@ -6541,7 +6637,7 @@ export default function CookieConsentBanner() {
                     <span className="font-semibold text-gray-900 dark:text-white">MS Digital System</span>.
                     <Link
                       href="/privacy"
-                      className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-medium hover:underline ml-1 transition-colors"
+                      className="text-sky-700 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium hover:underline ml-1 transition-colors"
                     >
                       Learn more in our Privacy Policy
                     </Link>
@@ -6560,7 +6656,7 @@ export default function CookieConsentBanner() {
               </button>
               <button
                 onClick={handleAccept}
-                className="px-4 sm:px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg shadow-sky-500/25"
+                className="px-4 sm:px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-700 to-indigo-700 hover:from-sky-800 hover:to-indigo-800 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg shadow-sky-500/25"
               >
                 Accept
               </button>
@@ -6570,6 +6666,35 @@ export default function CookieConsentBanner() {
       </div>
     </div>
   );
+}
+</file>
+
+<file path="components/DelayedAdSense.tsx">
+'use client';
+
+import { useEffect } from 'react';
+
+const ADSENSE_SCRIPT_URL =
+  'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2631095859749439';
+const ADSENSE_SCRIPT_ID = 'google-adsense-loader';
+
+export default function DelayedAdSense() {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      if (document.getElementById(ADSENSE_SCRIPT_ID)) return;
+
+      const script = document.createElement('script');
+      script.id = ADSENSE_SCRIPT_ID;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.src = ADSENSE_SCRIPT_URL;
+      document.head.appendChild(script);
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  return null;
 }
 </file>
 
@@ -6899,11 +7024,11 @@ export default async function Footer({ settings, categories }: Props) {
                 <span className="footer-logo-frame">
                   <Image
                     src={siteLogo}
-                    alt={siteName}
+                    alt=""
                     width={48}
                     height={48}
+                    sizes="48px"
                     className="footer-logo"
-                    unoptimized
                   />
                 </span>
               ) : (
@@ -7037,7 +7162,7 @@ export default function GameCard({ game, index = 0 }: Props) {
         {game.cover_image ? (
           <Image
             src={game.cover_image}
-            alt={game.name}
+            alt=""
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
@@ -7575,6 +7700,21 @@ export default function HomeScrollControls() {
 }
 </file>
 
+<file path="components/HomeScrollControlsLoader.tsx">
+'use client';
+
+import dynamic from 'next/dynamic';
+
+const HomeScrollControls = dynamic(
+  () => import('@/components/HomeScrollControls'),
+  { ssr: false }
+);
+
+export default function HomeScrollControlsLoader() {
+  return <HomeScrollControls />;
+}
+</file>
+
 <file path="components/ImageUpload.tsx">
 'use client';
 
@@ -8083,13 +8223,61 @@ import { useMemo, useState } from 'react';
 type Level = {
   id: string;
   level_number: number;
-  title?: string | null;
+  title?: string;
+  views: number;
 };
 
 type Props = {
   gameSlug: string;
   levels: Level[];
 };
+
+type LevelRange = {
+  start: number;
+  end: number;
+  firstLevel: number;
+};
+
+function getLevelRanges(levels: Level[]): LevelRange[] {
+  const firstLevels = new Map<number, number>();
+
+  for (const level of levels) {
+    if (level.level_number < 1) continue;
+    const start = Math.floor((level.level_number - 1) / 100) * 100 + 1;
+    if (!firstLevels.has(start)) firstLevels.set(start, level.level_number);
+  }
+
+  const highestLevel = levels.reduce(
+    (highest, level) => Math.max(highest, level.level_number),
+    0
+  );
+
+  return [...firstLevels.entries()]
+    .sort(([firstStart], [secondStart]) => firstStart - secondStart)
+    .map(([start, firstLevel]) => ({
+      start,
+      end: Math.min(start + 99, highestLevel),
+      firstLevel,
+    }));
+}
+
+export function LevelRangePagination({ levels }: { levels: Level[] }) {
+  const ranges = getLevelRanges(levels);
+  if (ranges.length === 0) return null;
+
+  return (
+    <nav className="level-range-pagination" aria-label="Level pagination">
+      <span className="level-range-pagination-label">Jump to levels:</span>
+      <div className="level-range-pagination-links">
+        {ranges.map(({ start, end, firstLevel }) => (
+          <a key={start} href={`#level-tile-${firstLevel}`}>
+            Level {start}–{end}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
 
 export default function LevelSearchGrid({ gameSlug, levels }: Props) {
   const [query, setQuery] = useState('');
@@ -8117,15 +8305,17 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
     return levels.find((l) => l.level_number === num) || null;
   }, [levels, query]);
 
+  function jumpToExactMatch() {
+    if (!exactMatch) return;
+    document
+      .getElementById(`level-tile-${exactMatch.level_number}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && exactMatch) {
       e.preventDefault();
-      // Scroll to the tile
-      const el = document.getElementById(`level-tile-${exactMatch.level_number}`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Flash highlight
-      el?.classList.add('level-tile-flash');
-      setTimeout(() => el?.classList.remove('level-tile-flash'), 1200);
+      jumpToExactMatch();
     }
   }
 
@@ -8135,11 +8325,10 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
         <div>
           <h2 className="section-title">All levels</h2>
           <p className="section-sub">
-            {levels.length} walkthroughs — tap a level to open it
+            {levels.length} walkthroughs — select a level to open its guide
           </p>
         </div>
 
-        {/* Search input */}
         <div className="level-search">
           <svg
             className="level-search-icon"
@@ -8162,7 +8351,7 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Go to level…"
+            placeholder="Find or go to a level…"
             aria-label="Search levels"
             className="level-search-input"
           />
@@ -8171,15 +8360,14 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
               type="button"
               onClick={() => setQuery('')}
               className="level-search-clear"
-              aria-label="Clear"
+              aria-label="Clear level search"
             >
-              ✕
+              ×
             </button>
           )}
         </div>
       </div>
 
-      {/* Info line when filtering */}
       {query.trim() && (
         <p className="level-search-info">
           {filtered.length === 0 ? (
@@ -8192,9 +8380,13 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
               {exactMatch && (
                 <>
                   {' · '}
-                  <a href={`#level-tile-${exactMatch.level_number}`} className="level-search-jump">
-                    Jump to Level {exactMatch.level_number} ↓
-                  </a>
+                  <button
+                    type="button"
+                    className="level-search-jump"
+                    onClick={jumpToExactMatch}
+                  >
+                    Go to Level {exactMatch.level_number} →
+                  </button>
                 </>
               )}
             </>
@@ -8210,20 +8402,22 @@ export default function LevelSearchGrid({ gameSlug, levels }: Props) {
           </p>
         </div>
       ) : (
-        <div className="level-grid">
-          {filtered.map((level) => (
-            <Link
-              key={level.id}
-              id={`level-tile-${level.level_number}`}
-              href={`/game/${gameSlug}/level-${level.level_number}`}
-              prefetch={false}
-              className="level-tile"
-              title={level.title || `Level ${level.level_number}`}
-            >
-              {level.level_number}
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="level-grid">
+            {filtered.map((level) => (
+              <Link
+                key={level.id}
+                id={`level-tile-${level.level_number}`}
+                href={`/game/${gameSlug}/level-${level.level_number}`}
+                prefetch={false}
+                className="level-tile"
+                title={level.title || `Level ${level.level_number}`}
+              >
+                {level.level_number}
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
@@ -8499,9 +8693,9 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
                   alt=""
                   width={40}
                   height={40}
+                  sizes="40px"
                   className="brand-logo"
-                  priority
-                  unoptimized
+                  preload
                 />
               </span>
             ) : (
@@ -9053,14 +9247,14 @@ export default function PopularLevels({
             key={item.id}
             href={`/game/${gameSlug}/level-${item.level_number}`}
             prefetch={false}
-            className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--primary-soft)] group"
+            className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-xl transition-colors hover:bg-(--primary-soft) group"
           >
             <span
               className="rounded-xl grid place-items-center shrink-0 text-[12px] sm:text-[13px] font-bold text-white"
               style={{
                 width: 'clamp(34px, 5vw, 40px)',
                 height: 'clamp(34px, 5vw, 40px)',
-                background: 'linear-gradient(180deg, #38BDF8, #0284C7)',
+                background: 'linear-gradient(180deg, #075985, #0369A1)',
                 boxShadow: '0 3px 0 #0369A1',
                 fontFamily: 'var(--font-display), sans-serif',
               }}
@@ -9068,7 +9262,7 @@ export default function PopularLevels({
               {item.level_number}
             </span>
             <span
-              className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-[var(--primary-dark)]"
+              className="text-[13px] sm:text-[13.5px] font-semibold line-clamp-1 transition-colors group-hover:text-(--primary-dark)"
               style={{ color: 'var(--ink)' }}
             >
               {item.title || `Level ${item.level_number}`}
@@ -9101,19 +9295,44 @@ export default function ScrollToLevelsButton() {
 </file>
 
 <file path="components/SettingsForm.tsx">
+'use client';
+
+import { useActionState, useState } from 'react';
 import type { Settings } from '@/types';
 import ImageUpload from './ImageUpload';
 
-type ActionResult = { error?: string } | void;
+type ActionResult = { error?: string; success?: boolean };
 
 type Props = {
-  action: (formData: FormData) => Promise<ActionResult> | ActionResult;
+  action: (formData: FormData) => Promise<ActionResult | void>;
   settings: Settings | null;
 };
 
 export default function SettingsForm({ action, settings }: Props) {
+  const [ahrefsDataKey, setAhrefsDataKey] = useState(
+    settings?.ahrefs_data_key || ''
+  );
+  const [state, formAction, isPending] = useActionState(
+    async (_previousState: ActionResult | null, formData: FormData) =>
+      (await action(formData)) ?? null,
+    null
+  );
+
   return (
-    <form action={action as never} className="space-y-6">
+    <form action={formAction} className="space-y-6">
+      {state?.error && (
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          Could not save settings: {state.error}
+          {state.error.includes('ahrefs_data_key') &&
+            ' Apply the Ahrefs database migration in the Supabase SQL Editor, then try again.'}
+        </div>
+      )}
+      {state?.success && (
+        <div role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-700">
+          Settings saved successfully.
+        </div>
+      )}
+
       {/* ================= SITE INFO ================= */}
       <div className="card p-6 space-y-5">
         <h2 className="text-lg font-bold border-b pb-3">Site Info</h2>
@@ -9264,6 +9483,20 @@ export default function SettingsForm({ action, settings }: Props) {
 
         <div>
           <label className="block text-sm font-medium mb-1">
+            Ahrefs Data Key
+          </label>
+          <input
+            type="text"
+            name="ahrefs_data_key"
+            value={ahrefsDataKey}
+            onChange={(event) => setAhrefsDataKey(event.target.value)}
+            placeholder="Paste your Ahrefs Web Analytics data key"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
             Google Search Console Verification Code
           </label>
           <input
@@ -9331,9 +9564,10 @@ export default function SettingsForm({ action, settings }: Props) {
       <div className="flex items-center gap-3">
         <button
           type="submit"
+          disabled={isPending}
           className="btn btn-primary"
         >
-          💾 Save Settings
+          {isPending ? 'Saving…' : '💾 Save Settings'}
         </button>
       </div>
     </form>
@@ -9508,7 +9742,6 @@ export default function YouTubeEmbed({ youtubeId, title = 'YouTube video' }: Pro
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
@@ -9585,6 +9818,15 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
   return slug;
 }
 
+function revalidateBlogPaths(...slugs: string[]) {
+  revalidatePath('/');
+  revalidatePath('/blog');
+  revalidatePath('/sitemap.xml');
+  for (const slug of new Set(slugs)) {
+    revalidatePath(`/blog/${slug}`);
+  }
+}
+
 export async function createBlog(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
@@ -9632,10 +9874,8 @@ export async function createBlog(formData: FormData): Promise<ActionResult> {
       }
       return { success: false, error: 'Failed to create blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath('/blog');
-    revalidatePath('/');
+    revalidateBlogPaths(slug);
     return { success: true, data: inserted };
   } catch (error) {
     console.error('Create blog error:', error);
@@ -9671,6 +9911,20 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
       slug = await generateUniqueSlug(slug, id);
     }
 
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('blogs')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find blog. Please try again.' };
+    }
+    if (!existing) {
+      return { success: false, error: 'Blog not found.' };
+    }
+
     const { error } = await supabaseAdmin
       .from('blogs')
       .update({
@@ -9693,10 +9947,8 @@ export async function updateBlog(id: string, formData: FormData): Promise<Action
       }
       return { success: false, error: 'Failed to update blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath(`/blog/${slug}`);
-    revalidatePath('/blog');
+    revalidateBlogPaths(existing.slug, slug);
     return { success: true };
   } catch (error) {
     console.error('Update blog error:', error);
@@ -9708,16 +9960,28 @@ export async function deleteBlog(id: string): Promise<ActionResult> {
   try {
     await requireAuth();
 
+    const { data: blog, error: lookupError } = await supabaseAdmin
+      .from('blogs')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find blog. Please try again.' };
+    }
+    if (!blog) {
+      return { success: false, error: 'Blog not found.' };
+    }
+
     const { error } = await supabaseAdmin.from('blogs').delete().eq('id', id);
 
     if (error) {
       console.error('Supabase error:', error);
       return { success: false, error: 'Failed to delete blog. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath('/blog');
-    revalidatePath('/');
+    revalidateBlogPaths(blog.slug);
     return { success: true };
   } catch (error) {
     console.error('Delete blog error:', error);
@@ -9730,7 +9994,6 @@ export async function deleteBlog(id: string): Promise<ActionResult> {
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
@@ -9909,6 +10172,17 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
   return slug;
 }
 
+function revalidateGamePaths(levelNumbers: number[], ...slugs: string[]) {
+  revalidatePath('/');
+  revalidatePath('/sitemap.xml');
+  for (const slug of new Set(slugs)) {
+    revalidatePath(`/game/${slug}`);
+    for (const levelNumber of new Set(levelNumbers)) {
+      revalidatePath(`/game/${slug}/level-${levelNumber}`);
+    }
+  }
+}
+
 export async function createGame(formData: FormData): Promise<ActionResult> {
   try {
     await requireAuth();
@@ -9942,7 +10216,7 @@ export async function createGame(formData: FormData): Promise<ActionResult> {
     }
 
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath('/');
+    revalidateGamePaths([], slug);
     return { success: true, data: inserted };
   } catch (error) {
     console.error('Create game error:', error);
@@ -9968,6 +10242,30 @@ export async function updateGame(id: string, formData: FormData): Promise<Action
       slug = await generateUniqueSlug(slug, id);
     }
 
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('games')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find game. Please try again.' };
+    }
+    if (!existing) {
+      return { success: false, error: 'Game not found.' };
+    }
+
+    const { data: existingLevels, error: levelsError } = await supabaseAdmin
+      .from('levels')
+      .select('level_number')
+      .eq('game_id', id);
+
+    if (levelsError) {
+      console.error('Supabase error:', levelsError);
+      return { success: false, error: 'Failed to find game levels. Please try again.' };
+    }
+
     const { error } = await supabaseAdmin
       .from('games')
       .update({
@@ -9984,10 +10282,12 @@ export async function updateGame(id: string, formData: FormData): Promise<Action
       }
       return { success: false, error: 'Failed to update game. Please try again.' };
     }
-
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath(`/game/${slug}`);
-    revalidatePath('/');
+    revalidateGamePaths(
+      existingLevels.map((level) => level.level_number),
+      existing.slug,
+      slug
+    );
     return { success: true };
   } catch (error) {
     console.error('Update game error:', error);
@@ -10012,6 +10312,20 @@ export async function deleteGame(id: string): Promise<ActionResult> {
       };
     }
 
+    const { data: game, error: lookupError } = await supabaseAdmin
+      .from('games')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Supabase error:', lookupError);
+      return { success: false, error: 'Failed to find game. Please try again.' };
+    }
+    if (!game) {
+      return { success: false, error: 'Game not found.' };
+    }
+
     const { error } = await supabaseAdmin.from('games').delete().eq('id', id);
 
     if (error) {
@@ -10020,7 +10334,7 @@ export async function deleteGame(id: string): Promise<ActionResult> {
     }
 
     revalidatePath('/ms-control-9x7k2p/games');
-    revalidatePath('/');
+    revalidateGamePaths([], game.slug);
     return { success: true };
   } catch (error) {
     console.error('Delete game error:', error);
@@ -10053,6 +10367,47 @@ import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { extractYoutubeId } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
+import { getAdminUrl } from '@/lib/admin-path';
+
+async function getGameSlug(gameId: string): Promise<{ slug: string } | { error: string }> {
+  const { data: game, error } = await supabaseAdmin
+    .from('games')
+    .select('slug')
+    .eq('id', gameId)
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!game) return { error: 'Game not found.' };
+  return { slug: game.slug };
+}
+
+function getLevelNumbers(levels: unknown[]): number[] {
+  return [
+    ...new Set(
+      levels.flatMap((item) => {
+        if (
+          item &&
+          typeof item === 'object' &&
+          'level_number' in item &&
+          typeof item.level_number === 'number' &&
+          Number.isInteger(item.level_number)
+        ) {
+          return [item.level_number];
+        }
+        return [];
+      })
+    ),
+  ];
+}
+
+function revalidatePublicLevelPaths(gameSlug: string, levelNumbers: number[]) {
+  revalidatePath('/');
+  revalidatePath('/sitemap.xml');
+  revalidatePath(`/game/${gameSlug}`);
+  for (const levelNumber of new Set(levelNumbers)) {
+    revalidatePath(`/game/${gameSlug}/level-${levelNumber}`);
+  }
+}
 
 // ==========================================
 // BULK EDIT ALL LEVELS AT ONCE
@@ -10071,6 +10426,9 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
       return { error: 'Invalid levels data.' };
     }
 
+    const game = await getGameSlug(gameId);
+    if ('error' in game) return { error: game.error };
+
     // Upsert all levels (insert or update based on game_id, level_number)
     const { error } = await supabaseAdmin
       .from('levels')
@@ -10084,7 +10442,7 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
     await updateGameLevelCount(gameId);
 
     revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
-    revalidatePath(`/game/[slug]`);
+    revalidatePublicLevelPaths(game.slug, getLevelNumbers(levels));
     redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
   } catch (e) {
     return { error: 'Failed to parse levels data.' };
@@ -10104,6 +10462,9 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
   if (isNaN(from) || isNaN(to) || from < 1 || to < from || to > 1000) {
     return { error: 'Invalid range. From must be >= 1, To >= From, max 1000.' };
   }
+
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
 
   // Existing levels ki list nikalo
   const { data: existing } = await supabaseAdmin
@@ -10152,6 +10513,10 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePublicLevelPaths(
+    game.slug,
+    newLevels.map((level) => level.level_number)
+  );
   redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
@@ -10180,6 +10545,9 @@ export async function createLevel(gameId: string, formData: FormData) {
     return { error: 'Invalid YouTube URL.' };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
   const { error } = await supabaseAdmin.from('levels').insert({
     game_id: gameId,
     level_number,
@@ -10204,6 +10572,7 @@ export async function createLevel(gameId: string, formData: FormData) {
   await updateGameLevelCount(gameId);
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePublicLevelPaths(game.slug, [level_number]);
   redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
 }
 
@@ -10227,6 +10596,17 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
     return { error: 'Invalid YouTube URL.' };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
+  const { data: existingLevel, error: lookupError } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('id', levelId)
+    .maybeSingle();
+  if (lookupError) return { error: lookupError.message };
+  if (!existingLevel) return { error: 'Level not found.' };
+
   const { error } = await supabaseAdmin
     .from('levels')
     .update({
@@ -10248,7 +10628,8 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels/${levelId}/edit`);
-  redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
+  redirect(getAdminUrl(`/games/${gameId}/levels/${levelId}/edit`));
 }
 
 // ==========================================
@@ -10256,6 +10637,17 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
 // ==========================================
 export async function deleteLevel(levelId: string, gameId: string) {
   await requireAuth();
+
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
+  const { data: existingLevel, error: lookupError } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('id', levelId)
+    .maybeSingle();
+  if (lookupError) return { error: lookupError.message };
+  if (!existingLevel) return { error: 'Level not found.' };
 
   const { error } = await supabaseAdmin.from('levels').delete().eq('id', levelId);
 
@@ -10267,6 +10659,7 @@ export async function deleteLevel(levelId: string, gameId: string) {
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
 }
 
 // ==========================================
@@ -10352,6 +10745,9 @@ export async function bulkImportLevels(
     return { error: `No valid levels to import. Skipped: ${skipped}, Invalid: ${invalid}` };
   }
 
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
   const { error } = await supabaseAdmin.from('levels').insert(newLevels);
 
   if (error) {
@@ -10362,6 +10758,10 @@ export async function bulkImportLevels(
 
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
   revalidatePath('/ms-control-9x7k2p/games');
+  revalidatePublicLevelPaths(
+    game.slug,
+    newLevels.map((level) => level.level_number)
+  );
 
   return { success: true, inserted: newLevels.length, skipped, invalid };
 }
@@ -10422,11 +10822,11 @@ function getPageValues(formData: FormData) {
   };
 }
 
-function revalidatePagePaths(slug?: string) {
+function revalidatePagePaths(...slugs: string[]) {
   revalidatePath('/ms-control-9x7k2p/pages');
   revalidatePath('/sitemap.xml');
-  revalidatePath('/', 'layout');
-  if (slug) {
+  revalidatePath('/');
+  for (const slug of new Set(slugs)) {
     revalidatePath(`/${slug}`);
     if (slug === 'privacy') revalidatePath('/privacy-policy');
   }
@@ -10468,8 +10868,7 @@ export async function updatePage(id: string, formData: FormData) {
     .eq('id', id);
   if (error) return { error: error.message };
 
-  revalidatePagePaths(existingPage.slug);
-  revalidatePagePaths(result.values.slug);
+  revalidatePagePaths(existingPage.slug, result.values.slug);
   redirect('/ms-control-9x7k2p/pages');
 }
 
@@ -10680,6 +11079,11 @@ export async function updateSettings(formData: FormData) {
   const switch_youtube_enabled = formData.get('switch_youtube_enabled') === 'on';
   const google_analytics_id =
     (formData.get('google_analytics_id') as string) || null;
+  const rawAhrefsDataKey = formData.get('ahrefs_data_key');
+  if (rawAhrefsDataKey !== null && typeof rawAhrefsDataKey !== 'string') {
+    return { error: 'Invalid Ahrefs Data Key.' };
+  }
+  const ahrefs_data_key = rawAhrefsDataKey?.trim() || null;
   const google_search_console =
     (formData.get('google_search_console') as string) || null;
 
@@ -10708,6 +11112,7 @@ export async function updateSettings(formData: FormData) {
       youtube_button_text,
       switch_youtube_enabled,
       google_analytics_id,
+      ahrefs_data_key,
       google_search_console,
       social_links,
       updated_at: new Date().toISOString(),
@@ -10719,6 +11124,7 @@ export async function updateSettings(formData: FormData) {
   revalidatePath('/ms-control-9x7k2p/settings');
   revalidatePath('/');
   revalidatePath('/game', 'layout');
+  return { success: true };
 }
 </file>
 
@@ -10949,63 +11355,152 @@ export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
   return (data || []) as { slug: string }[];
 }
 
+type SitemapPageResult<T> = {
+  data: T[] | null;
+  error: { message: string; code?: string } | null;
+};
+
+async function getAllSitemapRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<SitemapPageResult<T>>,
+  queryName: string
+): Promise<T[]> {
+  const pageSize = 1000;
+  const result: T[] = [];
+
+  for (let from = 0; ; ) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) {
+      throw new Error(`${queryName} failed: ${error.message}`);
+    }
+
+    const batch = data || [];
+    result.push(...batch);
+    if (batch.length < pageSize) break;
+    from += batch.length;
+  }
+
+  return result;
+}
+
+export async function getAllPublishedGamesForSitemap(): Promise<
+  Pick<Game, 'id' | 'slug' | 'created_at' | 'updated_at'>[]
+> {
+  return getAllSitemapRows<Pick<Game, 'id' | 'slug' | 'created_at' | 'updated_at'>>(
+    (from, to) =>
+      supabase
+        .from('games')
+        .select('id, slug, created_at, updated_at')
+        .eq('published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedGamesForSitemap'
+  );
+}
+
+export async function getPublishedLevelsForGameForSitemap(
+  gameId: string,
+  gameSlug: string
+): Promise<
+  { game_slug: string; level_number: number; created_at: string; updated_at?: string }[]
+> {
+  let selectUpdatedAt = true;
+  type SitemapLevel = {
+    game_slug: string;
+    level_number: number;
+    created_at: string;
+    updated_at?: string;
+  };
+
+  return getAllSitemapRows<SitemapLevel>(
+    async (from, to) => {
+      let rows: Omit<SitemapLevel, 'game_slug'>[] | null = null;
+
+      if (selectUpdatedAt) {
+        const response = await supabase
+          .from('levels')
+          .select('level_number, created_at, updated_at')
+          .eq('game_id', gameId)
+          .eq('published', true)
+          .order('level_number', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to);
+
+        if (
+          response.error &&
+          (response.error.code === '42703' ||
+            response.error.code === 'PGRST204' ||
+            response.error.message.includes('levels.updated_at'))
+        ) {
+          console.warn(
+            'levels.updated_at is unavailable; apply the levels updated_at migration. Using created_at for sitemap lastModified.'
+          );
+          selectUpdatedAt = false;
+        } else if (response.error) {
+          return { data: null, error: response.error };
+        } else {
+          rows = response.data;
+        }
+      }
+
+      if (!selectUpdatedAt) {
+        const response = await supabase
+          .from('levels')
+          .select('level_number, created_at')
+          .eq('game_id', gameId)
+          .eq('published', true)
+          .order('level_number', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (response.error) {
+          return { data: null, error: response.error };
+        }
+        rows = response.data;
+      }
+
+      return {
+        data: (rows || []).map((level) => ({
+          game_slug: gameSlug,
+          level_number: level.level_number,
+          created_at: level.created_at,
+          updated_at: level.updated_at,
+        })),
+        error: null,
+      };
+    },
+    'getPublishedLevelsForGameForSitemap'
+  );
+}
+
 // ==========================================
 // LEVELS
 // ==========================================
-export async function getLevelsByGame(gameId: string): Promise<Level[]> {
-  const { data, error } = await supabase
-    .from('levels')
-    .select('*')
-    .eq('game_id', gameId)
-    .eq('published', true)
-    .order('level_number', { ascending: true });
+export type PublishedLevelSummary = Pick<Level, 'id' | 'level_number' | 'title' | 'views'>;
 
-  if (error) return [];
-  return (data || []) as Level[];
-}
-
-export async function getAllPublishedLevelsForSitemap(): Promise<
-  { game_slug: string; level_number: number; created_at: string }[]
-> {
+export async function getPublishedLevelSummariesByGame(
+  gameId: string
+): Promise<PublishedLevelSummary[]> {
   const pageSize = 1000;
-  const result: { game_slug: string; level_number: number; created_at: string }[] = [];
+  const result: PublishedLevelSummary[] = [];
 
-  for (let from = 0; ; from += pageSize) {
+  for (let from = 0; ; ) {
     const { data, error } = await supabase
       .from('levels')
-      .select(`
-        level_number,
-        created_at,
-        game:games!inner (slug, published)
-      `)
+      .select('id, level_number, title, views')
+      .eq('game_id', gameId)
       .eq('published', true)
-      .eq('game.published', true)
-      .order('created_at', { ascending: false })
+      .order('level_number', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
 
     if (error) {
-      console.error('getAllPublishedLevelsForSitemap error:', error.message);
+      console.error('getPublishedLevelSummariesByGame error:', error.message);
       return [];
     }
 
-    type Row = {
-      level_number: number;
-      created_at: string;
-      game: { slug: string } | { slug: string }[] | null;
-    };
-
-    const rows = (data || []) as unknown as Row[];
-    for (const row of rows) {
-      const game = Array.isArray(row.game) ? row.game[0] : row.game;
-      if (!game?.slug) continue;
-      result.push({
-        game_slug: game.slug,
-        level_number: row.level_number,
-        created_at: row.created_at,
-      });
-    }
-
-    if (rows.length < pageSize) break;
+    const batch = (data || []) as PublishedLevelSummary[];
+    if (batch.length === 0) break;
+    result.push(...batch);
+    from += batch.length;
   }
 
   return result;
@@ -11138,6 +11633,21 @@ export async function getAllBlogs(): Promise<Blog[]> {
   return (data || []) as Blog[];
 }
 
+export async function getAllPublishedBlogsForSitemap(): Promise<
+  Pick<Blog, 'slug' | 'created_at'>[]
+> {
+  return getAllSitemapRows<Pick<Blog, 'slug' | 'created_at'>>(
+    (from, to) =>
+      supabase
+        .from('blogs')
+        .select('slug, created_at')
+        .eq('published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedBlogsForSitemap'
+  );
+}
+
 export async function getBlogBySlug(slug: string): Promise<Blog | null> {
   const { data, error } = await supabase
     .from('blogs')
@@ -11225,17 +11735,16 @@ export async function getFooterPages(): Promise<Page[]> {
 export async function getAllPublishedPagesForSitemap(): Promise<
   Pick<Page, 'slug' | 'created_at' | 'updated_at'>[]
 > {
-  const { data, error } = await supabase
-    .from('pages')
-    .select('slug, created_at, updated_at')
-    .eq('is_published', true)
-    .order('slug', { ascending: true });
-
-  if (error) {
-    console.error('getAllPublishedPagesForSitemap error:', error.message);
-    return [];
-  }
-  return (data || []) as Pick<Page, 'slug' | 'created_at' | 'updated_at'>[];
+  return getAllSitemapRows<Pick<Page, 'slug' | 'created_at' | 'updated_at'>>(
+    (from, to) =>
+      supabase
+        .from('pages')
+        .select('slug, created_at, updated_at')
+        .eq('is_published', true)
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllPublishedPagesForSitemap'
+  );
 }
 
 // ==========================================
@@ -11249,6 +11758,18 @@ export async function getAllCategories(): Promise<Category[]> {
 
   if (error) return [];
   return (data || []) as Category[];
+}
+
+export async function getAllCategoriesForSitemap(): Promise<Category[]> {
+  return getAllSitemapRows<Category>(
+    (from, to) =>
+      supabase
+        .from('categories')
+        .select('*')
+        .order('id', { ascending: true })
+        .range(from, to),
+    'getAllCategoriesForSitemap'
+  );
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -12013,7 +12534,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
 }
 
 // ==========================================
-// HELPER FUNCTION
+// HELPER FUNCTIONS
 // ==========================================
 
 function extractYoutubeId(url: string): string {
@@ -12025,6 +12546,62 @@ function extractYoutubeId(url: string): string {
     if (match) return match[1];
   }
   return '';
+}
+
+function decodeHtmlEntities(text: string): string {
+  const entityMap: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&apos;': "'",
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&#x2F;': '/',
+    '&#x3D;': '=',
+    '&#60;': '<',
+    '&#62;': '>',
+    '&#34;': '"',
+    '&nbsp;': ' ',
+  };
+
+  return text.replace(/&[a-zA-Z0-9#]+;/g, (entity) => {
+    return entityMap[entity] || entity;
+  });
+}
+
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
+
+export function extractFaqsFromHtml(html: string): Array<{ q: string; a: string }> {
+  const faqs: Array<{ q: string; a: string }> = [];
+
+  // Match h3 tags followed by p tags
+  const h3Pattern = /<h3[^>]*>(.*?)<\/h3>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = h3Pattern.exec(html)) !== null && faqs.length < 10) {
+    const questionHtml = match[1];
+    const question = decodeHtmlEntities(stripHtmlTags(questionHtml)).trim();
+
+    if (!question) continue;
+
+    // Find the next p tag after this h3
+    const afterH3 = html.slice(match.index + match[0].length);
+    const pMatch = afterH3.match(/<p[^>]*>(.*?)<\/p>/i);
+
+    if (pMatch) {
+      const answerHtml = pMatch[1];
+      const answer = decodeHtmlEntities(stripHtmlTags(answerHtml)).trim();
+
+      if (answer) {
+        faqs.push({ q: question, a: answer });
+      }
+    }
+  }
+
+  return faqs;
 }
 </file>
 
@@ -12302,8 +12879,25 @@ CREATE TABLE IF NOT EXISTS public.levels (
   views integer NOT NULL DEFAULT 0,
   published boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT levels_game_level_unique UNIQUE (game_id, level_number)
 );
+
+CREATE OR REPLACE FUNCTION public.set_level_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS levels_set_updated_at ON public.levels;
+CREATE TRIGGER levels_set_updated_at
+  BEFORE UPDATE ON public.levels
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_level_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.blogs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12575,6 +13169,32 @@ SET content = '<p>Last updated: October 12, 2026</p><h2>Information we collect</
 WHERE slug = 'privacy';
 </file>
 
+<file path="supabase/migrations/20261018_add_ahrefs_data_key.sql">
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS ahrefs_data_key text;
+</file>
+
+<file path="supabase/migrations/20261021_add_level_updated_at.sql">
+ALTER TABLE public.levels
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+CREATE OR REPLACE FUNCTION public.set_level_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS levels_set_updated_at ON public.levels;
+CREATE TRIGGER levels_set_updated_at
+  BEFORE UPDATE ON public.levels
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_level_updated_at();
+</file>
+
 <file path="supabase/README.md">
 # Supabase database
 
@@ -12590,6 +13210,10 @@ Review it against the actual database before using it as a production restore.
 - `migrations/20261009_add_operating_system.sql` — adds the per-game platform field.
 - `migrations/20261012_pages_cms.sql` — adds the Pages CMS table, published-page read
   policy, and the initial About, Contact, Privacy, and Terms pages.
+- `migrations/20261018_add_ahrefs_data_key.sql` — adds the Ahrefs Web Analytics key to
+  site settings.
+- `migrations/20261021_add_level_updated_at.sql` — adds level modification timestamps
+  for accurate sitemap `lastModified` values.
 
 ## Existing project
 
@@ -12602,6 +13226,13 @@ to rerun because it uses `IF NOT EXISTS` and fills null values.
 Apply `migrations/20261012_pages_cms.sql` in the Supabase SQL Editor to enable the
 Pages CMS. It is safe to rerun; seed rows are inserted only when their slug does not
 already exist, so existing page content is preserved.
+
+Apply `migrations/20261018_add_ahrefs_data_key.sql` in the Supabase SQL Editor to add
+the Ahrefs Web Analytics setting to an existing project. It is safe to rerun.
+
+Apply `migrations/20261021_add_level_updated_at.sql` in the Supabase SQL Editor before
+deploying the matching sitemap change. The sitemap remains available without it, but
+will temporarily use each level's `created_at` value and log a warning.
 
 ## New project
 
@@ -12690,8 +13321,25 @@ CREATE TABLE IF NOT EXISTS public.levels (
   views integer NOT NULL DEFAULT 0,
   published boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT levels_game_level_unique UNIQUE (game_id, level_number)
 );
+
+CREATE OR REPLACE FUNCTION public.set_level_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS levels_set_updated_at ON public.levels;
+CREATE TRIGGER levels_set_updated_at
+  BEFORE UPDATE ON public.levels
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_level_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.blogs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12749,6 +13397,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   youtube_button_text text NOT NULL DEFAULT 'Watch on YouTube',
   switch_youtube_enabled boolean NOT NULL DEFAULT true,
   google_analytics_id text,
+  ahrefs_data_key text,
   google_search_console text,
   social_links jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -12885,6 +13534,7 @@ export interface Level {
   views: number;
   published: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 // ==========================================
@@ -12952,6 +13602,7 @@ export interface Settings {
   youtube_button_text: string;
   switch_youtube_enabled: boolean;
   google_analytics_id?: string;
+  ahrefs_data_key?: string;
   google_search_console?: string;
   social_links: Record<string, string>;
   updated_at?: string;
@@ -12997,6 +13648,9 @@ import path from 'path';
 const ADMIN_PATH = process.env.ADMIN_SECRET_PATH || 'ms-control-9x7k2p';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    agentUpgrade: 'security',
+  },
   turbopack: {
     root: path.join(__dirname),
   },
@@ -13011,6 +13665,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    qualities: [70, 75, 85],
   },
   poweredByHeader: false,
   compress: true,
@@ -13044,23 +13699,14 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.youtube.com https://s.ytimg.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://analytics.ahrefs.com https://www.youtube.com https://s.ytimg.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://adservice.google.com https://*.googleadservices.com https://*.doubleclick.net",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: blob:",
+              "img-src 'self' data: https: blob: https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://www.google-analytics.com",
-              "frame-src https://www.youtube.com",
+              "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://analytics.ahrefs.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google",
+              "frame-src https://www.youtube.com https://www.google.com https://*.googlesyndication.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.googleadservices.com",
               "media-src 'self' https://*.ytimg.com",
             ].join('; '),
-          },
-        ],
-      },
-      {
-        source: '/game/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=86400, stale-while-revalidate=604800',
           },
         ],
       },
@@ -13110,7 +13756,7 @@ export default nextConfig;
     "@supabase/supabase-js": "^2.117.3",
     "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.6",
-    "next": "16.4.0",
+    "next": "16.4.3",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.3.0",
     "react-dom": "19.3.0",

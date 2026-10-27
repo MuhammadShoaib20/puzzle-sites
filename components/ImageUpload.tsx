@@ -1,6 +1,8 @@
 'use client';
 
+import imageCompression from 'browser-image-compression';
 import { useRef, useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 type Props = {
   /** Form field name (e.g. "cover_image") */
@@ -16,7 +18,9 @@ type Props = {
 };
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
-const MAX_SIZE = 5 * 1024 * 1024;
+const COMPRESSIBLE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const MAX_INPUT_SIZE = 20 * 1024 * 1024;
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 
 export default function ImageUpload({
   name,
@@ -27,6 +31,7 @@ export default function ImageUpload({
 }: Props) {
   const [url, setUrl] = useState(defaultValue);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,30 +43,73 @@ export default function ImageUpload({
       setError('Sirf JPG, PNG, WebP, GIF ya AVIF allowed hain.');
       return;
     }
-    if (file.size > MAX_SIZE) {
-      setError('File 5MB se chhoti honi chahiye.');
+    if (file.size > MAX_INPUT_SIZE) {
+      setError('Original image 20MB se chhoti honi chahiye.');
       return;
     }
 
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', folder);
+      const shouldCompress = COMPRESSIBLE_TYPES.includes(file.type);
+      setUploadStatus(shouldCompress ? 'Optimizing image…' : 'Preparing image…');
+      const uploadFile = shouldCompress
+        ? await imageCompression(file, {
+              maxSizeMB: 1.5,
+              maxWidthOrHeight: 1920,
+              initialQuality: 0.82,
+              useWebWorker: false,
+            })
+        : file;
 
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        setError(data.error || 'Upload failed');
+      if (uploadFile.size > MAX_UPLOAD_SIZE) {
+        setError(
+          shouldCompress
+            ? 'Image compression ke baad bhi 5MB se badi hai.'
+            : 'GIF ya AVIF file 5MB se chhoti honi chahiye.'
+        );
         return;
       }
 
-      setUrl(data.url);
-    } catch {
-      setError('Upload failed. Please try again.');
+      setUploadStatus('Uploading directly to Supabase…');
+      const signResponse = await fetch('/api/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folder,
+          type: uploadFile.type,
+          size: uploadFile.size,
+        }),
+      });
+      const signPayload: unknown = await signResponse.json();
+      if (!signPayload || typeof signPayload !== 'object') {
+        throw new Error('Could not prepare image upload.');
+      }
+
+      const signedData = signPayload as { error?: unknown; path?: unknown; token?: unknown };
+      if (!signResponse.ok) {
+        throw new Error(
+          typeof signedData.error === 'string' ? signedData.error : 'Could not prepare image upload.'
+        );
+      }
+      if (typeof signedData.path !== 'string' || typeof signedData.token !== 'string') {
+        throw new Error('Upload authorization response was invalid.');
+      }
+
+      const { error: uploadError } = await supabaseBrowser.storage
+        .from('images')
+        .uploadToSignedUrl(signedData.path, signedData.token, uploadFile, {
+          contentType: uploadFile.type,
+          cacheControl: '31536000',
+        });
+      if (uploadError) throw new Error(`Supabase upload failed: ${uploadError.message}`);
+
+      const { data } = supabaseBrowser.storage.from('images').getPublicUrl(signedData.path);
+      setUrl(data.publicUrl);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
+      setUploadStatus('');
       if (inputRef.current) inputRef.current.value = '';
     }
   }
@@ -114,7 +162,7 @@ export default function ImageUpload({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={uploading}
-              className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-md transition hover:scale-105 disabled:opacity-50"
+              className="text-xs font-bold px-3 py-2 min-h-11 rounded-lg shadow-md transition hover:scale-105 disabled:opacity-50"
               style={{ background: 'rgba(255,255,255,0.96)', color: 'var(--ink)' }}
             >
               {uploading ? 'Uploading…' : '🔄 Change'}
@@ -122,7 +170,7 @@ export default function ImageUpload({
             <button
               type="button"
               onClick={clear}
-              className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-md text-white transition hover:scale-105"
+              className="text-xs font-bold px-3 py-2 min-h-11 rounded-lg shadow-md text-white transition hover:scale-105"
               style={{ background: '#EF4444' }}
             >
               ✕ Remove
@@ -171,18 +219,23 @@ export default function ImageUpload({
                 className="w-9 h-9 border-[3px] rounded-full animate-spin mb-3"
                 style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
               />
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>
-                Uploading…
+              <p
+                className="text-sm font-semibold"
+                style={{ color: 'var(--ink)' }}
+                role="status"
+                aria-label={uploadStatus || 'Uploading image'}
+              >
+                {uploadStatus || 'Uploading…'}
               </p>
             </>
           ) : (
             <>
               <div className="text-4xl mb-2">🖼️</div>
               <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
-                Click karo ya image drag karo
+                Photo choose karein ya camera se lein
               </p>
               <p className="text-xs mt-1 px-4" style={{ color: 'var(--muted)' }}>
-                JPG · PNG · WebP · GIF · AVIF · Max 5MB
+                JPG · PNG · WebP · GIF · AVIF · Max 20MB original
               </p>
             </>
           )}
@@ -201,7 +254,7 @@ export default function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        accept="image/*"
         onChange={onSelect}
         className="hidden"
       />
