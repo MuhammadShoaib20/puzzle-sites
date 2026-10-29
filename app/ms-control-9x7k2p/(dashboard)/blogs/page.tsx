@@ -23,6 +23,9 @@ export default async function AdminBlogsPage() {
           <p className="admin-sub">{blogs.length} total posts</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/ms-control-9x7k2p/blogs/bulk-images" className="btn btn-secondary btn-sm">
+            Bulk Image Upload
+          </Link>
           <Link href="/ms-control-9x7k2p/blogs/import" className="btn btn-secondary btn-sm">
             Import CSV
           </Link>

@@ -360,6 +360,20 @@ export async function getBlogBySlug(slug: string): Promise<Blog | null> {
   return data as Blog;
 }
 
+export async function getBlogById(id: string): Promise<Blog | null> {
+  const { data, error } = await supabaseAdmin
+    .from('blogs')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('getBlogById error:', error.message);
+    return null;
+  }
+  return data as Blog | null;
+}
+
 export async function getBlogsByGame(gameId: string, limit = 6): Promise<Blog[]> {
   const { data, error } = await supabase
     .from('blogs')
