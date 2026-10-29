@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import Papa from 'papaparse';
 import { supabaseAdmin } from '@/lib/supabase';
 import { makeSlug } from '@/lib/utils';
 import { requireAuth } from '@/lib/require-auth';
@@ -15,6 +16,25 @@ type ActionResult = {
   };
   data?: unknown;
 };
+
+type BulkImportResult = {
+  success: boolean;
+  importedCount?: number;
+  error?: string;
+};
+
+const BLOG_CSV_HEADERS = [
+  'title',
+  'slug',
+  'related_game',
+  'content',
+  'meta_title',
+  'meta_description',
+  'keywords',
+  'published',
+] as const;
+
+type BlogCsvRow = Record<(typeof BLOG_CSV_HEADERS)[number], string>;
 
 function validateBlogData(data: {
   title: string;
@@ -49,6 +69,165 @@ function validateBlogData(data: {
   }
 
   return { valid: true };
+}
+
+export async function bulkImportBlogs(formData: FormData): Promise<BulkImportResult> {
+  try {
+    await requireAuth();
+
+    const file = formData.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return { success: false, error: 'Please select a non-empty CSV file.' };
+    }
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      return { success: false, error: 'Please upload a file with the .csv extension.' };
+    }
+    if (file.size > 4_900_000) {
+      return { success: false, error: 'CSV files must be smaller than 4.9 MB.' };
+    }
+
+    const csv = await file.text();
+    const parsed = Papa.parse<BlogCsvRow>(csv, {
+      header: true,
+      skipEmptyLines: 'greedy',
+    });
+
+    if (parsed.errors.length > 0) {
+      const firstError = parsed.errors[0];
+      return {
+        success: false,
+        error: `Invalid CSV near row ${(firstError.row ?? 0) + 2}: ${firstError.message}`,
+      };
+    }
+
+    const headers = parsed.meta.fields || [];
+    const expectedHeaders = new Set<string>(BLOG_CSV_HEADERS);
+    const unexpectedHeaders = headers.filter((header) => !expectedHeaders.has(header));
+    const missingHeaders = BLOG_CSV_HEADERS.filter((header) => !headers.includes(header));
+    if (
+      parsed.meta.renamedHeaders &&
+      Object.keys(parsed.meta.renamedHeaders).length > 0
+    ) {
+      return { success: false, error: 'The CSV contains duplicate column names.' };
+    }
+    if (unexpectedHeaders.length > 0 || missingHeaders.length > 0 || headers.length !== BLOG_CSV_HEADERS.length) {
+      const details = [
+        missingHeaders.length > 0 ? `missing: ${missingHeaders.join(', ')}` : '',
+        unexpectedHeaders.length > 0 ? `unexpected: ${unexpectedHeaders.join(', ')}` : '',
+      ].filter(Boolean);
+      return {
+        success: false,
+        error: `The CSV must contain exactly these columns: ${BLOG_CSV_HEADERS.join(', ')}.${details.length ? ` ${details.join('; ')}.` : ''}`,
+      };
+    }
+    if (parsed.data.length === 0) {
+      return { success: false, error: 'The CSV does not contain any blog rows.' };
+    }
+
+    const rows = parsed.data.map((row, index) => ({
+      rowNumber: index + 2,
+      title: (row.title || '').trim(),
+      slug: (row.slug || '').trim(),
+      gameSlug: (row.related_game || '').trim(),
+      content: (row.content || '').trim(),
+      metaTitle: (row.meta_title || '').trim(),
+      metaDescription: (row.meta_description || '').trim(),
+      keywords: (row.keywords || '')
+        .split(',')
+        .map((keyword) => keyword.trim())
+        .filter(Boolean),
+      published: (row.published || '').trim().toLowerCase() === 'true',
+    }));
+
+    const slugs = new Set<string>();
+    for (const row of rows) {
+      const missingFields = [
+        !row.title ? 'title' : '',
+        !row.slug ? 'slug' : '',
+        !row.content ? 'content' : '',
+      ].filter(Boolean);
+      if (missingFields.length > 0) {
+        return {
+          success: false,
+          error: `Row ${row.rowNumber} is missing required values: ${missingFields.join(', ')}.`,
+        };
+      }
+      if (!/^[a-z0-9-]+$/.test(row.slug)) {
+        return {
+          success: false,
+          error: `Row ${row.rowNumber} has an invalid slug. Use lowercase letters, numbers, and hyphens only.`,
+        };
+      }
+      if (slugs.has(row.slug)) {
+        return { success: false, error: `The CSV contains the duplicate slug "${row.slug}".` };
+      }
+      slugs.add(row.slug);
+    }
+
+    const gameSlugs = [...new Set(rows.map((row) => row.gameSlug).filter(Boolean))];
+    const gameIds = new Map<string, string>();
+    if (gameSlugs.length > 0) {
+      const { data: games, error } = await supabaseAdmin
+        .from('games')
+        .select('id, slug')
+        .in('slug', gameSlugs);
+
+      if (error) {
+        console.error('Bulk blog import game lookup error:', error);
+        return { success: false, error: 'Could not match game slugs. Please try again.' };
+      }
+      for (const game of games || []) {
+        gameIds.set(game.slug, game.id);
+      }
+    }
+
+    const blogsData = [];
+    for (const row of rows) {
+      const gameId = row.gameSlug ? gameIds.get(row.gameSlug) : null;
+      if (row.gameSlug && !gameId) {
+        return {
+          success: false,
+          error: `Row ${row.rowNumber} refers to unknown game slug "${row.gameSlug}".`,
+        };
+      }
+      blogsData.push({
+        title: row.title,
+        slug: row.slug,
+        game_id: gameId || null,
+        content: row.content,
+        cover_image: null,
+        meta_title: row.metaTitle || null,
+        meta_description: row.metaDescription || null,
+        keywords: row.keywords,
+        published: row.published,
+      });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('blogs')
+      .upsert(blogsData, { onConflict: 'slug' });
+
+    if (error) {
+      console.error('Bulk blog import database error:', error);
+      return { success: false, error: 'Failed to import blogs. Please check the CSV and try again.' };
+    }
+
+    revalidatePath('/blog');
+    revalidatePath('/admin/blogs');
+    revalidatePath('/ms-control-9x7k2p/blogs');
+    revalidatePath('/sitemap.xml');
+    for (const slug of slugs) {
+      revalidatePath(`/blog/${slug}`);
+    }
+
+    return { success: true, importedCount: blogsData.length };
+  } catch (error) {
+    console.error('Bulk blog import error:', error);
+    if (error instanceof Error && error.message.startsWith('Unauthorized:')) {
+      return { success: false, error: 'You must be signed in as an admin to import blogs.' };
+    }
+    return { success: false, error: 'An unexpected error occurred while importing blogs.' };
+  }
 }
 
 async function checkSlugExists(slug: string, excludeId?: string): Promise<boolean> {

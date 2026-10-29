@@ -22,9 +22,14 @@ export default async function AdminBlogsPage() {
           <h1 className="admin-title">Blogs</h1>
           <p className="admin-sub">{blogs.length} total posts</p>
         </div>
-        <Link href="/ms-control-9x7k2p/blogs/new" className="btn btn-primary btn-sm">
-          + Add blog
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/ms-control-9x7k2p/blogs/import" className="btn btn-secondary btn-sm">
+            Import CSV
+          </Link>
+          <Link href="/ms-control-9x7k2p/blogs/new" className="btn btn-primary btn-sm">
+            + Add blog
+          </Link>
+        </div>
       </div>
 
       {blogs.length === 0 ? (
