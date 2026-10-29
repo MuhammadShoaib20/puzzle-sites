@@ -1,9 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { bulkImportBlogs } from '@/lib/actions/blogs';
 import { useToast } from './Toast';
+
+type ImportState = {
+  success: boolean;
+  importedCount?: number;
+  error?: string;
+};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -18,24 +25,37 @@ function SubmitButton() {
 export default function BulkBlogImportForm() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const processedState = useRef<ImportState | null>(null);
 
-  async function handleImport(formData: FormData) {
-    const result = await bulkImportBlogs(formData);
+  const [state, formAction] = useActionState(
+    async (_previousState: ImportState | null, formData: FormData): Promise<ImportState> => {
+      try {
+        return await bulkImportBlogs(formData);
+      } catch {
+        return { success: false, error: 'Upload failed. Please try again.' };
+      }
+    },
+    null
+  );
 
-    if (!result.success) {
-      toastError(result.error || 'Failed to import blogs.');
+  useEffect(() => {
+    if (!state || processedState.current === state) return;
+    processedState.current = state;
+
+    if (!state.success) {
+      toastError(state.error || 'Failed to import blogs.');
       return;
     }
 
-    success(`${result.importedCount} Blogs imported successfully!`);
+    success(`${state.importedCount} Blogs imported successfully!`);
     setTimeout(() => {
       router.push('/ms-control-9x7k2p/blogs');
       router.refresh();
     }, 500);
-  }
+  }, [router, state, success, toastError]);
 
   return (
-    <form action={handleImport} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       <div className="card p-6 space-y-5">
         <div>
           <label htmlFor="blog-csv" className="block text-sm font-medium mb-1">
@@ -67,6 +87,12 @@ export default function BulkBlogImportForm() {
         <SubmitButton />
         <p className="text-sm text-gray-500">Maximum file size: 4.9 MB</p>
       </div>
+
+      {state && !state.success && (
+        <p role="alert" className="text-sm text-red-600">
+          {state.error || 'Failed to import blogs. Please try again.'}
+        </p>
+      )}
     </form>
   );
 }
