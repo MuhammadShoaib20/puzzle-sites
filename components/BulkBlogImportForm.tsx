@@ -58,14 +58,15 @@ export default function BulkBlogImportForm() {
     <form action={formAction} className="space-y-6">
       <div className="card p-6 space-y-5">
         <div>
-          <label htmlFor="blog-csv" className="block text-sm font-medium mb-1">
-            CSV file
+          <label htmlFor="blog-files" className="block text-sm font-medium mb-1">
+            CSV and cover images
           </label>
           <input
-            id="blog-csv"
+            id="blog-files"
             type="file"
-            name="file"
-            accept=".csv"
+            name="files"
+            accept=".csv,image/webp,image/jpeg,image/png"
+            multiple
             required
             className="w-full px-3 py-2 border rounded-lg"
           />
@@ -78,14 +79,17 @@ export default function BulkBlogImportForm() {
           </p>
           <p className="mt-2">
             Leave related_game blank when a post is not associated with a game. Separate keywords
-            with commas. Set published to true or false. Cover images are left blank.
+            with commas. Set published to true or false. Select exactly one CSV and optionally
+            multiple cover images. Each image filename must match its blog slug, for example
+            <span className="font-mono"> sand-blocks-level-113.webp</span>. Images must be JPG,
+            PNG, or WebP and no larger than 5 MB each.
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         <SubmitButton />
-        <p className="text-sm text-gray-500">Maximum file size: 4.9 MB</p>
+        <p className="text-sm text-gray-500">Maximum total upload size: 49 MB</p>
       </div>
 
       {state && !state.success && (

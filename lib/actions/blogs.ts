@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import Papa from 'papaparse';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -33,6 +34,16 @@ const BLOG_CSV_HEADERS = [
   'keywords',
   'published',
 ] as const;
+
+const MAX_CSV_SIZE = 4_900_000;
+const MAX_IMAGE_SIZE = 5_000_000;
+const MAX_TOTAL_UPLOAD_SIZE = 49_000_000;
+const IMAGE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+};
 
 type BlogCsvRow = Record<(typeof BLOG_CSV_HEADERS)[number], string>;
 
@@ -75,15 +86,24 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
   try {
     await requireAuth();
 
-    const file = formData.get('file');
-    if (!(file instanceof File) || file.size === 0) {
-      return { success: false, error: 'Please select a non-empty CSV file.' };
+    const files = formData.getAll('files');
+    const selectedFiles = files.filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    if (selectedFiles.length !== files.length) {
+      return { success: false, error: 'Please select valid, non-empty files.' };
     }
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      return { success: false, error: 'Please upload a file with the .csv extension.' };
+
+    const csvFiles = selectedFiles.filter((selectedFile) => /\.csv$/i.test(selectedFile.name));
+    if (csvFiles.length !== 1) {
+      return { success: false, error: 'Please select exactly one CSV file.' };
     }
-    if (file.size > 4_900_000) {
+
+    const file = csvFiles[0];
+    if (file.size > MAX_CSV_SIZE) {
       return { success: false, error: 'CSV files must be smaller than 4.9 MB.' };
+    }
+    const imageFiles = selectedFiles.filter((selectedFile) => selectedFile !== file);
+    if (selectedFiles.reduce((total, selectedFile) => total + selectedFile.size, 0) > MAX_TOTAL_UPLOAD_SIZE) {
+      return { success: false, error: 'The total upload size must be smaller than 49 MB.' };
     }
 
     const csv = await file.text();
@@ -164,6 +184,38 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
       slugs.add(row.slug);
     }
 
+    const rowsBySlug = new Map(rows.map((row) => [row.slug, row]));
+    const matchedImages = new Map<string, File>();
+    for (const imageFile of imageFiles) {
+      const extension = imageFile.name.match(/\.[^.]+$/)?.[0].toLowerCase();
+      const expectedType = extension ? IMAGE_TYPES[extension] : undefined;
+      if (!expectedType || (imageFile.type && imageFile.type !== expectedType)) {
+        return {
+          success: false,
+          error: `Unsupported image "${imageFile.name}". Use JPG, PNG, or WebP files.`,
+        };
+      }
+      if (imageFile.size > MAX_IMAGE_SIZE) {
+        return {
+          success: false,
+          error: `Image "${imageFile.name}" must be smaller than 5 MB.`,
+        };
+      }
+
+      const imageSlug = imageFile.name.slice(0, -extension!.length);
+      if (!rowsBySlug.has(imageSlug)) {
+        console.warn(`Bulk blog import: ignoring image "${imageFile.name}" because no CSV blog has that slug.`);
+        continue;
+      }
+      if (matchedImages.has(imageSlug)) {
+        return {
+          success: false,
+          error: `More than one image matches the blog slug "${imageSlug}". Select only one image per blog.`,
+        };
+      }
+      matchedImages.set(imageSlug, imageFile);
+    }
+
     const gameSlugs = [...new Set(rows.map((row) => row.gameSlug).filter(Boolean))];
     const gameIds = new Map<string, string>();
     if (gameSlugs.length > 0) {
@@ -181,21 +233,62 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
       }
     }
 
-    const blogsData = [];
     for (const row of rows) {
-      const gameId = row.gameSlug ? gameIds.get(row.gameSlug) : null;
-      if (row.gameSlug && !gameId) {
+      if (row.gameSlug && !gameIds.has(row.gameSlug)) {
         return {
           success: false,
           error: `Row ${row.rowNumber} refers to unknown game slug "${row.gameSlug}".`,
         };
       }
+    }
+
+    const coverImages = new Map<string, string>();
+    const uploadedImagePaths: string[] = [];
+    async function cleanUpUploadedImages() {
+      if (uploadedImagePaths.length === 0) return;
+      const { error } = await supabaseAdmin.storage.from('images').remove(uploadedImagePaths);
+      if (error) {
+        console.error('Bulk blog import image cleanup failed:', error);
+      }
+    }
+
+    for (const [slug, imageFile] of matchedImages) {
+      const extension = imageFile.name.match(/\.[^.]+$/)?.[0].toLowerCase();
+      if (!extension || !IMAGE_TYPES[extension]) {
+        return { success: false, error: `Unsupported image "${imageFile.name}".` };
+      }
+      const storagePath = `blogs/${slug}-${randomUUID()}${extension}`;
+      const { data, error } = await supabaseAdmin.storage
+        .from('images')
+        .upload(storagePath, imageFile, {
+          cacheControl: '31536000',
+          contentType: IMAGE_TYPES[extension],
+          upsert: false,
+        });
+
+      if (error) {
+        console.error(`Bulk blog import image upload failed for "${imageFile.name}":`, error);
+        await cleanUpUploadedImages();
+        return {
+          success: false,
+          error: `Could not upload image "${imageFile.name}". Please check the Supabase images bucket and try again.`,
+        };
+      }
+      uploadedImagePaths.push(data.path);
+
+      const { data: publicUrl } = supabaseAdmin.storage.from('images').getPublicUrl(data.path);
+      coverImages.set(slug, publicUrl.publicUrl);
+    }
+
+    const blogsData = [];
+    for (const row of rows) {
+      const gameId = row.gameSlug ? gameIds.get(row.gameSlug) : null;
       blogsData.push({
         title: row.title,
         slug: row.slug,
         game_id: gameId || null,
         content: row.content,
-        cover_image: null,
+        cover_image: coverImages.get(row.slug) || null,
         meta_title: row.metaTitle || null,
         meta_description: row.metaDescription || null,
         keywords: row.keywords,
@@ -209,6 +302,7 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
 
     if (error) {
       console.error('Bulk blog import database error:', error);
+      await cleanUpUploadedImages();
       return { success: false, error: 'Failed to import blogs. Please check the CSV and try again.' };
     }
 
