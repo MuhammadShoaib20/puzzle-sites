@@ -72,7 +72,7 @@ export default async function HomePage() {
       <section className="home-hero">
         <div className="container-page home-hero-grid">
           <div className="home-hero-copy">
-            <h1 className="home-title">Stuck on level 6? Watch how it&apos;s solved.</h1>
+            <h2 className="home-title">Stuck on level 6? Watch how it&apos;s solved.</h2>
             <p className="home-lead">
               Video walkthroughs and step-by-step solutions for every level of your favourite
               puzzle games.
@@ -131,6 +131,19 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="max-w-4xl mx-auto text-center px-4 py-10">
+        <h1 className="text-4xl font-bold mb-4">
+          Your Ultimate Hub for Mobile Puzzle Game Solutions
+        </h1>
+        <p className="text-lg text-gray-600">
+          Welcome to <strong>Puzzle Walkthroughs</strong> by MS Digital System. We provide complete,
+          step-by-step video walkthroughs and expert tips for the most popular mobile puzzle games
+          like <strong>Sand Blocks</strong>, <strong>Colony Flow</strong>, <strong>Tricky Hacks</strong>,
+          and <strong>Rotate Rings</strong>. Whether you are stuck on a tricky level or just want to
+          improve your high score, our free guides are here to help you master every puzzle.
+        </p>
+      </section>
+
       {/* ============= ALL GAMES ============= */}
       <section id="all-games" className="container-page home-section">
         <div className="home-head">
@@ -155,6 +168,49 @@ export default async function HomePage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="max-w-4xl mx-auto px-4 py-12 mt-12 bg-gray-50 rounded-2xl">
+        <div className="prose prose-lg max-w-none text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Why Choose Puzzle Walkthroughs?
+          </h2>
+          <p>
+            At Puzzle Walkthroughs, we understand how frustrating it can be when you are stuck on a
+            difficult level. That&apos;s why our team works tirelessly to create high-quality,
+            accurate, and easy-to-follow video solutions for hundreds of levels. We don&apos;t just
+            give you the answer; we explain the strategy so you can improve your skills and beat
+            future levels on your own.
+          </p>
+          <p>
+            Our mission is to provide free, reliable, and fast help for players all over the world.
+            No paywalls, no annoying pop-ups—just pure gaming help.
+          </p>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">
+            Frequently Asked Questions
+          </h2>
+          <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+            Are your walkthroughs free?
+          </h3>
+          <p>Yes, all of our level walkthroughs, tips, and strategies are 100% free to access.</p>
+
+          <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+            How many games do you cover?
+          </h3>
+          <p>
+            We currently cover major titles including Sand Blocks, Colony Flow, Tricky Hacks, and
+            Rotate Rings, with new games added regularly.
+          </p>
+
+          <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+            Do you provide video solutions?
+          </h3>
+          <p>
+            Yes, every level guide includes a real-time video walkthrough so you can see exactly
+            where to place your blocks or route your paths.
+          </p>
+        </div>
       </section>
 
       {/* ============= LATEST LEVELS ============= */}
