@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS public.blogs (
   keywords text[],
   views integer NOT NULL DEFAULT 0,
   published boolean NOT NULL DEFAULT true,
+  author text NOT NULL DEFAULT 'Muhammad Shoaib',
+  published_date timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

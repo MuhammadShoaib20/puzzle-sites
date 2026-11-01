@@ -79,6 +79,7 @@ export function generateWebsiteSchema() {
 
 export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+  const publishedDate = blog.published_date || blog.created_at;
 
   return {
     '@context': 'https://schema.org',
@@ -86,11 +87,11 @@ export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
     headline: blog.title,
     description: blog.meta_description || blog.content?.slice(0, 160) || '',
     image: blog.cover_image,
-    datePublished: blog.created_at,
-    dateModified: blog.created_at,
+    datePublished: publishedDate,
+    dateModified: blog.updated_at || publishedDate,
     author: {
-      '@type': 'Organization',
-      name: 'MS Digital System',
+      '@type': 'Person',
+      name: blog.author || 'Muhammad Shoaib',
     },
     publisher: {
       '@type': 'Organization',

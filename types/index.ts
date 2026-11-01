@@ -86,6 +86,9 @@ export interface Blog {
   views: number;
   published: boolean;
   created_at: string;
+  author?: string;
+  published_date?: string;
+  updated_at?: string;
 }
 
 // ==========================================

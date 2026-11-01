@@ -24,13 +24,15 @@ export async function generateMetadata({ params }: Props) {
   const blog = await getBlogBySlug(slug);
   if (!blog) return {};
 
+  const title = (blog.meta_title || blog.title).slice(0, 60);
+
   return {
-    title: blog.meta_title || blog.title,
+    title,
     description: blog.meta_description,
     keywords: blog.keywords,
     alternates: { canonical: `/blog/${blog.slug}` },
     openGraph: {
-      title: blog.meta_title || blog.title,
+      title,
       description: blog.meta_description,
       images: blog.cover_image ? [blog.cover_image] : [],
       type: 'article',
@@ -87,7 +89,7 @@ export default async function BlogDetailPage({ params }: Props) {
           className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm pb-6 mb-8"
           style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
         >
-          <span>Published {formatDate(blog.created_at)}</span>
+          <span>Published on: {formatDate(blog.published_date || blog.created_at)}</span>
         </div>
 
         {blog.cover_image && (
@@ -106,6 +108,23 @@ export default async function BlogDetailPage({ params }: Props) {
           className="prose max-w-none text-[16px]"
           dangerouslySetInnerHTML={{ __html: sanitize(blog.content || '') }}
         />
+
+        <aside
+          className="mt-10 rounded-xl border p-5"
+          style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}
+          aria-label="About the author"
+        >
+          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--ink)' }}>
+            Muhammad Shoaib
+          </h2>
+          <p className="text-sm leading-6" style={{ color: 'var(--muted)' }}>
+            Muhammad Shoaib creates clear, practical puzzle walkthroughs for players. He shares
+            step-by-step guides to make tricky levels easier to solve.
+          </p>
+          <p className="mt-2 text-sm font-medium" style={{ color: 'var(--ink)' }}>
+            Founder of MS Digital System
+          </p>
+        </aside>
 
         {relatedBlogs.length > 0 && (
           <section className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
