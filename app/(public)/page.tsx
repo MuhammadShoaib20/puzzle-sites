@@ -7,8 +7,14 @@ import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
 import JsonLd from '@/components/JsonLd';
 import type { Level } from '@/types';
+import type { Metadata } from 'next';
+import { canonicalUrl } from '@/lib/seo';
 
 export const revalidate = false;
+
+export const metadata: Metadata = {
+  alternates: { canonical: canonicalUrl('/') },
+};
 
 type GameRef = { id: string; name: string; slug: string };
 

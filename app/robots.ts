@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';
+import { CANONICAL_SITE_URL } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   // We don't disallow the admin path here since it's obscure and changes
@@ -18,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/'],
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
+    sitemap: `${CANONICAL_SITE_URL}/sitemap.xml`,
+    host: CANONICAL_SITE_URL,
   };
 }

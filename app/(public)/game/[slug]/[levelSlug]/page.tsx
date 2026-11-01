@@ -21,6 +21,7 @@ import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
 import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
+import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
@@ -75,7 +76,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: `/game/${game.slug}/level-${level.level_number}` },
+    alternates: {
+      canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
+    },
     openGraph: {
       title,
       description,

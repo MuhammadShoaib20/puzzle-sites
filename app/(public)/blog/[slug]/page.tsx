@@ -8,6 +8,7 @@ import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import JsonLd from '@/components/JsonLd';
 import { sanitize } from '@/lib/sanitize';
+import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props) {
     title,
     description: blog.meta_description,
     keywords: blog.keywords,
-    alternates: { canonical: `/blog/${blog.slug}` },
+    alternates: { canonical: canonicalUrl(`/blog/${blog.slug}`) },
     openGraph: {
       title,
       description: blog.meta_description,
@@ -45,7 +46,7 @@ export default async function BlogDetailPage({ params }: Props) {
   const blog = await getBlogBySlug(slug);
   if (!blog) notFound();
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+  const siteUrl = canonicalUrl('/');
 
   const [relatedBlogs] = await Promise.all([
     getRelatedBlogs(blog.id, blog.game_id, 3),

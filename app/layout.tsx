@@ -4,6 +4,7 @@ import DelayedAdSense from '@/components/DelayedAdSense';
 import ConsentAnalytics from '@/components/ConsentAnalytics';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
 import { getSettings } from '@/lib/db';
+import { CANONICAL_SITE_URL } from '@/lib/seo';
 import './globals.css';
 
 const body = Plus_Jakarta_Sans({
@@ -21,10 +22,8 @@ const display = Sora({
   preload: true,
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com';
-
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(CANONICAL_SITE_URL),
   title: {
     default: 'Puzzle Walkthroughs — All Levels Guide',
     template: '%s | Puzzle Walkthroughs',
@@ -52,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: SITE_URL,
+    url: CANONICAL_SITE_URL,
     siteName: 'Puzzle Walkthroughs',
     title: 'Puzzle Walkthroughs — All Levels Guide',
     description:

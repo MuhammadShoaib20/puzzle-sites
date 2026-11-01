@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [
       {

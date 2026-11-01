@@ -4,6 +4,7 @@ import { getCategoryBySlug, getGamesByCategory } from '@/lib/db';
 import Breadcrumb from '@/components/Breadcrumb';
 import GameCard from '@/components/GameCard';
 import EmptyState from '@/components/EmptyState';
+import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description:
       category.description ||
       `Browse all puzzle games in ${category.name} category.`,
-    alternates: { canonical: `/category/${category.slug}` },
+    alternates: { canonical: canonicalUrl(`/category/${category.slug}`) },
   };
 }
 

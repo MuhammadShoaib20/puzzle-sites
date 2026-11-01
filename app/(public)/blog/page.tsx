@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { getAllBlogs } from '@/lib/db';
 import BlogCard from '@/components/BlogCard';
 import EmptyState from '@/components/EmptyState';
+import { canonicalUrl } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Blog — Puzzle Game Guides & Tips',
   description: 'Read the latest puzzle game walkthroughs, tips and tricks.',
+  alternates: { canonical: canonicalUrl('/blog') },
 };
 
 export const revalidate = false;

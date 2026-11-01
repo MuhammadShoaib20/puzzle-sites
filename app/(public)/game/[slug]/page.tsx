@@ -27,6 +27,7 @@ import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
 import LazyYouTube from '@/components/LazyYouTube';
 import { sanitize } from '@/lib/sanitize';
+import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       game.short_description ||
       `Complete ${game.name} walkthrough with video guides for all levels.`,
     keywords: game.keywords,
-    alternates: { canonical: `/game/${game.slug}` },
+    alternates: { canonical: canonicalUrl(`/game/${game.slug}`) },
     openGraph: {
       title: game.meta_title || game.name,
       description: game.meta_description || game.short_description || '',

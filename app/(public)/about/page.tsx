@@ -3,11 +3,12 @@ import { notFound } from 'next/navigation';
 import PageContent from '@/components/PageContent';
 import { getPageBySlug } from '@/lib/db';
 import { getPageMetadata } from '@/lib/page-metadata';
+import { canonicalUrl } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  return getPageMetadata(await getPageBySlug('about'));
+  return getPageMetadata(await getPageBySlug('about'), canonicalUrl('/about'));
 }
 
 export default async function AboutPage() {
