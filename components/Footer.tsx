@@ -62,6 +62,9 @@ export default async function Footer({ settings, categories }: Props) {
               <span className="footer-brand-name">{siteName}</span>
             </Link>
             <p className="text-sm leading-relaxed max-w-sm">{siteDescription}</p>
+            <p className="mt-2 text-sm leading-relaxed">
+              {siteName} is operated by MS Digital System.
+            </p>
             {socialLinks.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-5">
                 {socialLinks.map(({ key, label }) => (

@@ -1,4 +1,5 @@
 import type { Blog, FAQ } from '@/types';
+import { formatIsoDate } from '@/lib/utils';
 
 // ==========================================
 // SCHEMA TYPES
@@ -80,6 +81,7 @@ export function generateWebsiteSchema() {
 export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
   const publishedDate = blog.published_date || blog.created_at;
+  const modifiedDate = blog.updated_at || publishedDate;
 
   return {
     '@context': 'https://schema.org',
@@ -87,15 +89,15 @@ export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
     headline: blog.title,
     description: blog.meta_description || blog.content?.slice(0, 160) || '',
     image: blog.cover_image,
-    datePublished: publishedDate,
-    dateModified: blog.updated_at || publishedDate,
+    datePublished: formatIsoDate(publishedDate),
+    dateModified: formatIsoDate(modifiedDate),
     author: {
-      '@type': 'Person',
-      name: blog.author || 'Muhammad Shoaib',
+      '@type': 'Organization',
+      name: 'MS Digital System',
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Puzzle Walkthroughs',
+      name: 'MS Digital System',
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo.png`,

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getBlogBySlug, getAllBlogSlugs, getRelatedBlogs } from '@/lib/db';
-import { formatDate } from '@/lib/utils';
+import { formatIsoDate } from '@/lib/utils';
 import { generateArticleSchema, generateBreadcrumbSchema, extractFaqsFromHtml, generateFAQSchema } from '@/lib/schema';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -55,6 +55,8 @@ export default async function BlogDetailPage({ params }: Props) {
     ...blog,
     canonicalUrl: `${siteUrl}/blog/${blog.slug}`,
   });
+  const publishedAt = blog.published_date || blog.created_at;
+  const publishedDate = formatIsoDate(publishedAt);
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { position: 1, name: 'Home', item: siteUrl },
@@ -89,7 +91,10 @@ export default async function BlogDetailPage({ params }: Props) {
           className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm pb-6 mb-8"
           style={{ color: 'var(--muted)', borderBottom: '1px solid var(--line)' }}
         >
-          <span>Published on: {formatDate(blog.published_date || blog.created_at)}</span>
+          <span>
+            Published on: <time dateTime={publishedDate}>{publishedDate}</time>
+          </span>
+          <span>By MS Digital System</span>
         </div>
 
         {blog.cover_image && (
@@ -115,14 +120,11 @@ export default async function BlogDetailPage({ params }: Props) {
           aria-label="About the author"
         >
           <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--ink)' }}>
-            Muhammad Shoaib
+            MS Digital System
           </h2>
           <p className="text-sm leading-6" style={{ color: 'var(--muted)' }}>
-            Muhammad Shoaib creates clear, practical puzzle walkthroughs for players. He shares
-            step-by-step guides to make tricky levels easier to solve.
-          </p>
-          <p className="mt-2 text-sm font-medium" style={{ color: 'var(--ink)' }}>
-            Founder of MS Digital System
+            MS Digital System publishes clear, practical puzzle walkthroughs to help players solve
+            tricky levels.
           </p>
         </aside>
 

@@ -22,3 +22,7 @@ export function formatDate(date: string): string {
     day: 'numeric',
   });
 }
+
+export function formatIsoDate(date: string): string {
+  return new Date(date).toISOString().slice(0, 10);
+}
