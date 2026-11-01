@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Level } from '@/types';
+import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 
@@ -97,6 +98,40 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
             SEO ke liye 300+ words likhna best hai.
           </p>
         </div>
+
+        <section className="space-y-5 border-t pt-5">
+          <h3 className="text-base font-bold">Gameplay Screenshots &amp; Breakdown</h3>
+          <div className="grid gap-5">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="rounded-lg border p-4 space-y-4">
+                <h4 className="font-semibold">Screenshot {step}</h4>
+                <ImageUpload
+                  name={`screenshot_url_${step}`}
+                  defaultValue={level?.screenshots?.[step - 1]?.url || ''}
+                  folder="levels"
+                  label="Gameplay Screenshot"
+                  aspect="video"
+                />
+                <div>
+                  <label
+                    htmlFor={`screenshot_overview_${step}`}
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Step-by-Step Overview
+                  </label>
+                  <textarea
+                    id={`screenshot_overview_${step}`}
+                    name={`screenshot_overview_${step}`}
+                    defaultValue={level?.screenshots?.[step - 1]?.overview || ''}
+                    rows={4}
+                    placeholder="Explain step-by-step what is happening in this screenshot and what strategy to use here."
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div>
           <label className="block text-sm font-medium mb-1">

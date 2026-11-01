@@ -47,6 +47,18 @@ function revalidatePublicLevelPaths(gameSlug: string, levelNumbers: number[]) {
   }
 }
 
+function getLevelScreenshots(formData: FormData) {
+  return [1, 2, 3].flatMap((step) => {
+    const url = String(formData.get(`screenshot_url_${step}`) || '').trim();
+    if (!url) return [];
+
+    return [{
+      url,
+      overview: String(formData.get(`screenshot_overview_${step}`) || '').trim(),
+    }];
+  });
+}
+
 // ==========================================
 // BULK EDIT ALL LEVELS AT ONCE
 // ==========================================
@@ -170,6 +182,7 @@ export async function createLevel(gameId: string, formData: FormData) {
   const description = (formData.get('description') as string) || null;
   const walkthrough = (formData.get('walkthrough') as string) || null;
   const tips = (formData.get('tips') as string) || null;
+  const screenshots = getLevelScreenshots(formData);
   const meta_title = (formData.get('meta_title') as string) || null;
   const meta_description = (formData.get('meta_description') as string) || null;
   const published = formData.get('published') === 'on';
@@ -195,6 +208,7 @@ export async function createLevel(gameId: string, formData: FormData) {
     description,
     walkthrough,
     tips,
+    screenshots,
     meta_title,
     meta_description,
     published,
@@ -225,6 +239,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
   const description = (formData.get('description') as string) || null;
   const walkthrough = (formData.get('walkthrough') as string) || null;
   const tips = (formData.get('tips') as string) || null;
+  const screenshots = getLevelScreenshots(formData);
   const meta_title = (formData.get('meta_title') as string) || null;
   const meta_description = (formData.get('meta_description') as string) || null;
   const published = formData.get('published') === 'on';
@@ -254,6 +269,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
       description,
       walkthrough,
       tips,
+      screenshots,
       meta_title,
       meta_description,
       published,

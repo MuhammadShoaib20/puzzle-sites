@@ -51,6 +51,11 @@ export interface Game {
 // ==========================================
 // LEVEL
 // ==========================================
+export interface LevelScreenshot {
+  url: string;
+  overview: string;
+}
+
 export interface Level {
   id: string;
   game_id: string;
@@ -62,6 +67,7 @@ export interface Level {
   description?: string;
   walkthrough?: string;
   tips?: string;
+  screenshots?: LevelScreenshot[];
   meta_title?: string;
   meta_description?: string;
   views: number;

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
@@ -173,6 +174,43 @@ export default async function LevelPage({ params }: Props) {
               title={`${game.name} Level ${level.level_number}`}
             />
           </div>
+
+          {level.screenshots && level.screenshots.length > 0 && (
+            <section className="mb-8">
+              <h2 className="section-title mb-4">Visual Walkthrough Breakdown</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {level.screenshots.map((screenshot, index) => {
+                  const overview = screenshot.overview?.trim() || '';
+                  const altText =
+                    overview.split(/\s+/).filter(Boolean).slice(0, 6).join(' ') ||
+                    `Level ${level.level_number} - Step ${index + 1}`;
+
+                  return (
+                    <article
+                      key={`${screenshot.url}-${index}`}
+                      className="card overflow-hidden"
+                    >
+                      <div className="relative aspect-video">
+                        <Image
+                          src={screenshot.url}
+                          alt={altText}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-bold mb-2">Step-by-Step Overview</h3>
+                        <p className="text-sm leading-6 whitespace-pre-wrap text-[var(--muted)]">
+                          {overview}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <div className="flex flex-wrap gap-4 mb-8">
             <a
