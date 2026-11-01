@@ -24,6 +24,13 @@ type BulkImportResult = {
   error?: string;
 };
 
+export type BulkSeoUpdateResult = {
+  success: boolean;
+  updatedCount?: number;
+  notFoundSlugs?: string[];
+  error?: string;
+};
+
 const BLOG_CSV_HEADERS = [
   'title',
   'slug',
@@ -35,6 +42,7 @@ const BLOG_CSV_HEADERS = [
   'published',
 ] as const;
 
+const BLOG_SEO_CSV_HEADERS = ['slug', 'title', 'meta_title', 'meta_description'] as const;
 const MAX_CSV_SIZE = 4_900_000;
 const MAX_IMAGE_SIZE = 5_000_000;
 const MAX_TOTAL_UPLOAD_SIZE = 49_000_000;
@@ -46,6 +54,7 @@ const IMAGE_TYPES: Record<string, string> = {
 };
 
 type BlogCsvRow = Record<(typeof BLOG_CSV_HEADERS)[number], string>;
+type BlogSeoCsvRow = Record<(typeof BLOG_SEO_CSV_HEADERS)[number], string>;
 
 function validateBlogData(data: {
   title: string;
@@ -321,6 +330,131 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
       return { success: false, error: 'You must be signed in as an admin to import blogs.' };
     }
     return { success: false, error: 'An unexpected error occurred while importing blogs.' };
+  }
+}
+
+export async function bulkUpdateBlogSEO(formData: FormData): Promise<BulkSeoUpdateResult> {
+  const updatedSlugs: string[] = [];
+
+  try {
+    await requireAuth();
+
+    const file = formData.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return { success: false, error: 'Please select a non-empty CSV file.' };
+    }
+    if (!/\.csv$/i.test(file.name)) {
+      return { success: false, error: 'Please select a CSV file.' };
+    }
+    if (file.size > MAX_CSV_SIZE) {
+      return { success: false, error: 'CSV files must be smaller than 4.9 MB.' };
+    }
+
+    const parsed = Papa.parse<BlogSeoCsvRow>(await file.text(), {
+      header: true,
+      skipEmptyLines: 'greedy',
+    });
+
+    if (parsed.errors.length > 0) {
+      const firstError = parsed.errors[0];
+      return {
+        success: false,
+        error: `Invalid CSV near row ${(firstError.row ?? 0) + 2}: ${firstError.message}`,
+      };
+    }
+
+    const headers = parsed.meta.fields || [];
+    const expectedHeaders = new Set<string>(BLOG_SEO_CSV_HEADERS);
+    const unexpectedHeaders = headers.filter((header) => !expectedHeaders.has(header));
+    const missingHeaders = BLOG_SEO_CSV_HEADERS.filter((header) => !headers.includes(header));
+    if (parsed.meta.renamedHeaders && Object.keys(parsed.meta.renamedHeaders).length > 0) {
+      return { success: false, error: 'The CSV contains duplicate column names.' };
+    }
+    if (headers.length !== BLOG_SEO_CSV_HEADERS.length || unexpectedHeaders.length || missingHeaders.length) {
+      const details = [
+        missingHeaders.length > 0 ? `missing: ${missingHeaders.join(', ')}` : '',
+        unexpectedHeaders.length > 0 ? `unexpected: ${unexpectedHeaders.join(', ')}` : '',
+      ].filter(Boolean);
+      return {
+        success: false,
+        error: `The CSV must contain exactly these columns: ${BLOG_SEO_CSV_HEADERS.join(', ')}.${details.length ? ` ${details.join('; ')}.` : ''}`,
+      };
+    }
+    if (parsed.data.length === 0) {
+      return { success: false, error: 'The CSV does not contain any blog rows.' };
+    }
+
+    const rows = parsed.data.map((row, index) => ({
+      rowNumber: index + 2,
+      slug: (row.slug || '').trim(),
+      title: (row.title || '').trim(),
+      metaTitle: (row.meta_title || '').trim(),
+      metaDescription: (row.meta_description || '').trim(),
+    }));
+    const slugs = new Set<string>();
+
+    for (const row of rows) {
+      if (!row.slug || !row.title) {
+        return {
+          success: false,
+          error: `Row ${row.rowNumber} must include both slug and title.`,
+        };
+      }
+      if (!/^[a-z0-9-]+$/.test(row.slug)) {
+        return {
+          success: false,
+          error: `Row ${row.rowNumber} has an invalid slug. Use lowercase letters, numbers, and hyphens only.`,
+        };
+      }
+      if (slugs.has(row.slug)) {
+        return { success: false, error: `The CSV contains the duplicate slug "${row.slug}".` };
+      }
+      slugs.add(row.slug);
+    }
+
+    const notFoundSlugs: string[] = [];
+    for (const row of rows) {
+      const { data, error } = await supabaseAdmin
+        .from('blogs')
+        .update({
+          title: row.title,
+          meta_title: row.metaTitle,
+          meta_description: row.metaDescription,
+        })
+        .eq('slug', row.slug)
+        .select('slug')
+        .maybeSingle();
+
+      if (error) {
+        console.error(`Bulk blog SEO update failed for "${row.slug}":`, error);
+        revalidateBlogPaths(...updatedSlugs);
+        return {
+          success: false,
+          updatedCount: updatedSlugs.length,
+          error: `Failed to update row ${row.rowNumber} (${row.slug}). ${updatedSlugs.length} earlier row(s) were updated.`,
+        };
+      }
+      if (data) {
+        updatedSlugs.push(data.slug);
+      } else {
+        notFoundSlugs.push(row.slug);
+      }
+    }
+
+    revalidatePath('/ms-control-9x7k2p/blogs');
+    revalidateBlogPaths(...updatedSlugs);
+    return {
+      success: true,
+      updatedCount: updatedSlugs.length,
+      notFoundSlugs,
+    };
+  } catch (error) {
+    console.error('Bulk blog SEO update error:', error);
+    revalidateBlogPaths(...updatedSlugs);
+    if (error instanceof Error && error.message.startsWith('Unauthorized:')) {
+      return { success: false, error: 'You must be signed in as an admin to update blog SEO.' };
+    }
+    return { success: false, updatedCount: updatedSlugs.length, error: 'Failed to update blog SEO.' };
   }
 }
 
