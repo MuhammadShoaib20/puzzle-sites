@@ -184,9 +184,7 @@ export default async function LevelPage({ params }: Props) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {level.screenshots.map((screenshot, index) => {
                   const overview = screenshot.overview?.trim() || '';
-                  const altText =
-                    overview.split(/\s+/).filter(Boolean).slice(0, 6).join(' ') ||
-                    `Level ${level.level_number} - Step ${index + 1}`;
+                  const altText = `${game.name} Level ${level.level_number} Step ${index + 1}`;
 
                   return (
                     <article
@@ -197,6 +195,7 @@ export default async function LevelPage({ params }: Props) {
                         <Image
                           src={screenshot.url}
                           alt={altText}
+                          title={altText}
                           fill
                           sizes="(max-width: 768px) 100vw, 33vw"
                           className="object-cover"

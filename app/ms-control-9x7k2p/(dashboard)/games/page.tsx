@@ -22,9 +22,17 @@ export default async function AdminGamesPage() {
           <h1 className="admin-title">Games</h1>
           <p className="admin-sub">{games.length} total games</p>
         </div>
-        <Link href="/ms-control-9x7k2p/games/new" className="btn btn-primary btn-sm">
-          + Add game
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/ms-control-9x7k2p/games/bulk-screenshots"
+            className="btn btn-secondary btn-sm"
+          >
+            Bulk screenshots
+          </Link>
+          <Link href="/ms-control-9x7k2p/games/new" className="btn btn-primary btn-sm">
+            + Add game
+          </Link>
+        </div>
       </div>
 
       {games.length === 0 ? (
