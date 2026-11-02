@@ -10,7 +10,7 @@ import { logLogout } from '@/lib/actions/security';
 const getLinks = (adminPath: string) => [
   { href: `/${adminPath}/dashboard`, label: 'Dashboard', icon: '📊' },
   { href: `/${adminPath}/games`, label: 'Games', icon: '🎮' },
-  { href: `/${adminPath}/games/bulk-screenshots`, label: 'Bulk screenshots', icon: '🖼️' },
+  { href: `/${adminPath}/games/bulk-screenshots`, label: 'Bulk level updater', icon: '🖼️' },
   { href: `/${adminPath}/blogs`, label: 'Blogs', icon: '📝' },
   { href: `/${adminPath}/pages`, label: 'Pages', icon: '📄' },
   { href: `/${adminPath}/settings`, label: 'Settings', icon: '⚙️' },

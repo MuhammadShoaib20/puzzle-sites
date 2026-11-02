@@ -12,12 +12,26 @@ const MAX_TOTAL_SIZE = 49_000_000;
 const HEADERS = [
   'game_slug',
   'level_number',
+  'title',
+  'description',
+  'walkthrough',
+  'tips',
+  'meta_title',
+  'meta_description',
   'image_1_name',
   'image_1_overview',
   'image_2_name',
   'image_2_overview',
   'image_3_name',
   'image_3_overview',
+] as const;
+const TEXT_FIELDS = [
+  'title',
+  'description',
+  'walkthrough',
+  'tips',
+  'meta_title',
+  'meta_description',
 ] as const;
 const IMAGE_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -44,7 +58,7 @@ function levelKey(gameId: string, levelNumber: number) {
   return `${gameId}:${levelNumber}`;
 }
 
-export async function bulkUpdateLevelScreenshots(
+export async function bulkUpdateLevelFullData(
   formData: FormData
 ): Promise<BulkLevelScreenshotsResult> {
   try {
@@ -139,6 +153,14 @@ export async function bulkUpdateLevelScreenshots(
         name: row[`image_${step}_name` as keyof CsvRow]?.trim() || '',
         overview: row[`image_${step}_overview` as keyof CsvRow]?.trim() || '',
       })),
+      textFields: {
+        title: (row.title || '').trim(),
+        description: (row.description || '').trim(),
+        walkthrough: (row.walkthrough || '').trim(),
+        tips: (row.tips || '').trim(),
+        meta_title: (row.meta_title || '').trim(),
+        meta_description: (row.meta_description || '').trim(),
+      },
     }));
 
     const gameSlugs = [...new Set(rows.map(({ gameSlug }) => gameSlug).filter(Boolean))];
@@ -223,6 +245,22 @@ export async function bulkUpdateLevelScreenshots(
         continue;
       }
 
+      const updateData: {
+        title?: string;
+        description?: string;
+        walkthrough?: string;
+        tips?: string;
+        meta_title?: string;
+        meta_description?: string;
+        screenshots?: { url: string; overview: string }[];
+      } = {};
+      for (const field of TEXT_FIELDS) {
+        const value = row.textFields[field];
+        if (value) {
+          updateData[field] = value;
+        }
+      }
+
       const screenshots: { url: string; overview: string }[] = [];
       const uploadedPaths: string[] = [];
       for (const image of row.images) {
@@ -261,17 +299,20 @@ export async function bulkUpdateLevelScreenshots(
         screenshots.push({ url: publicUrl.publicUrl, overview: image.overview });
       }
 
-      if (screenshots.length === 0) {
+      if (screenshots.length > 0) {
+        updateData.screenshots = screenshots;
+      }
+      if (Object.keys(updateData).length === 0) {
         skippedItems.push({
           rowNumber: row.rowNumber,
-          message: 'No images were uploaded for this level; existing screenshots were unchanged.',
+          message: 'No text values or successfully uploaded images to update.',
         });
         continue;
       }
 
       const { error: updateError } = await supabaseAdmin
         .from('levels')
-        .update({ screenshots })
+        .update(updateData)
         .eq('id', levelId);
       if (updateError) {
         console.error(
@@ -299,7 +340,7 @@ export async function bulkUpdateLevelScreenshots(
     }
     return { success: true, updatedCount, skippedItems };
   } catch (error) {
-    console.error('Bulk level screenshot update error:', error);
+    console.error('Full bulk level update error:', error);
     if (error instanceof Error && error.message.startsWith('Unauthorized:')) {
       return { success: false, error: 'You must be signed in as an admin to update screenshots.' };
     }

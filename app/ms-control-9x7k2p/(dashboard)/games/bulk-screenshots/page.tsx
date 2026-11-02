@@ -8,9 +8,9 @@ export default function BulkLevelScreenshotsPage() {
     <div className="admin-page animate-fade-in-up">
       <div className="admin-head">
         <div>
-          <h1 className="admin-title">Bulk Level Screenshots Updater</h1>
+          <h1 className="admin-title">Full Bulk Level Updater</h1>
           <p className="admin-sub">
-            Update screenshots and step overviews for multiple game levels from a CSV.
+            Update level text, SEO fields, screenshots, and step overviews from one CSV.
           </p>
         </div>
         <Link href="/ms-control-9x7k2p/games" className="btn btn-secondary btn-sm">

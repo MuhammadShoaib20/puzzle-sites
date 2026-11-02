@@ -27,7 +27,7 @@ export default async function AdminGamesPage() {
             href="/ms-control-9x7k2p/games/bulk-screenshots"
             className="btn btn-secondary btn-sm"
           >
-            Bulk screenshots
+            Bulk level updater
           </Link>
           <Link href="/ms-control-9x7k2p/games/new" className="btn btn-primary btn-sm">
             + Add game

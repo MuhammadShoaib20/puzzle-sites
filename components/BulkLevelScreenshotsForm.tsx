@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  bulkUpdateLevelScreenshots,
+  bulkUpdateLevelFullData,
   type BulkLevelScreenshotsResult,
 } from '@/lib/actions/bulk-level-screenshots';
 import { useToast } from '@/components/Toast';
@@ -13,7 +13,7 @@ function SubmitButton() {
 
   return (
     <button type="submit" disabled={pending} className="btn btn-primary">
-      {pending ? 'Updating screenshots…' : 'Upload & Update Screenshots'}
+      {pending ? 'Updating levels…' : 'Upload & Update Levels'}
     </button>
   );
 }
@@ -27,7 +27,7 @@ export default function BulkLevelScreenshotsForm() {
       formData: FormData
     ): Promise<BulkLevelScreenshotsResult> => {
       try {
-        return await bulkUpdateLevelScreenshots(formData);
+        return await bulkUpdateLevelFullData(formData);
       } catch {
         return { success: false, error: 'Upload failed. Please try again.' };
       }
@@ -40,13 +40,13 @@ export default function BulkLevelScreenshotsForm() {
     processedState.current = state;
 
     if (!state.success) {
-      toastError(state.error || 'Failed to update level screenshots.');
+      toastError(state.error || 'Failed to update levels.');
       return;
     }
 
     const skipped = state.skippedItems || [];
     if (state.updatedCount) {
-      success(`Updated screenshots for ${state.updatedCount} level(s).`);
+      success(`Updated ${state.updatedCount} level(s).`);
     }
     if (skipped.length > 0) {
       const missingImages = skipped.filter((item) => item.message.includes('was not selected'));
@@ -60,7 +60,7 @@ export default function BulkLevelScreenshotsForm() {
       toastError(summary);
     }
     if (!state.updatedCount && skipped.length === 0) {
-      toastError('No level screenshots were updated.');
+      toastError('No level data was updated.');
     }
   }, [state, success, toastError]);
 
@@ -96,18 +96,23 @@ export default function BulkLevelScreenshotsForm() {
         </div>
 
         <div className="space-y-2 text-sm text-gray-600">
-          <p className="font-medium text-gray-800">CSV columns (in any order):</p>
+          <p className="font-medium text-gray-800">Required CSV columns (in any order):</p>
           <p className="break-all font-mono text-xs">
-            game_slug, level_number, image_1_name, image_1_overview, image_2_name,
+            game_slug, level_number, title, description, walkthrough, tips, meta_title,
+            meta_description, image_1_name, image_1_overview, image_2_name,
             image_2_overview, image_3_name, image_3_overview
           </p>
           <p>
             Image names must exactly match the selected filenames, including the extension.
             Supported formats: JPG, PNG, and WebP. Each image must be under 5 MB; total upload
-            must be under 49 MB.
+            must be under 49 MB. Empty text fields keep their current database values. Leave an
+            image name empty to keep that row&apos;s existing screenshots if no new screenshots are
+            supplied.
           </p>
           <p className="font-mono text-xs">
-            Example: sand-blocks,113,step-1.webp,Move the blue block,step-2.webp,Clear the path,,
+            Example: sand-blocks,113,Fish Jam Level 113,Description,&lt;p&gt;Walkthrough&lt;/p&gt;,
+            &lt;p&gt;Tips&lt;/p&gt;,Meta title,Meta description,step-1.webp,Move the blue block,
+            step-2.webp,Clear the path,,
           </p>
         </div>
       </div>
@@ -123,7 +128,7 @@ export default function BulkLevelScreenshotsForm() {
       {state?.success && (
         <div className="card p-6 space-y-3" role="status">
           <p className="font-bold text-green-800">
-            Updated screenshots for {state.updatedCount || 0} level(s).
+            Updated {state.updatedCount || 0} level(s).
           </p>
           {(state.skippedItems?.length || 0) > 0 && (
             <div className="text-sm text-amber-800">

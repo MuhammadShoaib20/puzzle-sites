@@ -164,7 +164,7 @@ export default async function LevelPage({ params }: Props) {
       <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
           <h1 className="page-title mb-2">
-            {game.name} Level {level.level_number} Walkthrough
+            {level.title || `${game.name} Level ${level.level_number} Walkthrough`}
           </h1>
 
           <p className="text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
