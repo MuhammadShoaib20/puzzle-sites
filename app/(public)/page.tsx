@@ -13,7 +13,10 @@ import { canonicalUrl } from '@/lib/seo';
 export const revalidate = false;
 
 export const metadata: Metadata = {
-  alternates: { canonical: canonicalUrl('/') },
+  alternates: {
+    canonical: canonicalUrl('/'),
+    languages: { en: '/' },
+  },
 };
 
 type GameRef = { id: string; name: string; slug: string };

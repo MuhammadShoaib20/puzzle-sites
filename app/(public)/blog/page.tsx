@@ -7,7 +7,10 @@ import { canonicalUrl } from '@/lib/seo';
 export const metadata: Metadata = {
   title: 'Blog — Puzzle Game Guides & Tips',
   description: 'Read the latest puzzle game walkthroughs, tips and tricks.',
-  alternates: { canonical: canonicalUrl('/blog') },
+  alternates: {
+    canonical: canonicalUrl('/blog'),
+    languages: { en: canonicalUrl('/blog') },
+  },
 };
 
 export const revalidate = false;

@@ -16,7 +16,8 @@ export default function BlogCard({
         {blog.cover_image ? (
           <Image
             src={blog.cover_image}
-            alt=""
+            alt={blog.title + " cover image"}
+            title={blog.title}
             fill
             sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 33vw"
             quality={70}

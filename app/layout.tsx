@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   authors: [{ name: 'Puzzle Walkthroughs' }],
   creator: 'Puzzle Walkthroughs',
   publisher: 'Puzzle Walkthroughs',
+  alternates: {
+    canonical: '/',
+    languages: { en: '/' },
+  },
   other: {
     'google-adsense-account': 'ca-pub-2631095859749439',
   },

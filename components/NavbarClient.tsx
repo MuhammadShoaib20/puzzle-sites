@@ -50,7 +50,8 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
               <span className="nv-logo">
                 <Image
                   src={siteLogo}
-                  alt=""
+                  alt={`${siteName} logo`}
+                  title={siteName}
                   width={40}
                   height={40}
                   sizes="40px"

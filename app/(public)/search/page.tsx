@@ -7,7 +7,10 @@ import { canonicalUrl } from '@/lib/seo';
 export const metadata: Metadata = {
   title: 'Search',
   description: 'Search puzzle games and walkthroughs.',
-  alternates: { canonical: canonicalUrl('/search') },
+  alternates: {
+    canonical: canonicalUrl('/search'),
+    languages: { en: canonicalUrl('/search') },
+  },
 };
 
 type Props = { searchParams: Promise<{ q?: string }> };

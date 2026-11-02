@@ -79,6 +79,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
+      languages: {
+        en: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
+      },
     },
     openGraph: {
       title,

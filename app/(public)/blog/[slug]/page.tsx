@@ -31,7 +31,10 @@ export async function generateMetadata({ params }: Props) {
     title,
     description: blog.meta_description,
     keywords: blog.keywords,
-    alternates: { canonical: canonicalUrl(`/blog/${blog.slug}`) },
+    alternates: {
+      canonical: canonicalUrl(`/blog/${blog.slug}`),
+      languages: { en: canonicalUrl(`/blog/${blog.slug}`) },
+    },
     openGraph: {
       title,
       description: blog.meta_description,

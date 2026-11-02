@@ -49,7 +49,8 @@ export default async function Footer({ settings, categories }: Props) {
                 <span className="footer-logo-frame">
                   <Image
                     src={siteLogo}
-                    alt=""
+                    alt={`${siteName} logo`}
+                    title={siteName}
                     width={48}
                     height={48}
                     sizes="48px"

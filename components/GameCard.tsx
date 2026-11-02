@@ -16,7 +16,8 @@ export default function GameCard({ game, index = 0 }: Props) {
         {game.cover_image ? (
           <Image
             src={game.cover_image}
-            alt=""
+            alt={game.name + " cover image"}
+            title={game.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />

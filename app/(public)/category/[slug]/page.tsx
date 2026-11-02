@@ -17,7 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description:
       category.description ||
       `Browse all puzzle games in ${category.name} category.`,
-    alternates: { canonical: canonicalUrl(`/category/${category.slug}`) },
+    alternates: {
+      canonical: canonicalUrl(`/category/${category.slug}`),
+      languages: { en: canonicalUrl(`/category/${category.slug}`) },
+    },
   };
 }
 
