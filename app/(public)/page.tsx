@@ -10,7 +10,7 @@ import type { Level } from '@/types';
 import type { Metadata } from 'next';
 import { canonicalUrl } from '@/lib/seo';
 
-export const revalidate = false;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   alternates: {

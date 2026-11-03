@@ -30,7 +30,7 @@ import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string; levelSlug: string }> };
 
-export const revalidate = false;
+export const revalidate = 86400;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
