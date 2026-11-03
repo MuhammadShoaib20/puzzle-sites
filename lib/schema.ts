@@ -2,7 +2,8 @@ import type { Blog, FAQ } from '@/types';
 import { formatIsoDate } from '@/lib/utils';
 
 export const PUBLISHER_NAME = 'MS Digital System';
-export const LEVEL_AUTHOR_NAME = 'MS Digital System Team';
+export const LEVEL_AUTHOR_NAME = 'A. R. Khan';
+export const LEVEL_AUTHOR_JOB_TITLE = 'Editorial pseudonym for MS Digital System';
 
 // ==========================================
 // SCHEMA TYPES
@@ -170,7 +171,7 @@ export function generateLevelArticleSchema(article: LevelArticleSchemaInput) {
     author: {
       '@type': 'Person',
       name: LEVEL_AUTHOR_NAME,
-      jobTitle: 'Puzzle Experts',
+      jobTitle: LEVEL_AUTHOR_JOB_TITLE,
     },
     publisher: {
       '@type': 'Organization',
@@ -204,7 +205,7 @@ export function generateVideoObjectSchema(video: VideoObjectSchemaInput) {
     author: {
       '@type': 'Person',
       name: LEVEL_AUTHOR_NAME,
-      jobTitle: 'Puzzle Experts',
+      jobTitle: LEVEL_AUTHOR_JOB_TITLE,
     },
     embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
     contentUrl: video.youtubeUrl,
@@ -286,7 +287,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
     author: {
       '@type': 'Person',
       name: LEVEL_AUTHOR_NAME,
-      jobTitle: 'Puzzle Experts',
+      jobTitle: LEVEL_AUTHOR_JOB_TITLE,
     },
   };
 }
