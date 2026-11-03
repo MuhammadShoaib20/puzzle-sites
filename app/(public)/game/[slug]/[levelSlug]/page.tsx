@@ -267,9 +267,11 @@ export default async function LevelPage({ params }: Props) {
           </p>
 
           {level.screenshots && level.screenshots.length > 0 && (
-            <section className="mb-8">
-              <h2 className="section-title mb-4">What does each step look like?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <section className="step-screenshots mb-8">
+              <h2 className="section-title step-screenshots-heading mb-6">
+                What does each step look like?
+              </h2>
+              <div className="step-screenshot-list">
                 {level.screenshots.map((screenshot, index) => {
                   const overview = screenshot.overview?.trim() || '';
                   const altText = `${game.name} Level ${level.level_number} Step ${index + 1}`;
@@ -277,22 +279,24 @@ export default async function LevelPage({ params }: Props) {
                   return (
                     <article
                       key={`${screenshot.url}-${index}`}
-                      className="card overflow-hidden"
+                      className="step-screenshot-card"
                     >
-                      <div className="relative aspect-video">
+                      <div className="step-screenshot-media">
                         <Image
                           src={screenshot.url}
                           alt={altText}
                           title={altText}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
+                          width={1200}
+                          height={800}
+                          sizes="(max-width: 768px) 100vw, 800px"
                           loading="lazy"
-                          className="object-cover"
+                          className="step-screenshot-image"
                         />
+                        <span className="step-screenshot-badge">Step {index + 1}</span>
                       </div>
-                      <div className="p-4">
-                        <h3 className="font-bold mb-2">What happens in this step?</h3>
-                        <p className="text-sm leading-6 whitespace-pre-wrap text-[var(--muted)]">
+                      <div className="step-screenshot-copy">
+                        <h3 className="step-screenshot-title">What happens in this step?</h3>
+                        <p className="step-screenshot-overview">
                           {overview}
                         </p>
                       </div>

@@ -3201,6 +3201,93 @@ body:has(.home) .bg-decor { display: none; }        /* floating puzzle pieces */
   color: #CBD5E1;
 }
 
+/* Full-width, uncropped step screenshots in a centered vertical stack. */
+.site-content .step-screenshots { width: 100%; }
+.site-content .step-screenshots-heading {
+  justify-content: center;
+  text-align: center;
+}
+.site-content .step-screenshot-list {
+  display: flex;
+  width: 100%;
+  max-width: 48rem;
+  flex-direction: column;
+  gap: 2rem;
+  margin-inline: auto;
+}
+.site-content .step-screenshot-card {
+  width: 100%;
+  padding: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: #141B2D;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+.site-content .step-screenshot-card:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+.site-content .step-screenshot-media {
+  position: relative;
+  display: flex;
+  min-height: 8rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+}
+.site-content .step-screenshot-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  border: 1px solid rgba(100, 116, 139, 0.5);
+  border-radius: 0.5rem;
+  object-fit: contain;
+}
+.site-content .step-screenshot-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgba(196, 181, 253, 0.35);
+  border-radius: 0.375rem;
+  background: #7C3AED;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.32);
+}
+.site-content .step-screenshot-copy {
+  padding-top: 1.25rem;
+  text-align: center;
+}
+.site-content .step-screenshot-title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.site-content .step-screenshot-overview {
+  margin-top: 0.5rem;
+  color: #94A3B8;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+@media (min-width: 768px) {
+  .site-content .step-screenshot-card { padding: 1.5rem; }
+  .site-content .step-screenshot-image { max-height: 600px; }
+  .site-content .step-screenshot-title { font-size: 1.25rem; }
+  .site-content .step-screenshot-overview { font-size: 1rem; }
+}
+
 /* Footer stays compact and visually tied to the global canvas. */
 .site-content .site-footer {
   border-top: 1px solid rgba(139, 92, 246, 0.24);
