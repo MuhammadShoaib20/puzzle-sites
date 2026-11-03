@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-5 sm:px-6 text-center">
+    <div className="not-found-screen min-h-[70vh] flex flex-col items-center justify-center px-5 sm:px-6 text-center">
       <div className="flex items-center gap-3 mb-6 scale-[1.15]" aria-label="404 page code">
         <span className="level-tile current" style={{ width: 'clamp(52px, 12vw, 82px)', height: 'clamp(52px, 12vw, 82px)' }}>4</span>
         <span className="level-tile" style={{ width: 'clamp(52px, 12vw, 82px)', height: 'clamp(52px, 12vw, 82px)', background: '#FFF7ED', color: '#C2410C', borderColor: '#FDBA74' }}>0</span>

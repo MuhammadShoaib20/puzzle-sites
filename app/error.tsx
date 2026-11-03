@@ -18,7 +18,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-5 sm:px-6 text-center animate-fade-in-up">
+    <div className="error-screen min-h-screen flex flex-col items-center justify-center px-5 sm:px-6 text-center animate-fade-in-up">
       <div
         className="tile stuck mb-6"
         style={{

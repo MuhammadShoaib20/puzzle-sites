@@ -19,14 +19,17 @@ export function Toast({ toast, onClose }: Props) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
+    const frame = requestAnimationFrame(() => setIsVisible(true));
 
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(() => onClose(toast.id), 300);
     }, 5000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   }, [toast.id, onClose]);
 
   const bgColor = toast.type === 'success' ? 'bg-green-500' : 'bg-red-500';

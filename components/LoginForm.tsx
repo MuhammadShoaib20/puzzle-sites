@@ -1,8 +1,8 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -15,26 +15,26 @@ type Props = {
 
 export default function LoginForm({ siteName, siteLogo, adminPath, message }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [dismissedMessage, setDismissedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (message === 'password_changed') {
-      setSuccess('Password changed successfully. Please login with your new password.');
-    } else if (message === 'sessions_invalidated') {
-      setSuccess('All sessions have been invalidated. Please login again.');
-    }
-  }, [message]);
+  const messageSuccess =
+    message === 'password_changed'
+      ? 'Password changed successfully. Please login with your new password.'
+      : message === 'sessions_invalidated'
+        ? 'All sessions have been invalidated. Please login again.'
+        : '';
+  const visibleSuccess = success || (message !== dismissedMessage ? messageSuccess : '');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
+    setDismissedMessage(message ?? null);
 
     try {
       const userAgent = navigator.userAgent;
@@ -111,13 +111,13 @@ export default function LoginForm({ siteName, siteLogo, adminPath, message }: Pr
           Sign in to manage {siteName}
         </p>
 
-        {success && (
+        {visibleSuccess && (
           <div
             role="alert"
             className="p-3 rounded-xl mb-5 text-sm font-medium"
             style={{ background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0' }}
           >
-            {success}
+            {visibleSuccess}
           </div>
         )}
 

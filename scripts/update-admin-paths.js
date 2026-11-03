@@ -1,6 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
 const ADMIN_PATH = 'ms-control-9x7k2p';
 
 const filesToUpdate = [
@@ -26,27 +23,37 @@ const filesToUpdate = [
   'app/ms-control-9x7k2p/(dashboard)/layout.tsx',
 ];
 
-filesToUpdate.forEach(filePath => {
-  const fullPath = path.join(__dirname, '..', filePath);
-  if (!fs.existsSync(fullPath)) {
-    console.log(`Skipping ${filePath} - not found`);
-    return;
-  }
+async function main() {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
 
-  let content = fs.readFileSync(fullPath, 'utf8');
-  const originalContent = content;
+  filesToUpdate.forEach((filePath) => {
+    const fullPath = path.join(__dirname, '..', filePath);
+    if (!fs.existsSync(fullPath)) {
+      console.log(`Skipping ${filePath} - not found`);
+      return;
+    }
 
-  // Replace /admin with /ms-control-9x7k2p
-  content = content.replace(/\/admin\//g, `/${ADMIN_PATH}/`);
-  content = content.replace(/'\/admin'/g, `'/${ADMIN_PATH}'`);
-  content = content.replace(/"\/admin"/g, `"/${ADMIN_PATH}"`);
+    let content = fs.readFileSync(fullPath, 'utf8');
+    const originalContent = content;
 
-  if (content !== originalContent) {
-    fs.writeFileSync(fullPath, content, 'utf8');
-    console.log(`Updated ${filePath}`);
-  } else {
-    console.log(`No changes needed for ${filePath}`);
-  }
+    // Replace /admin with /ms-control-9x7k2p
+    content = content.replace(/\/admin\//g, `/${ADMIN_PATH}/`);
+    content = content.replace(/'\/admin'/g, `'/${ADMIN_PATH}'`);
+    content = content.replace(/"\/admin"/g, `"/${ADMIN_PATH}"`);
+
+    if (content !== originalContent) {
+      fs.writeFileSync(fullPath, content, 'utf8');
+      console.log(`Updated ${filePath}`);
+    } else {
+      console.log(`No changes needed for ${filePath}`);
+    }
+  });
+
+  console.log('Done updating admin paths');
+}
+
+main().catch((error) => {
+  console.error('Failed to update admin paths:', error);
+  process.exitCode = 1;
 });
-
-console.log('Done updating admin paths');

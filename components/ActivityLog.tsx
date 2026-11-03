@@ -14,8 +14,10 @@ type Props = {
   adminPath: string;
 };
 
+type ActivityFilter = 'all' | 'logins' | 'failures' | 'admin_actions';
+
 export default function ActivityLog({ activities, summary, suspiciousIPs, adminPath }: Props) {
-  const [filter, setFilter] = useState<'all' | 'logins' | 'failures' | 'admin_actions'>('all');
+  const [filter, setFilter] = useState<ActivityFilter>('all');
 
   const filteredActivities = activities.filter((activity) => {
     if (filter === 'all') return true;
@@ -103,7 +105,7 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
           <h2 className="text-lg font-bold">Activity Log</h2>
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
+            onChange={(e) => setFilter(e.target.value as ActivityFilter)}
             className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
             <option value="all">All Activity</option>

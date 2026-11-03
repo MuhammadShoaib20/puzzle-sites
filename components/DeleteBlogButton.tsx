@@ -29,7 +29,7 @@ export default function DeleteBlogButton({ id, title }: Props) {
   if (confirming) {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <span className="text-xs text-red-600 font-medium mr-2">Delete "{title}"?</span>
+        <span className="text-xs text-red-600 font-medium mr-2">Delete &quot;{title}&quot;?</span>
         <button
           type="button"
           onClick={handleConfirm}

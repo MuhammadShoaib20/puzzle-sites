@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState, useEffect } from 'react';
+import { useState, useActionState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Game } from '@/types';
@@ -33,8 +33,7 @@ export default function GameForm({ action, game, submitLabel = 'Save', redirectP
       : []
   );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [lastProcessedState, setLastProcessedState] = useState<string | null>(null);
+  const lastProcessedState = useRef<string | null>(null);
 
   const [state, formAction, isPending] = useActionState(
     async (_prev: { success: boolean; error?: string; fieldErrors?: Record<string, string> } | null, formData: FormData) => {
@@ -43,15 +42,15 @@ export default function GameForm({ action, game, submitLabel = 'Save', redirectP
     },
     null
   );
+  const fieldErrors = state?.fieldErrors ?? {};
 
   // Handle successful submission
   useEffect(() => {
     if (!state) return;
 
     const stateKey = JSON.stringify(state);
-    if (stateKey === lastProcessedState) return;
-
-    setLastProcessedState(stateKey);
+    if (stateKey === lastProcessedState.current) return;
+    lastProcessedState.current = stateKey;
 
     if (state.success) {
       success('Game saved successfully!');
@@ -61,12 +60,8 @@ export default function GameForm({ action, game, submitLabel = 'Save', redirectP
       }, 500);
     } else if (state.error) {
       toastError(state.error);
-      // Set field errors if present
-      if (state.fieldErrors) {
-        setFieldErrors(state.fieldErrors);
-      }
     }
-  }, [state, lastProcessedState, success, toastError, router, redirectPath]);
+  }, [state, success, toastError, router, redirectPath]);
 
   // beforeunload warning for unsaved changes
   useEffect(() => {

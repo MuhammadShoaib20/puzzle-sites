@@ -1,21 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 
 const CONSENT_KEY = 'cookie-consent';
 
 type ConsentChoice = 'accepted' | 'rejected' | null;
 
+function getConsentSnapshot(): ConsentChoice {
+  if (typeof window === 'undefined') return null;
+
+  const stored = localStorage.getItem(CONSENT_KEY);
+  return stored === 'accepted' || stored === 'rejected' ? stored : null;
+}
+
+function subscribeToConsent(onChange: () => void) {
+  window.addEventListener('cookie-consent-change', onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener('cookie-consent-change', onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+function getHydrationSnapshot() {
+  return true;
+}
+
+function getServerHydrationSnapshot() {
+  return false;
+}
+
 export function useCookieConsent(): ConsentChoice {
-  const [consent, setConsent] = useState<ConsentChoice>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(CONSENT_KEY) as ConsentChoice;
-    setConsent(stored);
-  }, []);
-
-  return consent;
+  return useSyncExternalStore(subscribeToConsent, getConsentSnapshot, () => null);
 }
 
 export function setCookieConsent(choice: 'accepted' | 'rejected' | null) {
@@ -33,27 +54,13 @@ export function openCookieBanner() {
 }
 
 export default function CookieConsentBanner() {
-  const [consent, setConsent] = useState<ConsentChoice>(null);
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(CONSENT_KEY) as ConsentChoice;
-    setConsent(stored);
-    setShow(!stored);
-  }, []);
-
-  useEffect(() => {
-    const handleConsentChange = () => {
-      const stored = localStorage.getItem(CONSENT_KEY) as ConsentChoice;
-      setConsent(stored);
-      setShow(!stored);
-    };
-
-    window.addEventListener('cookie-consent-change', handleConsentChange);
-    return () => window.removeEventListener('cookie-consent-change', handleConsentChange);
-  }, []);
-
-  if (!show) return null;
+  const hasMounted = useSyncExternalStore(
+    subscribeToHydration,
+    getHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
+  const consent = useCookieConsent();
+  if (!hasMounted || consent !== null) return null;
 
   const handleAccept = () => {
     setCookieConsent('accepted');

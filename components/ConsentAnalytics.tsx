@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useCookieConsent } from './CookieConsentBanner';
 
@@ -10,13 +9,7 @@ type Props = {
 
 export default function ConsentAnalytics({ gaId }: Props) {
   const consent = useCookieConsent();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || consent !== 'accepted') return null;
+  if (consent !== 'accepted') return null;
 
   if (!gaId) return null;
 

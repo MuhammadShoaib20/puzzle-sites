@@ -211,7 +211,7 @@ export default function BulkEditForm({ gameId, existingLevels }: Props) {
 
       {!isBulkMode && (
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
-          Click "Open Bulk Edit" to edit all levels at once and save in one click.
+          Click &quot;Open Bulk Edit&quot; to edit all levels at once and save in one click.
         </p>
       )}
     </div>
