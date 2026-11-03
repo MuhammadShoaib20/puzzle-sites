@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import NavbarSearch from './NavbarSearch';
+import ThemeToggle from './ThemeToggle';
 
 const LINKS = [
   { href: '/', label: 'Home' },
@@ -103,6 +104,8 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
               );
             })}
           </nav>
+
+          <ThemeToggle className="nv-theme-toggle" />
 
           {/* Menu button (phones + tablets) */}
           <button

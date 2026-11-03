@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { logLogout } from '@/lib/actions/security';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const getLinks = (adminPath: string) => [
   { href: `/${adminPath}/dashboard`, label: 'Dashboard overview', icon: '📊' },
@@ -287,6 +288,8 @@ export default function AdminSidebar({ siteName, siteLogo, adminPath }: Props) {
             </div>
           )}
         </div>
+
+        <ThemeToggle className="admin-theme-toggle" />
 
         <button
           type="button"
