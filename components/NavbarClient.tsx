@@ -107,6 +107,14 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         </div>
 
         {/* Mobile / tablet panel */}
+        {open && (
+          <button
+            type="button"
+            className="nv-backdrop"
+            aria-label="Close menu"
+            onClick={closeMenu}
+          />
+        )}
         <div id="nv-mobile-panel" className={`mobile-panel nv-panel ${open ? 'open' : ''}`}>
           <div className="mobile-panel-inner" inert={!open}>
             <div className="nv-panel-body">
