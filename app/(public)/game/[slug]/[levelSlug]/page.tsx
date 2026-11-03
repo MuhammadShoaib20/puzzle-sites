@@ -17,6 +17,7 @@ import {
   generateFAQSchema,
   generateLevelArticleSchema,
   htmlToPlainText,
+  PUBLISHER_NAME,
 } from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
@@ -97,7 +98,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
-    authors: [{ name: 'MS Digital System' }],
+    authors: [{ name: PUBLISHER_NAME }],
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
       languages: {
@@ -141,7 +142,7 @@ export default async function LevelPage({ params }: Props) {
   const popularLevels = [...allLevels]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
-  const author = 'MS Digital System';
+  const author = PUBLISHER_NAME;
   const customButtons = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
   const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
   const walkthroughText = htmlToPlainText(level.walkthrough || '');
@@ -178,7 +179,6 @@ export default async function LevelPage({ params }: Props) {
     description: level.description || level.title || '',
     youtubeUrl: level.youtube_url,
     uploadDate: level.created_at,
-    author,
   });
   const articleSchema = generateLevelArticleSchema({
     headline: `${game.name} Level ${level.level_number} Walkthrough`,
@@ -186,7 +186,6 @@ export default async function LevelPage({ params }: Props) {
     canonicalUrl: canonicalLevelUrl,
     publishedDate: level.created_at,
     modifiedDate: level.updated_at || level.created_at,
-    author,
   });
   const faqSchema = generateFAQSchema(faqItems);
 
@@ -204,7 +203,6 @@ export default async function LevelPage({ params }: Props) {
     gameName: game.name,
     levelNumber: level.level_number,
     walkthrough: level.walkthrough || level.description,
-    author,
   });
 
   return (
@@ -264,8 +262,8 @@ export default async function LevelPage({ params }: Props) {
           </section>
 
           <p className="mb-6 text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
-            Verified attempt counts and success-rate research are not available for this level.
-            Use the level-specific walkthrough and screenshot breakdown below to plan your moves.
+            Use a careful approach on this level. Keeping the center columns clear may preserve
+            room for later moves; follow the walkthrough sequence and adapt it to the board.
           </p>
 
           {level.screenshots && level.screenshots.length > 0 && (
@@ -347,11 +345,11 @@ export default async function LevelPage({ params }: Props) {
             <section className="section" style={{ marginBottom: '2rem' }}>
               <h2 className="section-title mb-3">How do you solve this level?</h2>
               {walkthroughItems.length > 0 ? (
-                <ul className="list-disc space-y-2 pl-6 leading-7">
+                <ol className="list-decimal space-y-2 pl-6 leading-7">
                   {walkthroughItems.map((item, index) => (
                     <li key={`${index}-${item}`}>{item}</li>
                   ))}
-                </ul>
+                </ol>
               ) : (
                 <div
                   className="prose max-w-none"
@@ -385,6 +383,16 @@ export default async function LevelPage({ params }: Props) {
                 </details>
               ))}
             </div>
+          </section>
+
+          <section className="card mb-8 p-5" aria-labelledby="publisher-heading">
+            <h2 id="publisher-heading" className="mb-2 font-bold">
+              About the Publisher
+            </h2>
+            <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
+              This guide was created by the MS Digital System Editorial Team. We create clear,
+              practical puzzle walkthroughs to help players solve tricky levels.
+            </p>
           </section>
 
           {nearbyLevels.length > 0 && (

@@ -1,6 +1,8 @@
 import type { Blog, FAQ } from '@/types';
 import { formatIsoDate } from '@/lib/utils';
 
+export const PUBLISHER_NAME = 'MS Digital System';
+
 // ==========================================
 // SCHEMA TYPES
 // ==========================================
@@ -16,7 +18,6 @@ interface VideoObjectSchemaInput {
   description?: string;
   youtubeUrl: string;
   uploadDate: string;
-  author: string;
 }
 
 interface BreadcrumbItem {
@@ -36,7 +37,6 @@ interface HowToSchemaInput {
   gameName: string;
   levelNumber: number;
   walkthrough?: string;
-  author: string;
 }
 
 interface LevelArticleSchemaInput {
@@ -45,7 +45,6 @@ interface LevelArticleSchemaInput {
   canonicalUrl: string;
   publishedDate: string;
   modifiedDate: string;
-  author: string;
 }
 
 // ==========================================
@@ -104,11 +103,11 @@ export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
     dateModified: formatIsoDate(modifiedDate),
     author: {
       '@type': 'Organization',
-      name: 'MS Digital System',
+      name: PUBLISHER_NAME,
     },
     publisher: {
       '@type': 'Organization',
-      name: 'MS Digital System',
+      name: PUBLISHER_NAME,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo.png`,
@@ -169,11 +168,11 @@ export function generateLevelArticleSchema(article: LevelArticleSchemaInput) {
     dateModified: formatIsoDate(article.modifiedDate),
     author: {
       '@type': 'Organization',
-      name: article.author,
+      name: PUBLISHER_NAME,
     },
     publisher: {
       '@type': 'Organization',
-      name: article.author,
+      name: PUBLISHER_NAME,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo.png`,
@@ -202,7 +201,7 @@ export function generateVideoObjectSchema(video: VideoObjectSchemaInput) {
     uploadDate: video.uploadDate,
     author: {
       '@type': 'Organization',
-      name: video.author,
+      name: PUBLISHER_NAME,
     },
     embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
     contentUrl: video.youtubeUrl,
@@ -283,7 +282,7 @@ export function generateHowToSchema(level: HowToSchemaInput) {
     step: steps,
     author: {
       '@type': 'Organization',
-      name: level.author,
+      name: PUBLISHER_NAME,
     },
   };
 }
