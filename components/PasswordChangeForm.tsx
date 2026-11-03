@@ -66,8 +66,8 @@ export default function PasswordChangeForm({ adminPath }: Props) {
         <h2 className="text-lg font-bold border-b pb-3 mb-4">Change Password</h2>
         
         {changeError && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4">
-            <p className="text-sm text-red-600 dark:text-red-400">{changeError}</p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <p className="text-sm text-red-600">{changeError}</p>
           </div>
         )}
 
@@ -104,7 +104,7 @@ export default function PasswordChangeForm({ adminPath }: Props) {
             />
             {passwordStrength > 0 && (
               <div className="mt-2">
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full transition-all duration-300"
                     style={{
@@ -113,7 +113,7 @@ export default function PasswordChangeForm({ adminPath }: Props) {
                     }}
                   />
                 </div>
-                <p className="text-xs mt-1 text-gray-600 dark:text-gray-400">
+                <p className="text-xs mt-1 text-gray-600">
                   Password strength: <span className="font-medium">{strengthText}</span>
                 </p>
               </div>
@@ -137,11 +137,11 @@ export default function PasswordChangeForm({ adminPath }: Props) {
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
             {!passwordMatch && (
-              <p className="text-xs mt-1 text-red-600 dark:text-red-400">Passwords do not match</p>
+              <p className="text-xs mt-1 text-red-600">Passwords do not match</p>
             )}
           </div>
 
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="text-xs text-gray-600">
             Requirements: At least 12 characters with uppercase, lowercase, number, and special character. Cannot reuse last 3 passwords.
           </div>
 
@@ -152,13 +152,13 @@ export default function PasswordChangeForm({ adminPath }: Props) {
       {/* Logout from All Devices */}
       <div className="card p-6">
         <h2 className="text-lg font-bold border-b pb-3 mb-4">Logout from All Devices</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-gray-600 mb-4">
           This will log you out from all devices and invalidate all active sessions. You will need to login again.
         </p>
 
         {logoutError && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4">
-            <p className="text-sm text-red-600 dark:text-red-400">{logoutError}</p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <p className="text-sm text-red-600">{logoutError}</p>
           </div>
         )}
 

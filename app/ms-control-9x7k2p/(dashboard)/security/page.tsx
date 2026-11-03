@@ -33,7 +33,7 @@ export default async function SecurityPage() {
 
       <div className="card p-6 space-y-6">
         <h2 className="text-lg font-bold border-b pb-3">Security Settings</h2>
-        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+        <ul className="space-y-2 text-sm text-gray-600">
           <li>✅ Three-layer authentication (Access Key + Email/Password + Rate Limiting)</li>
           <li>✅ Login attempt logging</li>
           <li>✅ 30-minute session timeout</li>

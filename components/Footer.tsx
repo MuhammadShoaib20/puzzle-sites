@@ -156,7 +156,7 @@ export default async function Footer({ settings, categories }: Props) {
             <button
               type="button"
               onClick={openCookieBanner}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               Cookie Settings
             </button>

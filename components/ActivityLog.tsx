@@ -79,20 +79,20 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
       {/* Summary Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card p-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Logins Today</div>
-          <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">{summary.totalLoginsToday}</div>
+          <div className="text-sm text-gray-600 mb-1">Total Logins Today</div>
+          <div className="text-2xl font-bold text-sky-600">{summary.totalLoginsToday}</div>
         </div>
         <div className="card p-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Failed Attempts Today</div>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.failedAttemptsToday}</div>
+          <div className="text-sm text-gray-600 mb-1">Failed Attempts Today</div>
+          <div className="text-2xl font-bold text-red-600">{summary.failedAttemptsToday}</div>
         </div>
         <div className="card p-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Last Successful Login</div>
+          <div className="text-sm text-gray-600 mb-1">Last Successful Login</div>
           <div className="text-sm font-medium">
             {summary.lastSuccessfulLogin ? formatRelativeTime(summary.lastSuccessfulLogin) : 'Never'}
           </div>
           {summary.lastSuccessfulLogin && (
-            <div className="text-xs text-gray-500 dark:text-gray-500" title={formatAbsoluteTime(summary.lastSuccessfulLogin)}>
+            <div className="text-xs text-gray-500" title={formatAbsoluteTime(summary.lastSuccessfulLogin)}>
               {formatAbsoluteTime(summary.lastSuccessfulLogin)}
             </div>
           )}
@@ -116,7 +116,7 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
         </div>
 
         {filteredActivities.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8 text-gray-500">
             <p>No activity yet</p>
           </div>
         ) : (
@@ -140,7 +140,7 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
                   return (
                     <tr
                       key={activity.id}
-                      className={`border-b last:border-0 ${isSuspicious ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+                      className={`border-b last:border-0 ${isSuspicious ? 'bg-red-50' : ''}`}
                     >
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
                             {activity.action}
                           </span>
                           {isSuspicious && (
-                            <span className="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
+                            <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">
                               ⚠️ Suspicious
                             </span>
                           )}
@@ -159,26 +159,26 @@ export default function ActivityLog({ activities, summary, suspiciousIPs, adminP
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             activity.status === 'success'
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
                           }`}
                         >
                           {activity.status}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">
+                      <td className="py-3 px-3 text-gray-600 truncate max-w-[150px]">
                         {activity.email}
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">
+                      <td className="py-3 px-3 text-gray-600">
                         {activity.ip_address}
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">
+                      <td className="py-3 px-3 text-gray-600">
                         <div className="text-xs">
                           <div>{browser}</div>
-                          <div className="text-gray-500 dark:text-gray-500">{device}</div>
+                          <div className="text-gray-500">{device}</div>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">
+                      <td className="py-3 px-3 text-gray-600">
                         <div title={formatAbsoluteTime(activity.created_at)}>
                           {formatRelativeTime(activity.created_at)}
                         </div>
