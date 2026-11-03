@@ -69,6 +69,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background-color: var(--bg);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='none' stroke='%235B5BD6' stroke-opacity='.045' stroke-width='1.4'%3E%3Cpath d='M9 10h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H27a4 4 0 1 1-8 0H9V28a4 4 0 1 0 0-8z'/%3E%3Cpath d='M51 52h8a4 4 0 1 1 8 0h8v8a4 4 0 1 0 0 8v8H65a4 4 0 1 1-8 0h-6v-8a4 4 0 1 0 0-8z'/%3E%3C/g%3E%3C/svg%3E");
@@ -505,6 +511,7 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow-sm);
+  will-change: transform;
 }
 .nav-inner {
   display: flex;
@@ -5761,4 +5768,61 @@ body {
 @media (max-width: 380px) {
   .admin-header-brand-copy strong { max-width: 14ch; }
   .admin-shell > .admin-topbar { padding-inline: 0.7rem; }
+}
+
+/* Public interaction and touch polish. */
+html,
+body,
+.site-content button,
+.site-content a {
+  touch-action: manipulation;
+}
+
+.site-content .site-nav {
+  z-index: 60;
+  flex-shrink: 0;
+}
+.site-content .nv-bar { flex-shrink: 0; }
+.site-content .nv-panel,
+.site-content .nv-panel.open {
+  clip-path: none;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    opacity 160ms ease,
+    visibility 180ms;
+  animation: none;
+}
+.site-content .nv-panel { opacity: 0; will-change: auto; }
+.site-content .nv-panel.open { opacity: 1; will-change: transform, opacity; }
+.site-content .nv-backdrop,
+.site-content .nv-backdrop.open {
+  transition: opacity 160ms ease, visibility 160ms;
+  animation: none;
+}
+.site-content .nv-backdrop {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.site-content .nv-backdrop.open {
+  visibility: visible;
+  pointer-events: auto;
+  opacity: 1;
+}
+.site-content .nv-menu:active,
+.site-content .level-tile:active,
+.site-content .video-frame button:active { transform: scale(0.96); }
+.site-content .game-card:active,
+.site-content .blog-card:active { transform: scale(0.99); }
+
+@media (max-width: 767px) {
+  .site-content button:not(.nv-backdrop) { min-height: 44px; }
+  .site-content .level-tile { min-width: 44px; min-height: 44px; }
+  .site-content .nv-panel,
+  .site-content .nv-panel.open { contain: paint; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-content .nv-panel,
+  .site-content .nv-panel.open { will-change: auto; }
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import NavbarSearch from './NavbarSearch';
 
 const LINKS = [
@@ -25,11 +25,12 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
   // route change (no effect needed).
   const [openFor, setOpenFor] = useState<string | null>(null);
   const open = openFor === pathname;
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeMenu = () => setOpenFor(null);
   const toggleMenu = () => setOpenFor(open ? null : pathname);
 
   // Keep the page behind the mobile drawer from scrolling.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
 
     const previousBodyOverflow = document.body.style.overflow;
@@ -47,7 +48,10 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenFor(null);
+      if (e.key === 'Escape') {
+        setOpenFor(null);
+        menuButtonRef.current?.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -106,6 +110,7 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
 
           {/* Menu button (phones + tablets) */}
           <button
+            ref={menuButtonRef}
             type="button"
             className="menu-btn nv-menu"
             aria-label={open ? 'Close menu' : 'Open menu'}
@@ -122,15 +127,22 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
         </div>
 
         {/* Mobile / tablet panel */}
-        {open && (
-          <button
-            type="button"
-            className="nv-backdrop"
-            aria-label="Close menu"
-            onClick={closeMenu}
-          />
-        )}
-        <div id="nv-mobile-panel" className={`mobile-panel nv-panel ${open ? 'open' : ''}`}>
+        <button
+          type="button"
+          className={`nv-backdrop ${open ? 'open' : ''}`}
+          aria-label="Close menu"
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          inert={!open}
+          onClick={closeMenu}
+        />
+        <div
+          id="nv-mobile-panel"
+          className={`mobile-panel nv-panel ${open ? 'open' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-hidden={!open}
+        >
           <div className="mobile-panel-inner" inert={!open}>
             <div className="nv-panel-body">
               <NavbarSearch onDone={closeMenu} />

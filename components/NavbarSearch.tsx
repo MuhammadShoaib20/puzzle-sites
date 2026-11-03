@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Props = {
@@ -11,15 +11,29 @@ type Props = {
 };
 
 export default function NavbarSearch({ onDone, big = false, placeholder }: Props) {
-  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const settledQuery = useRef('');
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+
+  useEffect(() => () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const q = query.trim();
+    const q = (inputRef.current?.value ?? settledQuery.current).trim();
     if (!q) return;
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     router.push(`/search?q=${encodeURIComponent(q)}`);
     onDone?.();
+  }
+
+  function handleInputChange(value: string) {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      settledQuery.current = value;
+    }, 300);
   }
 
   return (
@@ -40,9 +54,10 @@ export default function NavbarSearch({ onDone, big = false, placeholder }: Props
         <path d="m20 20-3.5-3.5" />
       </svg>
       <input
+        ref={inputRef}
         type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        defaultValue=""
+        onChange={(e) => handleInputChange(e.target.value)}
         placeholder={placeholder || 'Search games…'}
         aria-label="Search games"
         className="search-input"
