@@ -57,6 +57,18 @@ function parseLevelNumber(levelSlug: string): number {
   return match ? parseInt(match[1], 10) : NaN;
 }
 
+function trimTitleAtWordBoundary(title: string, maxLength = 59): string {
+  const trimmedTitle = title.trim();
+  if (trimmedTitle.length <= maxLength) return trimmedTitle;
+
+  const lastSpace = trimmedTitle.lastIndexOf(' ', maxLength);
+  if (lastSpace > 0) {
+    return trimmedTitle.slice(0, lastSpace).replace(/[\s&|–—-]+$/, '');
+  }
+
+  return 'Level Walkthrough';
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, levelSlug } = await params;
   const levelNumber = parseLevelNumber(levelSlug);
@@ -68,7 +80,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const level = await getLevelByNumber(game.id, levelNumber);
   if (!level) return {};
 
-  const title = level.meta_title || `${game.name} Level ${level.level_number} Walkthrough & Solution`;
+  const titleSuffix = ' | Puzzle Walkthroughs';
+  const titlePrefix = trimTitleAtWordBoundary(
+    level.meta_title || `${game.name} Level ${level.level_number} Walkthrough & Solution`,
+    59 - titleSuffix.length
+  );
+  const title = `${titlePrefix}${titleSuffix}`;
   const developer =
     typeof game === 'object' && game && 'developer' in game
       ? String((game as Record<string, unknown>).developer ?? '').trim()
@@ -78,8 +95,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `Stuck on ${game.name} Level ${level.level_number}? Watch our full video walkthrough and get pro tips to beat this ${developer || 'game'} level fast. Complete solution inside!`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
+    authors: [{ name: 'MS Digital System' }],
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
       languages: {
@@ -127,6 +145,14 @@ export default async function LevelPage({ params }: Props) {
   const customButtons = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
   const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
   const walkthroughText = htmlToPlainText(level.walkthrough || '');
+  const walkthroughItems = walkthroughText
+    .split(/\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const summaryDetail =
+    htmlToPlainText(level.tips || '') ||
+    walkthroughItems[0] ||
+    'Review the level-specific strategy and walkthrough below before making your moves.';
   const faqItems = [
     {
       q: `How to beat ${game.name} Level ${level.level_number}?`,
@@ -204,12 +230,12 @@ export default async function LevelPage({ params }: Props) {
         <main className="min-w-0">
           <article>
             <header className="mb-5">
-              <p className="mb-2 text-[13px]" style={{ color: 'var(--muted)' }}>
+              <div className="author-info mb-2 text-[13px]" style={{ color: 'var(--muted)' }}>
                 <time dateTime={level.created_at}>
                   {new Date(level.created_at).toLocaleDateString()}
                 </time>
                 {' · '}By {author}
-              </p>
+              </div>
               <h1 className="page-title mb-2">
                 How to beat {game.name} Level {level.level_number}?
               </h1>
@@ -227,9 +253,19 @@ export default async function LevelPage({ params }: Props) {
             />
           </div>
 
+          <section className="card mb-6 p-4 sm:p-5" aria-labelledby="level-summary-heading">
+            <h2 id="level-summary-heading" className="mb-2 font-bold">
+              TL;DR (Summary)
+            </h2>
+            <p className="text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
+              Summary: Beat {game.name} Level {level.level_number} by following the
+              level-specific walkthrough. {summaryDetail}
+            </p>
+          </section>
+
           <p className="mb-6 text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
-            Follow the video guide carefully and use the walkthrough below to check the sequence
-            of moves for this level.
+            Verified attempt counts and success-rate research are not available for this level.
+            Use the level-specific walkthrough and screenshot breakdown below to plan your moves.
           </p>
 
           {level.screenshots && level.screenshots.length > 0 && (
@@ -310,10 +346,18 @@ export default async function LevelPage({ params }: Props) {
           {level.walkthrough && (
             <section className="section" style={{ marginBottom: '2rem' }}>
               <h2 className="section-title mb-3">How do you solve this level?</h2>
-              <div
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitize(level.walkthrough) }}
-              />
+              {walkthroughItems.length > 0 ? (
+                <ul className="list-disc space-y-2 pl-6 leading-7">
+                  {walkthroughItems.map((item, index) => (
+                    <li key={`${index}-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: sanitize(level.walkthrough) }}
+                />
+              )}
             </section>
           )}
 
