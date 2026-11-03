@@ -26,6 +26,7 @@ export default function BlogCard({
         ) : (
           <span aria-hidden="true">📝</span>
         )}
+        <span className="badge badge-white blog-badge">Guide</span>
       </div>
       <div className="blog-body">
         <h3 className="blog-title">{blog.title}</h3>

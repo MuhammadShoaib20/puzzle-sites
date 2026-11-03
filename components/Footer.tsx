@@ -92,7 +92,7 @@ export default async function Footer({ settings, categories }: Props) {
             </div>
           </div>
 
-          {pages.length > 0 && (
+          {(pages.length > 0 || visibleCategories.length > 0) && (
             <div>
               <div className="footer-title">Pages</div>
               <div className="footer-links">
@@ -101,24 +101,20 @@ export default async function Footer({ settings, categories }: Props) {
                     {page.title}
                   </Link>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Categories */}
-          {visibleCategories.length > 0 && (
-            <div>
-              <div className="footer-title">Categories</div>
-              <div className="footer-links">
-                {visibleCategories.map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/category/${category.slug}`}
-                    className="footer-link"
-                  >
-                    {category.name}
-                  </Link>
-                ))}
+                {visibleCategories.length > 0 && (
+                  <>
+                    <div className="footer-title footer-subtitle">Categories</div>
+                    {visibleCategories.map((category) => (
+                      <Link
+                        key={category.id}
+                        href={`/category/${category.slug}`}
+                        className="footer-link"
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
           )}

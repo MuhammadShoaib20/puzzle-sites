@@ -39,6 +39,10 @@ const BOARD: { n: string; kind: '' | 'solved' | 'stuck' }[] = [
   { n: '10', kind: '' },
   { n: '11', kind: '' },
   { n: '12', kind: '' },
+  { n: '', kind: '' },
+  { n: '', kind: '' },
+  { n: '', kind: '' },
+  { n: '', kind: '' },
 ];
 
 function LevelLink({ level }: { level: LevelWithGame }) {
@@ -124,9 +128,10 @@ export default async function HomePage() {
             <div className="board-grid">
               {BOARD.map((tile, i) => (
                 <span
-                  key={tile.n}
+                  key={`board-tile-${i}`}
                   className={`board-tile ${tile.kind}`}
                   style={{ animationDelay: `${120 + i * 55}ms` }}
+                  aria-hidden={tile.n === '' ? true : undefined}
                 >
                   {tile.n}
                 </span>
