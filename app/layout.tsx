@@ -3,7 +3,6 @@ import { Plus_Jakarta_Sans, Sora } from 'next/font/google';
 import DelayedAdSense from '@/components/DelayedAdSense';
 import ConsentAnalytics from '@/components/ConsentAnalytics';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
-import SiteThemeProvider from '@/components/SiteThemeProvider';
 import { getSettings } from '@/lib/db';
 import { CANONICAL_SITE_URL } from '@/lib/seo';
 import './globals.css';
@@ -96,7 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const ahrefsDataKey = settings?.ahrefs_data_key?.trim();
 
   return (
-    <html lang="en" className={`${body.variable} ${display.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${body.variable} ${display.variable}`}>
       <head>
         {ahrefsDataKey && (
           <script
@@ -107,12 +106,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body>
-        <SiteThemeProvider>
-          <DelayedAdSense />
-          <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
-          {children}
-          <CookieConsentBanner />
-        </SiteThemeProvider>
+        <DelayedAdSense />
+        <ConsentAnalytics gaId={settings?.google_analytics_id || null} />
+        {children}
+        <CookieConsentBanner />
       </body>
     </html>
   );
