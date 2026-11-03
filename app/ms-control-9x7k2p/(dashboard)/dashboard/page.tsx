@@ -21,9 +21,9 @@ export default async function DashboardPage() {
   const stats = await getStats();
 
   const cards = [
-    { label: 'Games', value: stats.games, icon: '🎮', href: '/ms-control-9x7k2p/games', bg: 'linear-gradient(180deg,#38BDF8,#0284C7)' },
-    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/ms-control-9x7k2p/games', bg: 'linear-gradient(180deg,#A5B4FC,#6366F1)' },
-    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/ms-control-9x7k2p/blogs', bg: 'linear-gradient(180deg,#FDBA74,#FB923C)' },
+    { label: 'Games', value: stats.games, icon: '🎮', href: '/ms-control-9x7k2p/games', bg: '#EEF0FF' },
+    { label: 'Levels', value: stats.levels, icon: '🎯', href: '/ms-control-9x7k2p/games', bg: '#E8E9FC' },
+    { label: 'Blogs', value: stats.blogs, icon: '📝', href: '/ms-control-9x7k2p/blogs', bg: '#FEF3C7' },
   ];
 
   return (
