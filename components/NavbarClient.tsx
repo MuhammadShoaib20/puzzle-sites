@@ -28,6 +28,21 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
   const closeMenu = () => setOpenFor(null);
   const toggleMenu = () => setOpenFor(open ? null : pathname);
 
+  // Keep the page behind the mobile drawer from scrolling.
+  useEffect(() => {
+    if (!open) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
+  }, [open]);
+
   // Close with the Escape key
   useEffect(() => {
     if (!open) return;
