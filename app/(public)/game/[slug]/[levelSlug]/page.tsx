@@ -124,6 +124,7 @@ export default async function LevelPage({ params }: Props) {
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
   const author = 'MS Digital System';
+  const customButtons = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
   const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
   const walkthroughText = htmlToPlainText(level.walkthrough || '');
   const faqItems = [
@@ -280,6 +281,17 @@ export default async function LevelPage({ params }: Props) {
             <Link href={`/game/${game.slug}`} className="btn btn-secondary">
               🎮 All levels
             </Link>
+            {customButtons.map((button, index) => (
+              <a
+                key={`${button.url}-${index}`}
+                href={button.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+              >
+                {button.label}
+              </a>
+            ))}
           </div>
 
           {settings?.adsense_in_article && (
@@ -329,22 +341,6 @@ export default async function LevelPage({ params }: Props) {
                 </details>
               ))}
             </div>
-          </section>
-
-          <section className="section mb-8">
-            <h2 className="section-title mb-3">Where can you learn more about puzzle games?</h2>
-            <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
-              Read more about the puzzle video game genre on{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Puzzle_video_game"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Wikipedia
-              </a>
-              .
-            </p>
           </section>
 
           {nearbyLevels.length > 0 && (
