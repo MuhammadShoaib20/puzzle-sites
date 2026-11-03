@@ -2,6 +2,7 @@ import type { Blog, FAQ } from '@/types';
 import { formatIsoDate } from '@/lib/utils';
 
 export const PUBLISHER_NAME = 'MS Digital System';
+export const LEVEL_AUTHOR_NAME = 'MS Digital System Team';
 
 // ==========================================
 // SCHEMA TYPES
@@ -167,8 +168,9 @@ export function generateLevelArticleSchema(article: LevelArticleSchemaInput) {
     datePublished: formatIsoDate(article.publishedDate),
     dateModified: formatIsoDate(article.modifiedDate),
     author: {
-      '@type': 'Organization',
-      name: PUBLISHER_NAME,
+      '@type': 'Person',
+      name: LEVEL_AUTHOR_NAME,
+      jobTitle: 'Puzzle Experts',
     },
     publisher: {
       '@type': 'Organization',
@@ -200,8 +202,9 @@ export function generateVideoObjectSchema(video: VideoObjectSchemaInput) {
     thumbnailUrl: `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`,
     uploadDate: video.uploadDate,
     author: {
-      '@type': 'Organization',
-      name: PUBLISHER_NAME,
+      '@type': 'Person',
+      name: LEVEL_AUTHOR_NAME,
+      jobTitle: 'Puzzle Experts',
     },
     embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
     contentUrl: video.youtubeUrl,
@@ -281,8 +284,9 @@ export function generateHowToSchema(level: HowToSchemaInput) {
     name: `How to solve ${level.gameName} Level ${level.levelNumber}`,
     step: steps,
     author: {
-      '@type': 'Organization',
-      name: PUBLISHER_NAME,
+      '@type': 'Person',
+      name: LEVEL_AUTHOR_NAME,
+      jobTitle: 'Puzzle Experts',
     },
   };
 }

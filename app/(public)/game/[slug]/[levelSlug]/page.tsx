@@ -17,7 +17,7 @@ import {
   generateFAQSchema,
   generateLevelArticleSchema,
   htmlToPlainText,
-  PUBLISHER_NAME,
+  LEVEL_AUTHOR_NAME,
 } from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
@@ -98,7 +98,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
-    authors: [{ name: PUBLISHER_NAME }],
+    authors: [{ name: LEVEL_AUTHOR_NAME }],
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
       languages: {
@@ -142,7 +142,7 @@ export default async function LevelPage({ params }: Props) {
   const popularLevels = [...allLevels]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
-  const author = PUBLISHER_NAME;
+  const author = LEVEL_AUTHOR_NAME;
   const customButtons = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
   const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
   const walkthroughText = htmlToPlainText(level.walkthrough || '');
@@ -385,13 +385,14 @@ export default async function LevelPage({ params }: Props) {
             </div>
           </section>
 
-          <section className="card mb-8 p-5" aria-labelledby="publisher-heading">
-            <h2 id="publisher-heading" className="mb-2 font-bold">
-              About the Publisher
+          <section className="card mb-8 p-5" aria-labelledby="author-heading">
+            <h2 id="author-heading" className="mb-2 font-bold">
+              About the Author
             </h2>
             <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
-              This guide was created by the MS Digital System Editorial Team. We create clear,
-              practical puzzle walkthroughs to help players solve tricky levels.
+              Written by the MS Digital System Team. We are a dedicated group of puzzle
+              enthusiasts who create clear, practical walkthroughs to help players solve tricky
+              levels.
             </p>
           </section>
 
