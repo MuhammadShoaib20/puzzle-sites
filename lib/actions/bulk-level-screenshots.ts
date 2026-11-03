@@ -58,6 +58,10 @@ function levelKey(gameId: string, levelNumber: number) {
   return `${gameId}:${levelNumber}`;
 }
 
+function imageBaseName(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, '').toLowerCase();
+}
+
 export async function bulkUpdateLevelFullData(
   formData: FormData
 ): Promise<BulkLevelScreenshotsResult> {
@@ -118,6 +122,7 @@ export async function bulkUpdateLevelFullData(
 
     const skippedItems: SkippedItem[] = [];
     const imageFiles = new Map<string, File>();
+    const ambiguousImageNames = new Set<string>();
     for (const file of files) {
       const extension = file.name.match(/\.[^.]+$/)?.[0].toLowerCase();
       const expectedType = extension ? IMAGE_TYPES[extension] : undefined;
@@ -135,14 +140,24 @@ export async function bulkUpdateLevelFullData(
         });
         continue;
       }
-      if (imageFiles.has(file.name)) {
+      const baseName = imageBaseName(file.name);
+      if (ambiguousImageNames.has(baseName)) {
         skippedItems.push({
           rowNumber: 0,
-          message: `${file.name}: duplicate filename; only one file per filename is allowed.`,
+          message: `${file.name}: duplicate filename base; only one extension per base name is allowed.`,
         });
         continue;
       }
-      imageFiles.set(file.name, file);
+      if (imageFiles.has(baseName)) {
+        imageFiles.delete(baseName);
+        ambiguousImageNames.add(baseName);
+        skippedItems.push({
+          rowNumber: 0,
+          message: `${file.name}: duplicate filename base; only one extension per base name is allowed.`,
+        });
+        continue;
+      }
+      imageFiles.set(baseName, file);
     }
 
     const rows = parsed.data.map((row, index) => ({
@@ -265,7 +280,7 @@ export async function bulkUpdateLevelFullData(
       const uploadedPaths: string[] = [];
       for (const image of row.images) {
         if (!image.name) continue;
-        const file = imageFiles.get(image.name);
+        const file = imageFiles.get(imageBaseName(image.name));
         if (!file) {
           skippedItems.push({
             rowNumber: row.rowNumber,
@@ -310,39 +325,43 @@ export async function bulkUpdateLevelFullData(
         continue;
       }
 
-      const { error: updateError } = await supabaseAdmin
+      const { data: updatedLevel, error: updateError } = await supabaseAdmin
         .from('levels')
         .update(updateData)
-        .eq('id', levelId);
-      if (updateError) {
+        .eq('id', levelId)
+        .select('id')
+        .maybeSingle();
+      if (updateError || !updatedLevel) {
         console.error(
           `Bulk level screenshot update failed for "${row.gameSlug}" level ${row.levelNumber}:`,
-          updateError
+          updateError || 'No level row was affected.'
         );
-        const { error: cleanupError } = await supabaseAdmin.storage
-          .from('images')
-          .remove(uploadedPaths);
-        if (cleanupError) {
-          console.error('Bulk level screenshot cleanup failed:', cleanupError);
+        if (uploadedPaths.length > 0) {
+          const { error: cleanupError } = await supabaseAdmin.storage
+            .from('images')
+            .remove(uploadedPaths);
+          if (cleanupError) {
+            console.error('Bulk level screenshot cleanup failed:', cleanupError);
+          }
         }
-        skippedItems.push({
-          rowNumber: row.rowNumber,
-          message: 'Images uploaded, but the level screenshots could not be updated.',
-        });
-        continue;
+        throw new Error(
+          `Level update failed: Could not update ${row.gameSlug} level ${row.levelNumber}.`
+        );
       }
 
       updatedCount += 1;
+      revalidatePath(`/game/${row.gameSlug}/level-${row.levelNumber}`);
+      revalidatePath('/', 'layout');
     }
 
-    if (updatedCount > 0) {
-      revalidatePath('/game/[slug]/[levelSlug]', 'page');
-    }
     return { success: true, updatedCount, skippedItems };
   } catch (error) {
     console.error('Full bulk level update error:', error);
     if (error instanceof Error && error.message.startsWith('Unauthorized:')) {
       return { success: false, error: 'You must be signed in as an admin to update screenshots.' };
+    }
+    if (error instanceof Error && error.message.startsWith('Level update failed:')) {
+      return { success: false, error: error.message.replace('Level update failed: ', '') };
     }
     return { success: false, error: 'An unexpected error occurred while updating screenshots.' };
   }

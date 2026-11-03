@@ -103,11 +103,11 @@ export default function BulkLevelScreenshotsForm() {
             image_2_overview, image_3_name, image_3_overview
           </p>
           <p>
-            Image names must exactly match the selected filenames, including the extension.
-            Supported formats: JPG, PNG, and WebP. Each image must be under 5 MB; total upload
-            must be under 49 MB. Empty text fields keep their current database values. Leave an
-            image name empty to keep that row&apos;s existing screenshots if no new screenshots are
-            supplied.
+            Image names must match the selected filenames, but the extension can differ (for
+            example, a CSV name ending in .jpg can match an uploaded .webp file). Supported
+            formats: JPG, PNG, and WebP. Each image must be under 5 MB; total upload must be under
+            49 MB. Empty text fields keep their current database values. Leave an image name empty
+            to keep that row&apos;s existing screenshots if no new screenshots are supplied.
           </p>
           <p className="font-mono text-xs">
             Example: sand-blocks,113,Fish Jam Level 113,Description,&lt;p&gt;Walkthrough&lt;/p&gt;,
