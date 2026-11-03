@@ -16,6 +16,7 @@ interface VideoObjectSchemaInput {
   description?: string;
   youtubeUrl: string;
   uploadDate: string;
+  author: string;
 }
 
 interface BreadcrumbItem {
@@ -35,6 +36,16 @@ interface HowToSchemaInput {
   gameName: string;
   levelNumber: number;
   walkthrough?: string;
+  author: string;
+}
+
+interface LevelArticleSchemaInput {
+  headline: string;
+  description: string;
+  canonicalUrl: string;
+  publishedDate: string;
+  modifiedDate: string;
+  author: string;
 }
 
 // ==========================================
@@ -146,6 +157,35 @@ export function generateFAQSchema(faqs: FAQ[]) {
   };
 }
 
+export function generateLevelArticleSchema(article: LevelArticleSchemaInput) {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.headline,
+    description: article.description,
+    datePublished: formatIsoDate(article.publishedDate),
+    dateModified: formatIsoDate(article.modifiedDate),
+    author: {
+      '@type': 'Organization',
+      name: article.author,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: article.author,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteUrl}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': article.canonicalUrl,
+    },
+  };
+}
+
 // ==========================================
 // VIDEO OBJECT SCHEMA
 // ==========================================
@@ -160,6 +200,10 @@ export function generateVideoObjectSchema(video: VideoObjectSchemaInput) {
     description: video.description || '',
     thumbnailUrl: `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`,
     uploadDate: video.uploadDate,
+    author: {
+      '@type': 'Organization',
+      name: video.author,
+    },
     embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
     contentUrl: video.youtubeUrl,
   };
@@ -211,17 +255,24 @@ export function generateHowToSchema(level: HowToSchemaInput) {
   const steps: Array<{ '@type': string; text: string }> = [];
 
   if (level.walkthrough) {
-    // Split walkthrough into paragraphs and create steps
     const paragraphs = level.walkthrough
-      .split('\n')
-      .filter((p) => p.trim().length > 0)
-      .slice(0, 10); // Limit to 10 steps
+      .split(/(?:<\/p>|<\/li>|<br\s*\/?>|\r?\n)/i)
+      .map(htmlToPlainText)
+      .filter(Boolean)
+      .slice(0, 10);
 
     paragraphs.forEach((paragraph) => {
       steps.push({
         '@type': 'HowToStep',
-        text: paragraph.trim(),
+        text: paragraph,
       });
+    });
+  }
+
+  if (steps.length === 0) {
+    steps.push({
+      '@type': 'HowToStep',
+      text: `Watch the video walkthrough to see how to solve ${level.gameName} Level ${level.levelNumber}.`,
     });
   }
 
@@ -230,12 +281,40 @@ export function generateHowToSchema(level: HowToSchemaInput) {
     '@type': 'HowTo',
     name: `How to solve ${level.gameName} Level ${level.levelNumber}`,
     step: steps,
+    author: {
+      '@type': 'Organization',
+      name: level.author,
+    },
   };
 }
 
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
+
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\/(?:p|li|h[1-6]|div|blockquote)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(x[\da-f]+|\d+);/gi, (_match, entity: string) => {
+      const codePoint = entity[0].toLowerCase() === 'x'
+        ? Number.parseInt(entity.slice(1), 16)
+        : Number.parseInt(entity, 10);
+      return codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : '';
+    })
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .trim();
+}
 
 function extractYoutubeId(url: string): string {
   const patterns = [

@@ -14,6 +14,9 @@ import {
   generateVideoObjectSchema,
   generateBreadcrumbSchema,
   generateHowToSchema,
+  generateFAQSchema,
+  generateLevelArticleSchema,
+  htmlToPlainText,
 } from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
@@ -120,13 +123,45 @@ export default async function LevelPage({ params }: Props) {
   const popularLevels = [...allLevels]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
+  const author = 'MS Digital System';
+  const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
+  const walkthroughText = htmlToPlainText(level.walkthrough || '');
+  const faqItems = [
+    {
+      q: `How to beat ${game.name} Level ${level.level_number}?`,
+      a:
+        level.description ||
+        walkthroughText.split('\n')[0] ||
+        `Watch the video walkthrough below for the solution to ${game.name} Level ${level.level_number}.`,
+    },
+    {
+      q: `What is the best strategy for ${game.name} Level ${level.level_number}?`,
+      a:
+        htmlToPlainText(level.tips || '') ||
+        `Follow the walkthrough steps in order and use the video guide to check each move.`,
+    },
+    {
+      q: `Can I beat ${game.name} Level ${level.level_number} without boosters?`,
+      a: 'Yes, with patience and the right strategy, it is possible. Watch the video guide below and follow the steps carefully.',
+    },
+  ];
 
   const videoSchema = generateVideoObjectSchema({
     name: `${game.name} Level ${level.level_number} Walkthrough`,
     description: level.description || level.title || '',
     youtubeUrl: level.youtube_url,
     uploadDate: level.created_at,
+    author,
   });
+  const articleSchema = generateLevelArticleSchema({
+    headline: `${game.name} Level ${level.level_number} Walkthrough`,
+    description: level.meta_description || level.description || level.title || '',
+    canonicalUrl: canonicalLevelUrl,
+    publishedDate: level.created_at,
+    modifiedDate: level.updated_at || level.created_at,
+    author,
+  });
+  const faqSchema = generateFAQSchema(faqItems);
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { position: 1, name: 'Home', item: siteUrl },
@@ -141,15 +176,18 @@ export default async function LevelPage({ params }: Props) {
   const howToSchema = generateHowToSchema({
     gameName: game.name,
     levelNumber: level.level_number,
-    walkthrough: level.walkthrough,
+    walkthrough: level.walkthrough || level.description,
+    author,
   });
 
   return (
     <div className="animate-fade-in-up">
       <ViewTracker type="level" id={level.id} />
+      <JsonLd data={articleSchema} />
       <JsonLd data={videoSchema} />
       <JsonLd data={breadcrumbSchema} />
       <JsonLd data={howToSchema} />
+      {faqSchema && <JsonLd data={faqSchema} />}
 
       <div className="container-page pt-5">
         <Breadcrumb
@@ -163,13 +201,23 @@ export default async function LevelPage({ params }: Props) {
 
       <div className="container-page pt-6 pb-8 layout-2col">
         <main className="min-w-0">
-          <h1 className="page-title mb-2">
-            {level.title || `${game.name} Level ${level.level_number} Walkthrough`}
-          </h1>
-
-          <p className="text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
-            {new Date(level.created_at).toLocaleDateString()}
-          </p>
+          <article>
+            <header className="mb-5">
+              <p className="mb-2 text-[13px]" style={{ color: 'var(--muted)' }}>
+                <time dateTime={level.created_at}>
+                  {new Date(level.created_at).toLocaleDateString()}
+                </time>
+                {' · '}By {author}
+              </p>
+              <h1 className="page-title mb-2">
+                How to beat {game.name} Level {level.level_number}?
+              </h1>
+              {level.title && (
+                <p className="mb-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
+                  {level.title}
+                </p>
+              )}
+            </header>
 
           <div className="video-frame mb-6">
             <LazyYouTube
@@ -178,9 +226,14 @@ export default async function LevelPage({ params }: Props) {
             />
           </div>
 
+          <p className="mb-6 text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
+            Follow the video guide carefully and use the walkthrough below to check the sequence
+            of moves for this level.
+          </p>
+
           {level.screenshots && level.screenshots.length > 0 && (
             <section className="mb-8">
-              <h2 className="section-title mb-4">Visual Walkthrough Breakdown</h2>
+              <h2 className="section-title mb-4">What does each step look like?</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {level.screenshots.map((screenshot, index) => {
                   const overview = screenshot.overview?.trim() || '';
@@ -198,11 +251,12 @@ export default async function LevelPage({ params }: Props) {
                           title={altText}
                           fill
                           sizes="(max-width: 768px) 100vw, 33vw"
+                          loading="lazy"
                           className="object-cover"
                         />
                       </div>
                       <div className="p-4">
-                        <h3 className="font-bold mb-2">Step-by-Step Overview</h3>
+                        <h3 className="font-bold mb-2">What happens in this step?</h3>
                         <p className="text-sm leading-6 whitespace-pre-wrap text-[var(--muted)]">
                           {overview}
                         </p>
@@ -234,7 +288,7 @@ export default async function LevelPage({ params }: Props) {
 
           {level.description && (
             <section className="section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">Overview</h2>
+              <h2 className="section-title mb-3">What is the strategy for this level?</h2>
               <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
                 {level.description}
               </p>
@@ -243,7 +297,7 @@ export default async function LevelPage({ params }: Props) {
 
           {level.walkthrough && (
             <section className="section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">Step-by-step walkthrough</h2>
+              <h2 className="section-title mb-3">How do you solve this level?</h2>
               <div
                 className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: sanitize(level.walkthrough) }}
@@ -253,7 +307,7 @@ export default async function LevelPage({ params }: Props) {
 
           {level.tips && (
             <section className="tip-box mb-8">
-              <h3>💡 Pro tip</h3>
+              <h3>💡 What is the key tip for this level?</h3>
               <div
                 className="prose max-w-none text-[14.5px]"
                 dangerouslySetInnerHTML={{ __html: sanitize(level.tips) }}
@@ -261,9 +315,41 @@ export default async function LevelPage({ params }: Props) {
             </section>
           )}
 
+          <section className="section mb-8" aria-labelledby="level-faq-heading">
+            <h2 id="level-faq-heading" className="section-title mb-4">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-3">
+              {faqItems.map((faq) => (
+                <details key={faq.q} className="card faq-item">
+                  <summary className="cursor-pointer font-semibold">{faq.q}</summary>
+                  <p className="mt-3 leading-7" style={{ color: 'var(--ink-soft)' }}>
+                    {faq.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          <section className="section mb-8">
+            <h2 className="section-title mb-3">Where can you learn more about puzzle games?</h2>
+            <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
+              Read more about the puzzle video game genre on{' '}
+              <a
+                href="https://en.wikipedia.org/wiki/Puzzle_video_game"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Wikipedia
+              </a>
+              .
+            </p>
+          </section>
+
           {nearbyLevels.length > 0 && (
             <section className="section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-4">More levels</h2>
+              <h2 className="section-title mb-4">Which level should you try next?</h2>
               <div className="level-grid">
                 {nearbyLevels.map((item) => (
                   <Link
@@ -312,6 +398,7 @@ export default async function LevelPage({ params }: Props) {
               🎮 Complete {game.name} guide
             </Link>
           </div>
+          </article>
         </main>
 
         <aside className="sidebar">
