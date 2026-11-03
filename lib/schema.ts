@@ -2,8 +2,8 @@ import type { Blog, FAQ } from '@/types';
 import { formatIsoDate } from '@/lib/utils';
 
 export const PUBLISHER_NAME = 'MS Digital System';
-export const LEVEL_AUTHOR_NAME = 'A. R. Khan';
-export const LEVEL_AUTHOR_JOB_TITLE = 'Editorial pseudonym for MS Digital System';
+export const LEVEL_AUTHOR_NAME = 'MS Digital System Team';
+export const LEVEL_AUTHOR_JOB_TITLE = 'Puzzle Experts';
 
 // ==========================================
 // SCHEMA TYPES

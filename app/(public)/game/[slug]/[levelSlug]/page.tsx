@@ -233,7 +233,6 @@ export default async function LevelPage({ params }: Props) {
                   {new Date(level.created_at).toLocaleDateString()}
                 </time>
                 {' · '}By {author}
-                {' (editorial pseudonym for MS Digital System)'}
               </div>
               <h1 className="page-title mb-2">
                 How to beat {game.name} Level {level.level_number}?
@@ -391,9 +390,8 @@ export default async function LevelPage({ params }: Props) {
               About the Author
             </h2>
             <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
-              A. R. Khan is an editorial pseudonym for MS Digital System. This guide was prepared
-              by the MS Digital System editorial team to provide clear, practical walkthroughs
-              that help players solve tricky levels.
+              Written by the MS Digital System Team. We are a dedicated group of puzzle enthusiasts
+              who create clear, practical walkthroughs to help players solve tricky levels.
             </p>
           </section>
 
