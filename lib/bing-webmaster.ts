@@ -71,9 +71,14 @@ export function normalizeBingSiteUrl(value: string): string {
 async function callBingApi(operation: string, apiKey: string, values: Record<string, string> = {}) {
   const url = new URL(`${BING_API_BASE}/${operation}`);
   url.searchParams.set('apikey', apiKey);
-  for (const [name, value] of Object.entries(values)) url.searchParams.set(name, value);
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(values),
+    signal: AbortSignal.timeout(15000),
+    cache: 'no-store',
+  });
   let payload: unknown;
   try {
     payload = await response.json();
