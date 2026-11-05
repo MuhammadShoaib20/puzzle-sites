@@ -158,15 +158,18 @@ export default async function HomePage() {
         </p>
       </section>
 
-      {/* ============= ALL GAMES ============= */}
+      {/* ============= LATEST GAMES ============= */}
       <section id="all-games" className="container-page home-section">
         <div className="home-head">
           <div>
-            <h2 className="home-h2">All games</h2>
+            <h2 className="home-h2">Latest games</h2>
             <p className="home-sub">
               {games.length} {games.length === 1 ? 'game' : 'games'} with level-by-level guides
             </p>
           </div>
+          <Link href="/games" className="link-arrow">
+            View all →
+          </Link>
         </div>
 
         {games.length === 0 ? (
@@ -177,7 +180,7 @@ export default async function HomePage() {
           />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {games.map((game, idx) => (
+            {games.slice(0, 4).map((game, idx) => (
               <GameCard key={game.id} game={game} index={idx} />
             ))}
           </div>

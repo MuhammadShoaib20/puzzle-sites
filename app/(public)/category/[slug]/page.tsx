@@ -32,10 +32,10 @@ export default async function CategoryPage({ params }: Props) {
   const games = await getGamesByCategory(category.id);
 
   return (
-    <div className="container-page py-8 md:py-14 animate-fade-in-up">
+    <div className="container-page py-8 md:py-14 animate-fade-in-up game-grid-page category-page">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: category.name }]} />
 
-      <header className="mt-5 mb-8 md:mb-10">
+      <header className="mt-5 mb-8 md:mb-10 text-center">
         <h1 className="page-title">{category.name}</h1>
         {category.description && <p className="page-sub">{category.description}</p>}
         <div className="mt-4">

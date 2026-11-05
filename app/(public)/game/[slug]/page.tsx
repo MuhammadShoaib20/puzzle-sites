@@ -31,6 +31,14 @@ import { canonicalUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
+// Demote <h2> inside article prose to <h3> so the heading hierarchy stays
+// h1 (page) → h2 (section titles) → h3 (sub-headings) for SEO.
+function demoteProseHeadings(html: string) {
+  return html
+    .replace(/<h2(\s[^>]*)?>/gi, '<h3$1>')
+    .replace(/<\/h2>/gi, '</h3>');
+}
+
 export const revalidate = 3600;
 export const dynamicParams = true;
 
@@ -104,7 +112,7 @@ export default async function GamePage({ params }: Props) {
   const organizationSchema = generateOrganizationSchema();
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up game-page">
       <ViewTracker type="game" id={game.id} />
       <JsonLd data={videoGameSchema} />
       <JsonLd data={breadcrumbSchema} />
@@ -150,7 +158,7 @@ export default async function GamePage({ params }: Props) {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-4 mb-10">
+          <div className="level-actions game-actions">
             <ScrollToLevelsButton />
             {game.youtube_channel_url && (
               <a
@@ -176,21 +184,21 @@ export default async function GamePage({ params }: Props) {
           </div>
 
           {game.full_description && (
-            <section className="section">
+            <section className="section game-text-section">
               <h2 className="section-title mb-4">About {game.name}</h2>
               <div
                 className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitize(game.full_description) }}
+                dangerouslySetInnerHTML={{ __html: demoteProseHeadings(sanitize(game.full_description)) }}
               />
             </section>
           )}
 
           {game.walkthrough_intro && (
-            <section className="section">
+            <section className="section game-text-section">
               <h2 className="section-title mb-4">Walkthrough guide</h2>
               <div
                 className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitize(game.walkthrough_intro) }}
+                dangerouslySetInnerHTML={{ __html: demoteProseHeadings(sanitize(game.walkthrough_intro)) }}
               />
             </section>
           )}
@@ -279,7 +287,7 @@ export default async function GamePage({ params }: Props) {
             </div>
           )}
 
-          <Link href="/blog" className="btn btn-secondary btn-block">
+          <Link href="/blog" className="btn btn-primary btn-block">
             More guides
           </Link>
         </aside>

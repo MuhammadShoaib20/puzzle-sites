@@ -19,7 +19,7 @@ export default async function BlogPage() {
   const blogs = await getAllBlogs();
 
   return (
-    <div className="container-page py-10 md:py-16 animate-fade-in-up">
+    <div className="container-page py-10 md:py-16 animate-fade-in-up blog-page">
       <header className="mb-8 md:mb-12 text-center">
         <h1 className="page-title">Blog</h1>
         <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>

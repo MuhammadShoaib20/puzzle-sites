@@ -94,7 +94,7 @@ export async function bulkEditLevels(gameId: string, formData: FormData) {
     revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
     revalidatePublicLevelPaths(game.slug, getLevelNumbers(levels));
     redirect(`/ms-control-9x7k2p/games/${gameId}/levels`);
-  } catch (e) {
+  } catch {
     return { error: 'Failed to parse levels data.' };
   }
 }

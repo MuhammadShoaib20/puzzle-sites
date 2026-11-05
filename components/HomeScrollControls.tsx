@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function HomeScrollControls() {
   const [atTop, setAtTop] = useState(true);
   const [atBottom, setAtBottom] = useState(false);
+  const scrollFrame = useRef(0);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -21,15 +22,42 @@ export default function HomeScrollControls() {
     return () => {
       window.removeEventListener('scroll', updatePosition);
       window.removeEventListener('resize', updatePosition);
+      cancelAnimationFrame(scrollFrame.current);
     };
   }, []);
 
   const scrollPage = (direction: -1 | 1) => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollBy({
-      top: direction * Math.max(window.innerHeight * 0.8, 320),
-      behavior: reduceMotion ? 'instant' : 'smooth',
-    });
+    const target =
+      direction === -1
+        ? 0
+        : Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+
+    if (reduceMotion) {
+      window.scrollTo({ top: target, behavior: 'instant' });
+      return;
+    }
+
+    const start = window.scrollY;
+    const distance = target - start;
+    if (Math.abs(distance) < 2) return;
+
+    // Slow, gradual eased scroll — duration scales with distance
+    const duration = Math.min(3200, Math.max(900, Math.abs(distance) * 1.1));
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased =
+        progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      window.scrollTo({ top: start + distance * eased, behavior: 'instant' });
+      scrollFrame.current = progress < 1 ? requestAnimationFrame(step) : 0;
+    };
+
+    cancelAnimationFrame(scrollFrame.current);
+    scrollFrame.current = requestAnimationFrame(step);
   };
 
   return (

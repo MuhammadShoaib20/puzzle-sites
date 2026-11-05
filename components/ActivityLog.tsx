@@ -16,7 +16,7 @@ type Props = {
 
 type ActivityFilter = 'all' | 'logins' | 'failures' | 'admin_actions';
 
-export default function ActivityLog({ activities, summary, suspiciousIPs, adminPath }: Props) {
+export default function ActivityLog({ activities, summary, suspiciousIPs }: Props) {
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
   const filteredActivities = activities.filter((activity) => {

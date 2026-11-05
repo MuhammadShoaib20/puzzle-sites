@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 const ACCESS_KEY_COOKIE = 'admin_access_key';
 const COOKIE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
@@ -51,7 +50,6 @@ export default function AccessKeyScreen({ correctKey, onSuccess }: Props) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

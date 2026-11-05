@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- YouTube thumbnails load directly from i.ytimg.com */
 import { useState } from 'react';
 
 interface LazyYouTubeProps {

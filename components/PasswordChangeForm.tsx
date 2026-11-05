@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import { changeAdminPassword, invalidateAllSessions } from '@/lib/actions/security';
-
-type ActionResult = { success?: boolean; error?: string };
 
 type Props = {
   adminPath: string;
 };
 
 export default function PasswordChangeForm({ adminPath }: Props) {
+  const router = useRouter();
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [strengthText, setStrengthText] = useState('');
   const [passwordMatch, setPasswordMatch] = useState(true);
@@ -42,7 +42,7 @@ export default function PasswordChangeForm({ adminPath }: Props) {
     const result = await changeAdminPassword(formData);
     
     if (result.success) {
-      window.location.href = `/${adminPath}/login?message=password_changed`;
+      router.push(`/${adminPath}/login?message=password_changed`);
     } else if (result.error) {
       setChangeError(result.error);
     }
@@ -53,7 +53,7 @@ export default function PasswordChangeForm({ adminPath }: Props) {
     const result = await invalidateAllSessions();
     
     if (result.success) {
-      window.location.href = `/${adminPath}/login?message=sessions_invalidated`;
+      router.push(`/${adminPath}/login?message=sessions_invalidated`);
     } else if (result.error) {
       setLogoutError(result.error);
     }

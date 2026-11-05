@@ -1,11 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAuth } from '@/lib/require-auth';
 import bcrypt from 'bcryptjs';
-import { signOut } from '@/lib/auth';
 import { headers } from 'next/headers';
 
 async function getClientIP(): Promise<string> {

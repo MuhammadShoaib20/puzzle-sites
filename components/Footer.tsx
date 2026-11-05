@@ -88,6 +88,7 @@ export default async function Footer({ settings, categories }: Props) {
             <div className="footer-title">Quick links</div>
             <div className="footer-links">
               <Link href="/" className="footer-link">Home</Link>
+              <Link href="/games" className="footer-link">Games</Link>
               <Link href="/blog" className="footer-link">Blog</Link>
             </div>
           </div>

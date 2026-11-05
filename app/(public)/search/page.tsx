@@ -21,8 +21,8 @@ export default async function SearchPage({ searchParams }: Props) {
   const games = query ? await searchGames(query) : [];
 
   return (
-    <div className="container-page py-10 md:py-16 animate-fade-in-up">
-      <div className="max-w-2xl mx-auto text-center mb-10">
+    <div className="container-page py-10 md:py-16 animate-fade-in-up game-grid-page search-page">
+      <header className="max-w-2xl mx-auto text-center mb-10">
         <h1 className="page-title">Search</h1>
         <p className="page-sub" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
           Find games and walkthroughs.
@@ -57,7 +57,7 @@ export default async function SearchPage({ searchParams }: Props) {
             Search
           </button>
         </form>
-      </div>
+      </header>
 
       {query && (
         <p className="text-center mb-6" style={{ color: 'var(--muted)' }}>

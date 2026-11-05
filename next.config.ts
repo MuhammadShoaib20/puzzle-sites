@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
   skipTrailingSlashRedirect: true,
   async headers() {
     return [

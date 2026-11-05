@@ -8,6 +8,7 @@ import NavbarSearch from './NavbarSearch';
 
 const LINKS = [
   { href: '/', label: 'Home' },
+  { href: '/games', label: 'Games' },
   { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
@@ -57,8 +58,17 @@ export default function NavbarClient({ siteName, siteLogo }: Props) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    if (href === '/games') {
+      return (
+        pathname === '/games' ||
+        pathname.startsWith('/games/') ||
+        pathname.startsWith('/game/')
+      );
+    }
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <header className="site-nav">

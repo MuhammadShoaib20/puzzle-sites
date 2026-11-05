@@ -70,6 +70,28 @@ function trimTitleAtWordBoundary(title: string, maxLength = 59): string {
   return 'Level Walkthrough';
 }
 
+function StepOverview({ text }: { text: string }) {
+  const segments = text.split(/(\*\*[^*]+\*\*|strategy\s*:)/i);
+  return (
+    <>
+      {segments.map((segment, i) => {
+        if (!segment) return null;
+        if (/^\*\*[^*]+\*\*$/.test(segment)) {
+          return <strong key={i}>{segment.slice(2, -2)}</strong>;
+        }
+        if (/^strategy\s*:$/i.test(segment)) {
+          return (
+            <span key={i} className="step-overview-strategy">
+              {segment}
+            </span>
+          );
+        }
+        return <span key={i}>{segment}</span>;
+      })}
+    </>
+  );
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, levelSlug } = await params;
   const levelNumber = parseLevelNumber(levelSlug);
@@ -206,7 +228,7 @@ export default async function LevelPage({ params }: Props) {
   });
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up level-page">
       <ViewTracker type="level" id={level.id} />
       <JsonLd data={articleSchema} />
       <JsonLd data={videoSchema} />
@@ -232,13 +254,13 @@ export default async function LevelPage({ params }: Props) {
                 <time dateTime={level.created_at}>
                   {new Date(level.created_at).toLocaleDateString()}
                 </time>
-                {' · '}By {author}
+                <span className="author-name">By {author}</span>
               </div>
               <h1 className="page-title mb-2">
                 How to beat {game.name} Level {level.level_number}?
               </h1>
               {level.title && (
-                <p className="mb-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
+                <p className="level-subtitle mb-2 text-sm">
                   {level.title}
                 </p>
               )}
@@ -251,7 +273,7 @@ export default async function LevelPage({ params }: Props) {
             />
           </div>
 
-          <section className="card mb-6 p-4 sm:p-5" aria-labelledby="level-summary-heading">
+          <section className="card level-summary mb-6 p-4 sm:p-5" aria-labelledby="level-summary-heading">
             <h2 id="level-summary-heading" className="mb-2 font-bold">
               TL;DR (Summary)
             </h2>
@@ -295,9 +317,11 @@ export default async function LevelPage({ params }: Props) {
                         <span className="step-screenshot-badge">Step {index + 1}</span>
                       </div>
                       <div className="step-screenshot-copy">
-                        <h3 className="step-screenshot-title">What happens in this step?</h3>
+                        <h3 className="step-screenshot-title">
+                          What happens in Step {index + 1}?
+                        </h3>
                         <p className="step-screenshot-overview">
-                          {overview}
+                          <StepOverview text={overview} />
                         </p>
                       </div>
                     </article>
@@ -307,7 +331,7 @@ export default async function LevelPage({ params }: Props) {
             </section>
           )}
 
-          <div className="flex flex-wrap gap-4 mb-8">
+          <div className="level-actions">
             <a
               href={level.youtube_url}
               target="_blank"
@@ -337,7 +361,7 @@ export default async function LevelPage({ params }: Props) {
           )}
 
           {level.description && (
-            <section className="section" style={{ marginBottom: '2rem' }}>
+            <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
               <h2 className="section-title mb-3">What is the strategy for this level?</h2>
               <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
                 {level.description}
@@ -346,7 +370,7 @@ export default async function LevelPage({ params }: Props) {
           )}
 
           {level.walkthrough && (
-            <section className="section" style={{ marginBottom: '2rem' }}>
+            <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
               <h2 className="section-title mb-3">How do you solve this level?</h2>
               {walkthroughItems.length > 0 ? (
                 <ol className="list-decimal space-y-2 pl-6 leading-7">
@@ -445,7 +469,7 @@ export default async function LevelPage({ params }: Props) {
           <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
             <Link
               href={`/game/${game.slug}`}
-              className="btn btn-secondary btn-block"
+              className="btn btn-primary btn-block"
             >
               🎮 Complete {game.name} guide
             </Link>

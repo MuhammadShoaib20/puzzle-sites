@@ -37,7 +37,7 @@ export default function BlogCard({
         )}
         <div className="blog-meta">
           <span>{formatDate(blog.created_at)}</span>
-          <span style={{ color: 'var(--primary-dark)', fontWeight: 700 }}>Read guide</span>
+          <span className="blog-read-cta">Read guide</span>
         </div>
       </div>
     </Link>

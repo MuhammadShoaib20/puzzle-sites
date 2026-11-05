@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import PasswordChangeForm from '@/components/PasswordChangeForm';
 import ActivityLog from '@/components/ActivityLog';
@@ -9,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function SecurityPage() {
-  const session = await requireAuth();
+  await requireAuth();
   const adminPath = getAdminPath();
 
   const [activities, summary, suspiciousIPs] = await Promise.all([

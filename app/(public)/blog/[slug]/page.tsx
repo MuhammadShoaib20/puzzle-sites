@@ -72,7 +72,7 @@ export default async function BlogDetailPage({ params }: Props) {
   const faqSchema = faqs.length > 0 ? generateFAQSchema(faqs) : null;
 
   return (
-    <article className="animate-fade-in-up">
+    <article className="animate-fade-in-up blog-article">
       <ViewTracker type="blog" id={blog.id} />
       <JsonLd data={articleSchema} />
       <JsonLd data={breadcrumbSchema} />
