@@ -8,7 +8,6 @@ const BING_API_METHODS = {
 } as const;
 
 export type BingCredentialRecord = {
-  id: number;
   api_key_encrypted: string;
   site_url: string;
   status: 'connected' | 'verification_failed';
@@ -145,7 +144,7 @@ export async function submitBingSitemap(apiKey: string, siteUrl: string): Promis
 export async function getBingCredentialRecord(): Promise<BingCredentialRecord | null> {
   const { data, error } = await supabaseAdmin
     .from('bing_credentials')
-    .select('*')
+    .select('api_key_encrypted, site_url, status, last_submitted_at, last_error, updated_at')
     .eq('id', 1)
     .maybeSingle();
   if (error) throw new Error(`Could not read Bing settings: ${error.message}`);
@@ -153,7 +152,7 @@ export async function getBingCredentialRecord(): Promise<BingCredentialRecord | 
 }
 
 export async function saveBingCredentialRecord(
-  record: Omit<BingCredentialRecord, 'id'>
+  record: BingCredentialRecord
 ): Promise<void> {
   const { error } = await supabaseAdmin
     .from('bing_credentials')

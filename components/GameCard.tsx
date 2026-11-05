@@ -2,7 +2,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Game } from '@/types';
 
-type Props = { game: Game; index?: number };
+type Props = {
+  game: Pick<Game, 'id' | 'name' | 'slug' | 'cover_image' | 'short_description' | 'total_levels'>;
+  index?: number;
+};
 
 export default function GameCard({ game, index = 0 }: Props) {
   return (

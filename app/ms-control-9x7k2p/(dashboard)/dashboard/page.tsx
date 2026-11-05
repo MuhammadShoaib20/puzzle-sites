@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic';
 
 async function getStats() {
   const [games, levels, blogs] = await Promise.all([
-    supabaseAdmin.from('games').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('levels').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('blogs').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('games').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('levels').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('blogs').select('id', { count: 'exact', head: true }),
   ]);
 
   return {

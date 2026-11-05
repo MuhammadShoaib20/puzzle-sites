@@ -8,9 +8,20 @@ import { makeSlug } from '@/lib/utils';
 import type { Page } from '@/types';
 
 type ActionResult = { error?: string } | void;
+type EditablePage = Pick<
+  Page,
+  | 'slug'
+  | 'title'
+  | 'content'
+  | 'meta_title'
+  | 'meta_description'
+  | 'is_published'
+  | 'show_in_footer'
+  | 'sort_order'
+>;
 type Props = {
   action: (formData: FormData) => Promise<ActionResult>;
-  page?: Page;
+  page?: EditablePage;
   submitLabel?: string;
 };
 

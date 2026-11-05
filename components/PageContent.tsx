@@ -1,7 +1,11 @@
 import type { Page } from '@/types';
 import { sanitize } from '@/lib/sanitize';
 
-export default function PageContent({ page }: { page: Page }) {
+export default function PageContent({
+  page,
+}: {
+  page: Pick<Page, 'title' | 'content'>;
+}) {
   return (
     <article className="container-narrow animate-fade-in-up pt-10 pb-16 page-content">
       <h1 className="page-title mb-8">{page.title}</h1>

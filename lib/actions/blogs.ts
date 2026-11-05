@@ -531,7 +531,7 @@ export async function createBlog(formData: FormData): Promise<ActionResult> {
       meta_description,
       keywords,
       published,
-    }).select().single();
+    }).select('id').single();
 
     if (error) {
       console.error('Supabase error:', error);

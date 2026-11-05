@@ -9,10 +9,28 @@ import { useToast } from './Toast';
 
 type FAQItem = { q: string; a: string };
 type ButtonItem = { label: string; url: string; newTab: boolean };
+type EditableGame = Pick<
+  Game,
+  | 'name'
+  | 'slug'
+  | 'cover_image'
+  | 'short_description'
+  | 'operating_system'
+  | 'full_description'
+  | 'walkthrough_intro'
+  | 'youtube_trailer_url'
+  | 'youtube_channel_url'
+  | 'custom_buttons'
+  | 'faq'
+  | 'meta_title'
+  | 'meta_description'
+  | 'keywords'
+  | 'published'
+>;
 
 type Props = {
   action: (formData: FormData) => Promise<{ success: boolean; error?: string; fieldErrors?: { name?: string; slug?: string; short_description?: string; full_description?: string; youtube_trailer_url?: string; youtube_channel_url?: string }; data?: unknown }>;
-  game?: Game;
+  game?: EditableGame;
   submitLabel?: string;
   redirectPath?: string;
 };

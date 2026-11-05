@@ -1,13 +1,102 @@
 import { supabase, supabaseAdmin } from './supabase';
 import type { Game, Level, Blog, Page, Category, GameLink, Settings } from '@/types';
 
+export type GameCardData = Pick<
+  Game,
+  'id' | 'name' | 'slug' | 'cover_image' | 'short_description' | 'total_levels'
+>;
+export type GamePageData = Pick<
+  Game,
+  | 'id'
+  | 'name'
+  | 'slug'
+  | 'short_description'
+  | 'full_description'
+  | 'walkthrough_intro'
+  | 'cover_image'
+  | 'youtube_trailer_url'
+  | 'youtube_channel_url'
+  | 'custom_buttons'
+  | 'faq'
+  | 'meta_title'
+  | 'meta_description'
+  | 'keywords'
+  | 'operating_system'
+>;
+export type BlogCardData = Pick<
+  Blog,
+  'id' | 'slug' | 'title' | 'cover_image' | 'meta_description' | 'created_at'
+>;
+export type BlogDetailData = Pick<
+  Blog,
+  | 'id'
+  | 'game_id'
+  | 'title'
+  | 'slug'
+  | 'content'
+  | 'cover_image'
+  | 'meta_title'
+  | 'meta_description'
+  | 'keywords'
+  | 'published_date'
+  | 'created_at'
+  | 'updated_at'
+>;
+export type BlogEditData = Pick<
+  Blog,
+  'game_id' | 'title' | 'slug' | 'content' | 'cover_image' | 'meta_title' | 'meta_description' | 'keywords' | 'published'
+>;
+export type RelatedBlogData = Pick<
+  Blog,
+  'id' | 'slug' | 'title' | 'meta_description' | 'content' | 'cover_image' | 'created_at'
+>;
+export type PageContentData = Pick<Page, 'slug' | 'title' | 'content' | 'meta_title' | 'meta_description'>;
+export type SiteSettingsData = Pick<
+  Settings,
+  | 'site_name'
+  | 'site_url'
+  | 'site_logo'
+  | 'site_description'
+  | 'adsense_header'
+  | 'adsense_in_article'
+  | 'adsense_sidebar'
+  | 'adsense_footer'
+  | 'youtube_button_text'
+  | 'switch_youtube_enabled'
+  | 'google_analytics_id'
+  | 'ahrefs_data_key'
+  | 'google_search_console'
+  | 'social_links'
+>;
+export type LatestLevelData = Pick<Level, 'id' | 'level_number' | 'title'> & {
+  game: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[];
+};
+export type LevelPageData = Pick<
+  Level,
+  | 'id'
+  | 'game_id'
+  | 'level_number'
+  | 'title'
+  | 'youtube_url'
+  | 'youtube_id'
+  | 'description'
+  | 'walkthrough'
+  | 'tips'
+  | 'screenshots'
+  | 'meta_title'
+  | 'meta_description'
+  | 'created_at'
+  | 'updated_at'
+>;
+export type RelatedLevelData = Pick<Level, 'id' | 'level_number' | 'title'>;
+
 // ==========================================
 // GAMES
 // ==========================================
-export async function getAllGames(): Promise<Game[]> {
+export async function getAllGames(): Promise<GameCardData[]> {
   const { data, error } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug, cover_image, short_description, total_levels')
     .eq('published', true)
     .order('created_at', { ascending: false });
 
@@ -15,31 +104,31 @@ export async function getAllGames(): Promise<Game[]> {
     console.error('getAllGames error:', error.message);
     return [];
   }
-  return (data || []) as Game[];
+  return (data || []) as GameCardData[];
 }
 
-export async function getGameBySlug(slug: string): Promise<Game | null> {
+export async function getGameBySlug(slug: string): Promise<GamePageData | null> {
   const { data, error } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug, short_description, full_description, walkthrough_intro, cover_image, youtube_trailer_url, youtube_channel_url, custom_buttons, faq, meta_title, meta_description, keywords, operating_system')
     .eq('slug', slug)
     .eq('published', true)
     .single();
 
   if (error || !data) return null;
-  return data as Game;
+  return data as GamePageData;
 }
 
-export async function getFeaturedGames(limit = 6): Promise<Game[]> {
+export async function getFeaturedGames(limit = 12): Promise<Pick<Game, 'id' | 'name' | 'slug'>[]> {
   const { data, error } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug')
     .eq('published', true)
     .order('views', { ascending: false })
     .limit(limit);
 
   if (error) return [];
-  return (data || []) as Game[];
+  return (data || []) as Pick<Game, 'id' | 'name' | 'slug'>[];
 }
 
 export async function getAllGameSlugs(): Promise<{ slug: string }[]> {
@@ -209,26 +298,26 @@ export async function getPublishedLevelSummariesByGame(
 export async function getLevelByNumber(
   gameId: string,
   levelNumber: number
-): Promise<Level | null> {
+): Promise<LevelPageData | null> {
   const { data, error } = await supabase
     .from('levels')
-    .select('*')
+    .select('id, game_id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, screenshots, meta_title, meta_description, created_at, updated_at')
     .eq('game_id', gameId)
     .eq('level_number', levelNumber)
     .eq('published', true)
     .single();
 
   if (error || !data) return null;
-  return data as Level;
+  return data as LevelPageData;
 }
 
 export async function getLatestLevels(
   limit = 12
-): Promise<(Level & { game: { id: string; name: string; slug: string } })[]> {
+): Promise<LatestLevelData[]> {
   const { data, error } = await supabase
     .from('levels')
     .select(`
-      *,
+      id, level_number, title,
       game:games!inner (id, name, slug, published)
     `)
     .eq('published', true)
@@ -240,9 +329,7 @@ export async function getLatestLevels(
     console.error('getLatestLevels error:', error.message);
     return [];
   }
-  return (data || []) as (Level & {
-    game: { id: string; name: string; slug: string };
-  })[];
+  return (data || []) as LatestLevelData[];
 }
 
 export async function getPopularLevelSlugs(limit = 100): Promise<{ game_slug: string; level_number: number }[]> {
@@ -322,15 +409,15 @@ export async function getRecentLevelSlugs(limit = 100): Promise<{ game_slug: str
 // ==========================================
 // BLOGS
 // ==========================================
-export async function getAllBlogs(): Promise<Blog[]> {
+export async function getAllBlogs(): Promise<BlogCardData[]> {
   const { data, error } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id, slug, title, cover_image, meta_description, created_at')
     .eq('published', true)
     .order('created_at', { ascending: false });
 
   if (error) return [];
-  return (data || []) as Blog[];
+  return (data || []) as BlogCardData[];
 }
 
 export async function getAllPublishedBlogsForSitemap(): Promise<
@@ -348,22 +435,22 @@ export async function getAllPublishedBlogsForSitemap(): Promise<
   );
 }
 
-export async function getBlogBySlug(slug: string): Promise<Blog | null> {
+export async function getBlogBySlug(slug: string): Promise<BlogDetailData | null> {
   const { data, error } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id, game_id, title, slug, content, cover_image, meta_title, meta_description, keywords, published_date, created_at, updated_at')
     .eq('slug', slug)
     .eq('published', true)
     .single();
 
   if (error || !data) return null;
-  return data as Blog;
+  return data as BlogDetailData;
 }
 
-export async function getBlogById(id: string): Promise<Blog | null> {
+export async function getBlogById(id: string): Promise<BlogEditData | null> {
   const { data, error } = await supabaseAdmin
     .from('blogs')
-    .select('*')
+    .select('game_id, title, slug, content, cover_image, meta_title, meta_description, keywords, published')
     .eq('id', id)
     .maybeSingle();
 
@@ -371,32 +458,32 @@ export async function getBlogById(id: string): Promise<Blog | null> {
     console.error('getBlogById error:', error.message);
     return null;
   }
-  return data as Blog | null;
+  return data as BlogEditData | null;
 }
 
-export async function getBlogsByGame(gameId: string, limit = 6): Promise<Blog[]> {
+export async function getBlogsByGame(gameId: string, limit = 6): Promise<BlogCardData[]> {
   const { data, error } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id, slug, title, cover_image, meta_description, created_at')
     .eq('game_id', gameId)
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) return [];
-  return (data || []) as Blog[];
+  return (data || []) as BlogCardData[];
 }
 
-export async function getLatestBlogs(limit = 6): Promise<Blog[]> {
+export async function getLatestBlogs(limit = 6): Promise<BlogCardData[]> {
   const { data, error } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id, slug, title, cover_image, meta_description, created_at')
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) return [];
-  return (data || []) as Blog[];
+  return (data || []) as BlogCardData[];
 }
 
 export async function getAllBlogSlugs(): Promise<{ slug: string }[]> {
@@ -415,10 +502,10 @@ export async function getAllBlogSlugs(): Promise<{ slug: string }[]> {
 // ==========================================
 // PAGES
 // ==========================================
-export async function getPageBySlug(slug: string): Promise<Page | null> {
+export async function getPageBySlug(slug: string): Promise<PageContentData | null> {
   const { data, error } = await supabase
     .from('pages')
-    .select('*')
+    .select('slug, title, content, meta_title, meta_description')
     .eq('slug', slug)
     .eq('is_published', true)
     .maybeSingle();
@@ -427,13 +514,13 @@ export async function getPageBySlug(slug: string): Promise<Page | null> {
     console.error('getPageBySlug error:', error.message);
     return null;
   }
-  return data as Page | null;
+  return data as PageContentData | null;
 }
 
-export async function getFooterPages(): Promise<Page[]> {
+export async function getFooterPages(): Promise<Pick<Page, 'id' | 'slug' | 'title'>[]> {
   const { data, error } = await supabase
     .from('pages')
-    .select('*')
+    .select('id, slug, title')
     .eq('is_published', true)
     .eq('show_in_footer', true)
     .order('sort_order', { ascending: true })
@@ -443,7 +530,7 @@ export async function getFooterPages(): Promise<Page[]> {
     console.error('getFooterPages error:', error.message);
     return [];
   }
-  return (data || []) as Page[];
+  return (data || []) as Pick<Page, 'id' | 'slug' | 'title'>[];
 }
 
 export async function getAllPublishedPagesForSitemap(): Promise<
@@ -464,49 +551,51 @@ export async function getAllPublishedPagesForSitemap(): Promise<
 // ==========================================
 // CATEGORIES
 // ==========================================
-export async function getAllCategories(): Promise<Category[]> {
+export async function getAllCategories(): Promise<Pick<Category, 'id' | 'name' | 'slug'>[]> {
   const { data, error } = await supabase
     .from('categories')
-    .select('*')
+    .select('id, name, slug')
     .order('name', { ascending: true });
 
   if (error) return [];
-  return (data || []) as Category[];
+  return (data || []) as Pick<Category, 'id' | 'name' | 'slug'>[];
 }
 
-export async function getAllCategoriesForSitemap(): Promise<Category[]> {
-  return getAllSitemapRows<Category>(
+export async function getAllCategoriesForSitemap(): Promise<Pick<Category, 'slug'>[]> {
+  return getAllSitemapRows<Pick<Category, 'slug'>>(
     (from, to) =>
       supabase
         .from('categories')
-        .select('*')
+        .select('slug')
         .order('id', { ascending: true })
         .range(from, to),
     'getAllCategoriesForSitemap'
   );
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+export async function getCategoryBySlug(
+  slug: string
+): Promise<Pick<Category, 'id' | 'slug' | 'name' | 'description'> | null> {
   const { data, error } = await supabase
     .from('categories')
-    .select('*')
+    .select('id, slug, name, description')
     .eq('slug', slug)
     .single();
 
   if (error || !data) return null;
-  return data as Category;
+  return data as Pick<Category, 'id' | 'slug' | 'name' | 'description'>;
 }
 
-export async function getGamesByCategory(categoryId: string): Promise<Game[]> {
+export async function getGamesByCategory(categoryId: string): Promise<GameCardData[]> {
   const { data, error } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug, cover_image, short_description, total_levels')
     .eq('category_id', categoryId)
     .eq('published', true)
     .order('created_at', { ascending: false });
 
   if (error) return [];
-  return (data || []) as Game[];
+  return (data || []) as GameCardData[];
 }
 
 // ==========================================
@@ -515,7 +604,7 @@ export async function getGamesByCategory(categoryId: string): Promise<Game[]> {
 export async function getGameLinks(gameId: string): Promise<GameLink[]> {
   const { data, error } = await supabase
     .from('game_links')
-    .select('*')
+    .select('id, game_id, label, url, icon, position, new_tab')
     .eq('game_id', gameId)
     .order('position', { ascending: true });
 
@@ -526,30 +615,30 @@ export async function getGameLinks(gameId: string): Promise<GameLink[]> {
 // ==========================================
 // SETTINGS
 // ==========================================
-export async function getSettings(): Promise<Settings | null> {
+export async function getSettings(): Promise<SiteSettingsData | null> {
   const { data, error } = await supabase
     .from('settings')
-    .select('*')
+    .select('site_name, site_url, site_logo, site_description, adsense_header, adsense_in_article, adsense_sidebar, adsense_footer, youtube_button_text, switch_youtube_enabled, google_analytics_id, ahrefs_data_key, google_search_console, social_links')
     .eq('id', 1)
     .single();
 
   if (error || !data) return null;
-  return data as Settings;
+  return data as SiteSettingsData;
 }
 
 // ==========================================
 // SEARCH
 // ==========================================
-export async function searchGames(query: string): Promise<Game[]> {
+export async function searchGames(query: string): Promise<GameCardData[]> {
   const { data, error } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug, cover_image, short_description, total_levels')
     .eq('published', true)
     .ilike('name', `%${query}%`)
     .limit(20);
 
   if (error) return [];
-  return (data || []) as Game[];
+  return (data || []) as GameCardData[];
 }
 
 // ==========================================
@@ -573,7 +662,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   // Get login attempts from last 24 hours
   const { data: loginAttempts, error: loginError } = await supabaseAdmin
     .from('admin_login_attempts')
-    .select('*')
+    .select('id, success, email, ip_address, user_agent, attempted_at')
     .gte('attempted_at', oneHourAgo)
     .order('attempted_at', { ascending: false })
     .limit(limit);
@@ -581,7 +670,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityEntry[]> {
   // Get activity log from last 24 hours
   const { data: activityLog, error: activityError } = await supabaseAdmin
     .from('admin_activity_log')
-    .select('*')
+    .select('id, action, admin_email, ip_address, user_agent, created_at')
     .gte('created_at', oneHourAgo)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -628,23 +717,35 @@ export async function getActivitySummary() {
   today.setHours(0, 0, 0, 0);
   const todayIso = today.toISOString();
 
-  // Get today's login attempts
-  const { data: loginAttempts, error: loginError } = await supabaseAdmin
-    .from('admin_login_attempts')
-    .select('*')
-    .gte('attempted_at', todayIso);
+  const [successfulAttempts, failedAttempts] = await Promise.all([
+    supabaseAdmin
+      .from('admin_login_attempts')
+      .select('id', { count: 'exact', head: true })
+      .gte('attempted_at', todayIso)
+      .eq('success', true),
+    supabaseAdmin
+      .from('admin_login_attempts')
+      .select('id', { count: 'exact', head: true })
+      .gte('attempted_at', todayIso)
+      .eq('success', false),
+  ]);
 
   // Get last successful login
   const { data: lastLogin, error: lastLoginError } = await supabaseAdmin
     .from('admin_login_attempts')
-    .select('*')
+    .select('attempted_at')
     .eq('success', true)
     .order('attempted_at', { ascending: false })
     .limit(1)
     .single();
 
-  if (loginError || lastLoginError) {
-    console.error('getActivitySummary error:', loginError?.message, lastLoginError?.message);
+  if (successfulAttempts.error || failedAttempts.error || lastLoginError) {
+    console.error(
+      'getActivitySummary error:',
+      successfulAttempts.error?.message,
+      failedAttempts.error?.message,
+      lastLoginError?.message
+    );
     return {
       totalLoginsToday: 0,
       failedAttemptsToday: 0,
@@ -652,8 +753,8 @@ export async function getActivitySummary() {
     };
   }
 
-  const totalLoginsToday = (loginAttempts || []).filter((a) => a.success).length;
-  const failedAttemptsToday = (loginAttempts || []).filter((a) => !a.success).length;
+  const totalLoginsToday = successfulAttempts.count || 0;
+  const failedAttemptsToday = failedAttempts.count || 0;
 
   return {
     totalLoginsToday,
@@ -696,7 +797,7 @@ export async function getSuspiciousIPs(): Promise<string[]> {
 export async function getRelatedGames(
   currentGameId: string,
   limit = 4
-): Promise<Game[]> {
+): Promise<Pick<Game, 'id' | 'name' | 'slug' | 'total_levels'>[]> {
   // First try to get games from same category
   const currentGame = await supabase
     .from('games')
@@ -707,7 +808,7 @@ export async function getRelatedGames(
   if (currentGame.data?.category_id) {
     const { data: categoryGames } = await supabase
       .from('games')
-      .select('*')
+      .select('id, name, slug, total_levels')
       .eq('category_id', currentGame.data.category_id)
       .eq('published', true)
       .neq('id', currentGameId)
@@ -715,32 +816,32 @@ export async function getRelatedGames(
       .limit(limit);
 
     if (categoryGames && categoryGames.length > 0) {
-      return categoryGames as Game[];
+      return categoryGames as Pick<Game, 'id' | 'name' | 'slug' | 'total_levels'>[];
     }
   }
 
   // Fallback: random published games
   const { data: randomGames } = await supabase
     .from('games')
-    .select('*')
+    .select('id, name, slug, total_levels')
     .eq('published', true)
     .neq('id', currentGameId)
     .order('views', { ascending: false })
     .limit(limit);
 
-  return (randomGames || []) as Game[];
+  return (randomGames || []) as Pick<Game, 'id' | 'name' | 'slug' | 'total_levels'>[];
 }
 
 export async function getRelatedBlogs(
   currentBlogId: string,
   gameId?: string,
   limit = 3
-): Promise<Blog[]> {
+): Promise<RelatedBlogData[]> {
   if (gameId) {
     // First try: same game blogs
     const { data: gameBlogs } = await supabase
       .from('blogs')
-      .select('*')
+      .select('id, slug, title, meta_description, content, cover_image, created_at')
       .eq('game_id', gameId)
       .eq('published', true)
       .neq('id', currentBlogId)
@@ -748,34 +849,34 @@ export async function getRelatedBlogs(
       .limit(limit);
 
     if (gameBlogs && gameBlogs.length > 0) {
-      return gameBlogs as Blog[];
+      return gameBlogs as RelatedBlogData[];
     }
   }
 
   // Fallback: latest blogs
   const { data: latestBlogs } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id, slug, title, meta_description, content, cover_image, created_at')
     .eq('published', true)
     .neq('id', currentBlogId)
     .order('views', { ascending: false })
     .limit(limit);
 
-  return (latestBlogs || []) as Blog[];
+  return (latestBlogs || []) as RelatedBlogData[];
 }
 
 export async function getRelatedLevels(
   gameId: string,
   currentLevelNumber: number,
   limit = 5
-): Promise<Level[]> {
+): Promise<RelatedLevelData[]> {
   // Get adjacent levels (current - 2 to current + 2)
   const minLevel = Math.max(1, currentLevelNumber - 2);
   const maxLevel = currentLevelNumber + 2;
 
   const { data: adjacentLevels } = await supabase
     .from('levels')
-    .select('*')
+    .select('id, level_number, title')
     .eq('game_id', gameId)
     .eq('published', true)
     .gte('level_number', minLevel)
@@ -791,12 +892,12 @@ export async function getRelatedLevels(
   // Fallback: popular levels from same game
   const { data: popularLevels } = await supabase
     .from('levels')
-    .select('*')
+    .select('id, level_number, title')
     .eq('game_id', gameId)
     .eq('published', true)
     .neq('level_number', currentLevelNumber)
     .order('views', { ascending: false })
     .limit(limit);
 
-  return (popularLevels || []) as Level[];
+  return (popularLevels || []) as RelatedLevelData[];
 }

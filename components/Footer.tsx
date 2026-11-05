@@ -5,8 +5,8 @@ import { getFooterPages, getFeaturedGames } from '@/lib/db';
 import { openCookieBanner } from '@/components/CookieConsentBanner';
 
 type Props = {
-  settings: Settings | null;
-  categories: Category[];
+  settings: Pick<Settings, 'site_name' | 'site_logo' | 'site_description' | 'social_links'> | null;
+  categories: Pick<Category, 'id' | 'name' | 'slug'>[];
 };
 
 function isSafeExternalUrl(value?: string): value is string {

@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import PageForm from '@/components/PageForm';
 import { updatePage } from '@/lib/actions/pages';
 import { supabaseAdmin } from '@/lib/supabase';
-import type { Page } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +12,7 @@ export default async function EditPagePage({ params }: Props) {
   const { id } = await params;
   const { data, error } = await supabaseAdmin
     .from('pages')
-    .select('*')
+    .select('slug, title, content, meta_title, meta_description, is_published, show_in_footer, sort_order')
     .eq('id', id)
     .maybeSingle();
 
@@ -28,7 +27,7 @@ export default async function EditPagePage({ params }: Props) {
         ← Back to Pages
       </Link>
       <h1 className="text-3xl font-bold mt-2 mb-8">Edit Page</h1>
-      <PageForm action={action} page={data as Page} submitLabel="Update Page" />
+      <PageForm action={action} page={data} submitLabel="Update Page" />
     </div>
   );
 }

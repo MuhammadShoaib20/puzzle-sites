@@ -211,7 +211,7 @@ export async function createGame(formData: FormData): Promise<ActionResult> {
     const { data: inserted, error } = await supabaseAdmin
       .from('games')
       .insert({ ...data, slug })
-      .select()
+      .select('id')
       .single();
 
     if (error) {

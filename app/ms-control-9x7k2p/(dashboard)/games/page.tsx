@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 async function getGames() {
   const { data } = await supabaseAdmin
     .from('games')
-    .select('*')
+    .select('id, name, slug, total_levels, published')
     .order('created_at', { ascending: false });
   return data || [];
 }

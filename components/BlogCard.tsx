@@ -7,7 +7,7 @@ export default function BlogCard({
   blog,
   preload = false,
 }: {
-  blog: Blog;
+  blog: Pick<Blog, 'id' | 'slug' | 'title' | 'cover_image' | 'meta_description' | 'created_at'>;
   preload?: boolean;
 }) {
   return (

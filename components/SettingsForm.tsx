@@ -6,10 +6,27 @@ import ImageUpload from './ImageUpload';
 import SearchEnginesSettings from './SearchEnginesSettings';
 
 type ActionResult = { error?: string; success?: boolean };
+type EditableSettings = Pick<
+  Settings,
+  | 'site_name'
+  | 'site_url'
+  | 'site_logo'
+  | 'site_description'
+  | 'adsense_header'
+  | 'adsense_in_article'
+  | 'adsense_sidebar'
+  | 'adsense_footer'
+  | 'youtube_button_text'
+  | 'switch_youtube_enabled'
+  | 'google_analytics_id'
+  | 'ahrefs_data_key'
+  | 'google_search_console'
+  | 'social_links'
+>;
 
 type Props = {
   action: (formData: FormData) => Promise<ActionResult | void>;
-  settings: Settings | null;
+  settings: EditableSettings | null;
   initialSiteUrl: string;
 };
 

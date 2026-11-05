@@ -2,7 +2,7 @@ import NavbarClient from './NavbarClient';
 import type { Settings } from '@/types';
 
 type Props = {
-  settings: Settings | null;
+  settings: Pick<Settings, 'site_name' | 'site_logo'> | null;
 };
 
 export default function Navbar({ settings }: Props) {

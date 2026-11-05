@@ -89,7 +89,7 @@ export async function getRecentLoginAttempts(limit = 20) {
   try {
     const { data, error } = await supabaseAdmin
       .from('admin_login_attempts')
-      .select('*')
+      .select('id, email, ip_address, user_agent, success, attempted_at')
       .order('attempted_at', { ascending: false })
       .limit(limit);
 
@@ -105,7 +105,7 @@ export async function getRecentActivityLogs(limit = 50) {
   try {
     const { data, error } = await supabaseAdmin
       .from('admin_activity_log')
-      .select('*')
+      .select('id, admin_email, action, ip_address, user_agent, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
 

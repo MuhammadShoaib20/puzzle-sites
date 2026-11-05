@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminPagesPage() {
   const { data, error } = await supabaseAdmin
     .from('pages')
-    .select('*')
+    .select('id, title, slug, show_in_footer, sort_order, is_published')
     .order('sort_order', { ascending: true })
     .order('title', { ascending: true });
 

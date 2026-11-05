@@ -15,7 +15,7 @@ export default async function AdminLevelsPage({ params }: Props) {
 
   const { data: game } = await supabaseAdmin
     .from('games')
-    .select('*')
+    .select('id, name, slug')
     .eq('id', id)
     .single();
 
@@ -23,7 +23,7 @@ export default async function AdminLevelsPage({ params }: Props) {
 
   const { data: levels } = await supabaseAdmin
     .from('levels')
-    .select('*')
+    .select('id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, published')
     .eq('game_id', id)
     .order('level_number', { ascending: true });
 

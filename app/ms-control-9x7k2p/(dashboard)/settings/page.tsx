@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 async function getSettings() {
   const { data, error } = await supabaseAdmin
     .from('settings')
-    .select('*')
+    .select('site_name, site_url, site_logo, site_description, adsense_header, adsense_in_article, adsense_sidebar, adsense_footer, youtube_button_text, switch_youtube_enabled, google_analytics_id, ahrefs_data_key, google_search_console, social_links')
     .eq('id', 1)
     .maybeSingle();
 

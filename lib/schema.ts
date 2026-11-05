@@ -90,7 +90,11 @@ export function generateWebsiteSchema() {
 // ARTICLE SCHEMA (Blog Posts)
 // ==========================================
 
-export function generateArticleSchema(blog: Blog & { canonicalUrl: string }) {
+export function generateArticleSchema(
+  blog: Pick<Blog, 'title' | 'meta_description' | 'content' | 'cover_image' | 'published_date' | 'created_at' | 'updated_at'> & {
+    canonicalUrl: string;
+  }
+) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
   const publishedDate = blog.published_date || blog.created_at;
   const modifiedDate = blog.updated_at || publishedDate;

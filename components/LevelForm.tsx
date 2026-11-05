@@ -3,10 +3,23 @@ import type { Level } from '@/types';
 import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
+type EditableLevel = Pick<
+  Level,
+  | 'level_number'
+  | 'title'
+  | 'youtube_url'
+  | 'description'
+  | 'walkthrough'
+  | 'screenshots'
+  | 'tips'
+  | 'meta_title'
+  | 'meta_description'
+  | 'published'
+>;
 
 type Props = {
   action: (formData: FormData) => Promise<ActionResult> | ActionResult;
-  level?: Level;
+  level?: EditableLevel;
   submitLabel?: string;
 };
 

@@ -70,7 +70,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // ⚠️ supabaseAdmin use karo (RLS bypass) — admin_users me koi public policy nahi hai
         const { data, error } = await supabaseAdmin
           .from('admin_users')
-          .select('*')
+          .select('id, email, name, password_hash, role, sessions_invalidated_at')
           .eq('email', email)
           .single();
 

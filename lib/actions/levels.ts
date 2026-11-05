@@ -153,7 +153,7 @@ export async function bulkGenerateLevels(gameId: string, formData: FormData) {
   // Game ka total_levels update karo
   const { count } = await supabaseAdmin
     .from('levels')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('game_id', gameId);
 
   await supabaseAdmin
@@ -426,7 +426,7 @@ export async function bulkImportLevels(
 async function updateGameLevelCount(gameId: string) {
   const { count } = await supabaseAdmin
     .from('levels')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('game_id', gameId);
 
   await supabaseAdmin

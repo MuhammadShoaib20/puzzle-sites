@@ -11,7 +11,10 @@ type ActionResult = { success: boolean; error?: string; fieldErrors?: { title?: 
 
 type Props = {
   action: (formData: FormData) => Promise<ActionResult>;
-  blog?: Blog;
+  blog?: Pick<
+    Blog,
+    'game_id' | 'title' | 'slug' | 'cover_image' | 'content' | 'meta_title' | 'meta_description' | 'keywords' | 'published'
+  >;
   games?: Pick<Game, 'id' | 'name'>[];
   submitLabel?: string;
   redirectPath?: string;

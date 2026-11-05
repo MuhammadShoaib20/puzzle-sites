@@ -14,7 +14,7 @@ export default async function EditGamePage({ params }: Props) {
 
   const { data: game } = await supabaseAdmin
     .from('games')
-    .select('*')
+    .select('name, slug, cover_image, short_description, operating_system, full_description, walkthrough_intro, youtube_trailer_url, youtube_channel_url, custom_buttons, faq, meta_title, meta_description, keywords, published')
     .eq('id', id)
     .single();
 

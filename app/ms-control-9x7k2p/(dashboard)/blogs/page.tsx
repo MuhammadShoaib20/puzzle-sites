@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 async function getBlogs() {
   const { data } = await supabaseAdmin
     .from('blogs')
-    .select('*')
+    .select('id, title, slug, views, published')
     .order('created_at', { ascending: false });
   return data || [];
 }
