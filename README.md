@@ -110,3 +110,26 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 - `RESEND_API_KEY` (optional, for email notifications)
 
 Make sure to add all environment variables in your Vercel project settings.
+
+## Search Engine Integrations
+
+### Bing Webmaster Tools
+
+1. Open Bing Webmaster Tools and add your site's HTTPS root URL.
+2. Verify site ownership with DNS, an XML file, a meta tag, or by importing the verified property from Google Search Console.
+3. In Bing Webmaster Tools, open **Settings → API Access**, generate an API key, then enter the key and site URL in the admin **Settings → Search Engines** section.
+4. Apply `supabase/migrations/20261106_bing_credentials.sql` in the Supabase SQL Editor.
+5. Set `BING_CREDENTIALS_ENCRYPTION_KEY` to a base64-encoded 32-byte random key in local and production environments. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Keep the same value wherever the app runs so existing stored credentials can be decrypted.
+
+The admin verifies the site through Bing's `GetUserSites` API and submits `https://your-domain/sitemap.xml` after verification. The API key is stored encrypted with AES-256-GCM and is never returned by status endpoints.
+
+### IndexNow
+
+The `postbuild` script discovers changed URLs and submits them to IndexNow-compatible search engines. The generated public key file must be deployed at `https://your-domain/<key>.txt`.
+
+1. Run `npx nextjs-indexnow init` once. Commit the generated `public/<key>.txt` file so it is included in deployments.
+2. Set `INDEXNOW_KEY` to the exact key printed by the command in `.env.local` and in your Vercel project environment variables.
+3. Leave `INDEXNOW_SUBMIT` unset or `false` for local and preview builds. Set `INDEXNOW_SUBMIT=true` only in the production environment to enable submissions.
+4. Deploy/build the site. `npm run build` runs `nextjs-indexnow` afterward; the admin Search Engines section reports configuration and the most recent recorded submission.
+
+The CLI stores local diff state in `.indexnow-state.json`; ephemeral build platforms may not retain it between deployments unless a persistent state adapter is configured.

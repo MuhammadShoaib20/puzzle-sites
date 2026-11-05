@@ -3,15 +3,17 @@
 import { useActionState, useState } from 'react';
 import type { Settings } from '@/types';
 import ImageUpload from './ImageUpload';
+import SearchEnginesSettings from './SearchEnginesSettings';
 
 type ActionResult = { error?: string; success?: boolean };
 
 type Props = {
   action: (formData: FormData) => Promise<ActionResult | void>;
   settings: Settings | null;
+  initialSiteUrl: string;
 };
 
-export default function SettingsForm({ action, settings }: Props) {
+export default function SettingsForm({ action, settings, initialSiteUrl }: Props) {
   const [ahrefsDataKey, setAhrefsDataKey] = useState(
     settings?.ahrefs_data_key || ''
   );
@@ -211,6 +213,8 @@ export default function SettingsForm({ action, settings }: Props) {
           />
         </div>
       </div>
+
+      <SearchEnginesSettings initialSiteUrl={initialSiteUrl} />
 
       {/* ================= SOCIAL LINKS ================= */}
       <div className="card p-6 space-y-5">

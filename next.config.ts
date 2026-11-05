@@ -1,7 +1,11 @@
 import type { NextConfig } from 'next';
 import path from 'path';
+import { withIndexNow } from 'nextjs-indexnow';
 
 const ADMIN_PATH = process.env.ADMIN_SECRET_PATH || 'ms-control-9x7k2p';
+const INDEXNOW_HOST = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com'
+).hostname;
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -93,4 +97,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withIndexNow(nextConfig, {
+  host: INDEXNOW_HOST,
+  exclude: ['/api/**', `/${ADMIN_PATH}/**`],
+});

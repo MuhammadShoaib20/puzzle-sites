@@ -138,6 +138,17 @@ CREATE TABLE IF NOT EXISTS public.settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.bing_credentials (
+  id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  api_key_encrypted text NOT NULL,
+  site_url text NOT NULL,
+  status text NOT NULL DEFAULT 'verification_failed'
+    CHECK (status IN ('connected', 'verification_failed')),
+  last_submitted_at timestamptz,
+  last_error text,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.admin_users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email text NOT NULL UNIQUE,
@@ -177,7 +188,9 @@ ALTER TABLE public.blogs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bing_credentials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE public.bing_credentials TO service_role;
 
 DROP POLICY IF EXISTS "Public read categories" ON public.categories;
 CREATE POLICY "Public read categories" ON public.categories FOR SELECT USING (true);

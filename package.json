@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "nextjs-indexnow",
     "start": "next start",
     "lint": "eslint"
   },
@@ -38,6 +39,7 @@
     "@types/sanitize-html": "^2.16.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "nextjs-indexnow": "^0.1.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -16,6 +16,8 @@ Review it against the actual database before using it as a production restore.
   site settings.
 - `migrations/20261021_add_level_updated_at.sql` — adds level modification timestamps
   for accurate sitemap `lastModified` values.
+- `migrations/20261106_bing_credentials.sql` — adds private, encrypted Bing Webmaster
+   Tools credential storage.
 
 ## Existing project
 
@@ -36,6 +38,10 @@ Apply `migrations/20261021_add_level_updated_at.sql` in the Supabase SQL Editor 
 deploying the matching sitemap change. The sitemap remains available without it, but
 will temporarily use each level's `created_at` value and log a warning.
 
+Apply `migrations/20261106_bing_credentials.sql` before deploying Bing Webmaster Tools
+integration settings. The table has RLS enabled and intentionally has no public policy;
+admin operations use the server-only Supabase service role.
+
 ## New project
 
 1. Create a Supabase project.
@@ -47,8 +53,8 @@ will temporarily use each level's `created_at` value and log a warning.
 
 The baseline creates public read-only RLS policies for published content, categories,
 settings, and legacy game links. It deliberately creates no public policy for
-`admin_users`; server-side `SUPABASE_SECRET_KEY` usage bypasses RLS and must never be
-exposed to the browser.
+`admin_users` or `bing_credentials`; server-side `SUPABASE_SECRET_KEY` usage bypasses
+RLS and must never be exposed to the browser.
 
 ## Adding future schema changes
 

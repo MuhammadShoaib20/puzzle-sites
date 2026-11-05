@@ -38,7 +38,16 @@ export default async function AdminSettingsPage() {
         </div>
       )}
 
-      <SettingsForm action={updateSettings} settings={settings} />
+      <SettingsForm
+        action={updateSettings}
+        settings={settings}
+        initialSiteUrl={
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          (settings?.site_url && settings.site_url !== 'https://yoursite.com'
+            ? settings.site_url
+            : 'https://puzzlewalkthroughs.com')
+        }
+      />
     </div>
   );
 }
