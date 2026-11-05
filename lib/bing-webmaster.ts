@@ -2,6 +2,10 @@ import { createDecipheriv, createCipheriv, randomBytes } from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 
 const BING_API_BASE = 'https://ssl.bing.com/webmaster/api.svc/json';
+const BING_API_METHODS = {
+  GetUserSites: 'GET',
+  SubmitFeed: 'POST',
+} as const;
 
 export type BingCredentialRecord = {
   id: number;
@@ -68,17 +72,26 @@ export function normalizeBingSiteUrl(value: string): string {
   return `${url.origin}/`;
 }
 
-async function callBingApi(operation: string, apiKey: string, values: Record<string, string> = {}) {
+async function callBingApi(
+  operation: keyof typeof BING_API_METHODS,
+  apiKey: string,
+  values: Record<string, string> = {}
+) {
   const url = new URL(`${BING_API_BASE}/${operation}`);
   url.searchParams.set('apikey', apiKey);
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(values),
+  const method = BING_API_METHODS[operation];
+  const request: RequestInit = {
+    method,
     signal: AbortSignal.timeout(15000),
     cache: 'no-store',
-  });
+  };
+  if (method === 'POST') {
+    request.headers = { 'Content-Type': 'application/json' };
+    request.body = JSON.stringify(values);
+  }
+
+  const response = await fetch(url, request);
   let payload: unknown;
   try {
     payload = await response.json();
@@ -125,7 +138,7 @@ export async function verifyBingSite(apiKey: string, siteUrl: string): Promise<b
 export async function submitBingSitemap(apiKey: string, siteUrl: string): Promise<void> {
   await callBingApi('SubmitFeed', apiKey, {
     siteUrl,
-    feedUrl: `${siteUrl.replace(/\/$/, '')}/sitemap.xml`,
+    feedUrl: new URL('/sitemap.xml', siteUrl).toString(),
   });
 }
 
