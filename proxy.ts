@@ -53,6 +53,7 @@ export default auth((req: NextRequest & { auth: unknown }) => {
 
 export const config = {
   matcher: [
-    '/((?!api/|_next/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|css|js|woff|woff2)$).*)',
+    // Yahan humne 'xml' aur 'txt' ko bhi exclude list mein add kar diya hai
+    '/((?!api/|_next/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|css|js|woff|woff2|xml|txt)$).*)',
   ],
 };
