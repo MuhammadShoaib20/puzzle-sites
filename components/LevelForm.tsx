@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { Level } from '@/types';
-import ImageUpload from './ImageUpload';
 
 type ActionResult = { error?: string } | void;
 type EditableLevel = Pick<
@@ -10,7 +9,6 @@ type EditableLevel = Pick<
   | 'youtube_url'
   | 'description'
   | 'walkthrough'
-  | 'screenshots'
   | 'tips'
   | 'meta_title'
   | 'meta_description'
@@ -81,113 +79,78 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
         </div>
       </div>
 
-      {/* ================= CONTENT ================= */}
       <div className="card p-6 space-y-5">
-        <h2 className="text-lg font-bold border-b pb-3">Content</h2>
+        <h2 className="text-lg font-bold border-b pb-3">Walkthrough Content</h2>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
+          <label className="block text-sm font-medium mb-1">
+            Quick Solution (TL;DR)
+          </label>
           <textarea
             name="description"
             defaultValue={level?.description || ''}
-            rows={2}
-            placeholder="Fish Jam Level 1 walkthrough video guide."
+            rows={3}
+            placeholder="Summarize the solution in 1–2 sentences."
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            Walkthrough (HTML allowed)
+            Step-by-Step Video Walkthrough
           </label>
           <textarea
             name="walkthrough"
             defaultValue={level?.walkthrough || ''}
-            rows={6}
-            placeholder="<p>Step 1: Match blue fish...</p>"
+            rows={8}
+            placeholder={'- **[0:04] Step 1:** Make the first move.\n- **[0:12] Step 2:** Clear the path.'}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
           />
           <p className="text-xs text-gray-500 mt-1">
-            SEO ke liye 300+ words likhna best hai.
+            Paste timestamped Markdown steps or clean HTML.
           </p>
         </div>
 
-        <section className="space-y-5 border-t pt-5">
-          <h3 className="text-base font-bold">Gameplay Screenshots &amp; Breakdown</h3>
-          <div className="grid gap-5">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="rounded-lg border p-4 space-y-4">
-                <h4 className="font-semibold">Screenshot {step}</h4>
-                <ImageUpload
-                  name={`screenshot_url_${step}`}
-                  defaultValue={level?.screenshots?.[step - 1]?.url || ''}
-                  folder="levels"
-                  label="Gameplay Screenshot"
-                  aspect="video"
-                />
-                <div>
-                  <label
-                    htmlFor={`screenshot_overview_${step}`}
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Step-by-Step Overview
-                  </label>
-                  <textarea
-                    id={`screenshot_overview_${step}`}
-                    name={`screenshot_overview_${step}`}
-                    defaultValue={level?.screenshots?.[step - 1]?.overview || ''}
-                    rows={4}
-                    placeholder="Explain step-by-step what is happening in this screenshot and what strategy to use here."
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Pro Tips (HTML allowed)
-          </label>
+          <label className="block text-sm font-medium mb-1">Pro Tip / Common Mistake</label>
           <textarea
             name="tips"
             defaultValue={level?.tips || ''}
-            rows={3}
-            placeholder="<p><strong>Pro tip:</strong> Plan 2 moves ahead.</p>"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-          />
-        </div>
-      </div>
-
-      {/* ================= SEO ================= */}
-      <div className="card p-6 space-y-5">
-        <h2 className="text-lg font-bold border-b pb-3">SEO (Optional)</h2>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Meta Title</label>
-          <input
-            type="text"
-            name="meta_title"
-            defaultValue={level?.meta_title || ''}
-            maxLength={70}
-            placeholder="Fish Jam Level 1 Walkthrough & Solution"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Meta Description</label>
-          <textarea
-            name="meta_description"
-            defaultValue={level?.meta_description || ''}
             rows={2}
-            maxLength={160}
-            placeholder="Complete Fish Jam Level 1 walkthrough..."
+            placeholder="Add one specific tip or common mistake to avoid."
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
+
+      <details className="card p-6">
+        <summary className="cursor-pointer font-bold">Advanced SEO (Optional)</summary>
+        <div className="mt-5 space-y-5">
+          <div>
+            <label className="block text-sm font-medium mb-1">Meta Title</label>
+            <input
+              type="text"
+              name="meta_title"
+              defaultValue={level?.meta_title || ''}
+              maxLength={70}
+              placeholder="Fish Jam Level 1"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Meta Description</label>
+            <textarea
+              name="meta_description"
+              defaultValue={level?.meta_description || ''}
+              rows={2}
+              maxLength={160}
+              placeholder="A concise description of this level's solution."
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </details>
 
       {/* ================= PUBLISH ================= */}
       <div className="bg-white rounded-xl shadow-sm border p-6">

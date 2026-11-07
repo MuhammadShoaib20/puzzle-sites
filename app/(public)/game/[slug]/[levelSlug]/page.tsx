@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
@@ -14,10 +13,8 @@ import {
   generateVideoObjectSchema,
   generateBreadcrumbSchema,
   generateHowToSchema,
-  generateFAQSchema,
   generateLevelArticleSchema,
   htmlToPlainText,
-  LEVEL_AUTHOR_NAME,
 } from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
 import ViewTracker from '@/components/ViewTracker';
@@ -67,29 +64,94 @@ function trimTitleAtWordBoundary(title: string, maxLength = 59): string {
     return trimmedTitle.slice(0, lastSpace).replace(/[\s&|–—-]+$/, '');
   }
 
-  return 'Level Walkthrough';
+  return trimmedTitle.slice(0, maxLength);
 }
 
-function StepOverview({ text }: { text: string }) {
-  const segments = text.split(/(\*\*[^*]+\*\*|strategy\s*:)/i);
-  return (
-    <>
-      {segments.map((segment, i) => {
-        if (!segment) return null;
-        if (/^\*\*[^*]+\*\*$/.test(segment)) {
-          return <strong key={i}>{segment.slice(2, -2)}</strong>;
-        }
-        if (/^strategy\s*:$/i.test(segment)) {
-          return (
-            <span key={i} className="step-overview-strategy">
-              {segment}
-            </span>
-          );
-        }
-        return <span key={i}>{segment}</span>;
-      })}
-    </>
-  );
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
+}
+
+function formatInlineMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '<strong>$1$2</strong>')
+    .replace(/\*(.+?)\*|_(.+?)_/g, '<em>$1$2</em>');
+}
+
+function markdownToHtml(markdown: string): string {
+  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
+  const blocks: string[] = [];
+  let paragraph: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+  let listItems: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length) {
+      blocks.push(`<p>${paragraph.map(formatInlineMarkdown).join(' ')}</p>`);
+      paragraph = [];
+    }
+  };
+  const flushList = () => {
+    if (listType) {
+      blocks.push(`<${listType}>${listItems.join('')}</${listType}>`);
+      listType = null;
+      listItems = [];
+    }
+  };
+
+  for (const line of lines) {
+    const unorderedItem = line.match(/^\s*[-*+]\s+(.+)$/);
+    const orderedItem = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    const item = unorderedItem || orderedItem;
+
+    if (item) {
+      flushParagraph();
+      const nextListType = unorderedItem ? 'ul' : 'ol';
+      if (listType !== nextListType) flushList();
+      listType = nextListType;
+      listItems.push(`<li>${formatInlineMarkdown(item[1])}</li>`);
+      continue;
+    }
+
+    flushList();
+    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      const level = Math.min(6, heading[1].length + 1);
+      blocks.push(`<h${level}>${formatInlineMarkdown(heading[2])}</h${level}>`);
+    } else if (line.trim()) {
+      paragraph.push(line.trim());
+    } else {
+      flushParagraph();
+    }
+  }
+
+  flushParagraph();
+  flushList();
+  return blocks.join('');
+}
+
+function formatRichContent(content: string): string {
+  const hasHtml = /<\/?[a-z][^>]*>/i.test(content);
+  return sanitize(hasHtml ? content : markdownToHtml(content));
+}
+
+function contentToPlainText(content: string): string {
+  return htmlToPlainText(content)
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '')
+    .replace(/\*\*(.*?)\*\*|__(.*?)__/g, '$1$2')
+    .replace(/[*_`]/g, '')
+    .trim();
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -105,22 +167,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const titleSuffix = ' | Puzzle Walkthroughs';
   const titlePrefix = trimTitleAtWordBoundary(
-    level.meta_title || `${game.name} Level ${level.level_number} Walkthrough & Solution`,
+    level.meta_title || level.title?.trim() || `${game.name} Level ${level.level_number}`,
     59 - titleSuffix.length
   );
   const title = `${titlePrefix}${titleSuffix}`;
-  const developer =
-    typeof game === 'object' && game && 'developer' in game
-      ? String((game as Record<string, unknown>).developer ?? '').trim()
-      : '';
   const description =
-    level.meta_description ||
-    `Stuck on ${game.name} Level ${level.level_number}? Watch our full video walkthrough and get pro tips to beat this ${developer || 'game'} level fast. Complete solution inside!`;
+    contentToPlainText(level.meta_description || '') ||
+    contentToPlainText(level.description || '') ||
+    contentToPlainText(level.walkthrough || '') ||
+    undefined;
 
   return {
     title: { absolute: title },
-    description,
-    authors: [{ name: LEVEL_AUTHOR_NAME }],
+    ...(description ? { description } : {}),
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
       languages: {
@@ -129,7 +188,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: {
       title,
-      description,
+      ...(description ? { description } : {}),
       images: level.youtube_id
         ? [`https://i.ytimg.com/vi/${level.youtube_id}/maxresdefault.jpg`]
         : [],
@@ -158,58 +217,31 @@ export default async function LevelPage({ params }: Props) {
   const prevLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
   const nextLevel = currentIndex < allLevels.length - 1 ? allLevels[currentIndex + 1] : null;
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://puzzlewalkthroughs.com').replace(/\/$/, '');
-  const startIdx = Math.max(0, currentIndex - 5);
-  const endIdx = Math.min(allLevels.length, currentIndex + 15);
-  const nearbyLevels = allLevels.slice(startIdx, endIdx);
   const popularLevels = [...allLevels]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 5);
-  const author = LEVEL_AUTHOR_NAME;
-  const customButtons = Array.isArray(game.custom_buttons) ? game.custom_buttons : [];
   const canonicalLevelUrl = `${siteUrl}/game/${game.slug}/level-${level.level_number}`;
-  const walkthroughText = htmlToPlainText(level.walkthrough || '');
-  const walkthroughItems = walkthroughText
-    .split(/\n+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const summaryDetail =
-    htmlToPlainText(level.tips || '') ||
-    walkthroughItems[0] ||
-    'Review the level-specific strategy and walkthrough below before making your moves.';
-  const faqItems = [
-    {
-      q: `How to beat ${game.name} Level ${level.level_number}?`,
-      a:
-        level.description ||
-        walkthroughText.split('\n')[0] ||
-        `Watch the video walkthrough below for the solution to ${game.name} Level ${level.level_number}.`,
-    },
-    {
-      q: `What is the best strategy for ${game.name} Level ${level.level_number}?`,
-      a:
-        htmlToPlainText(level.tips || '') ||
-        `Follow the walkthrough steps in order and use the video guide to check each move.`,
-    },
-    {
-      q: `Can I beat ${game.name} Level ${level.level_number} without boosters?`,
-      a: 'Yes, with patience and the right strategy, it is possible. Watch the video guide below and follow the steps carefully.',
-    },
-  ];
+  const quickSolution = level.description?.trim();
+  const walkthrough = level.walkthrough?.trim();
+  const tip = level.tips?.trim();
+  const contentDescription =
+    contentToPlainText(quickSolution || '') ||
+    contentToPlainText(walkthrough || '') ||
+    contentToPlainText(tip || '');
 
   const videoSchema = generateVideoObjectSchema({
     name: `${game.name} Level ${level.level_number} Walkthrough`,
-    description: level.description || level.title || '',
+    description: contentDescription,
     youtubeUrl: level.youtube_url,
     uploadDate: level.created_at,
   });
   const articleSchema = generateLevelArticleSchema({
-    headline: `${game.name} Level ${level.level_number} Walkthrough`,
-    description: level.meta_description || level.description || level.title || '',
+    headline: level.title?.trim() || `${game.name} Level ${level.level_number}`,
+    description: contentDescription,
     canonicalUrl: canonicalLevelUrl,
     publishedDate: level.created_at,
     modifiedDate: level.updated_at || level.created_at,
   });
-  const faqSchema = generateFAQSchema(faqItems);
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { position: 1, name: 'Home', item: siteUrl },
@@ -224,7 +256,7 @@ export default async function LevelPage({ params }: Props) {
   const howToSchema = generateHowToSchema({
     gameName: game.name,
     levelNumber: level.level_number,
-    walkthrough: level.walkthrough || level.description,
+    walkthrough,
   });
 
   return (
@@ -233,8 +265,7 @@ export default async function LevelPage({ params }: Props) {
       <JsonLd data={articleSchema} />
       <JsonLd data={videoSchema} />
       <JsonLd data={breadcrumbSchema} />
-      <JsonLd data={howToSchema} />
-      {faqSchema && <JsonLd data={faqSchema} />}
+      {howToSchema && <JsonLd data={howToSchema} />}
 
       <div className="container-page pt-5">
         <Breadcrumb
@@ -250,21 +281,22 @@ export default async function LevelPage({ params }: Props) {
         <main className="min-w-0">
           <article>
             <header className="mb-5">
-              <div className="author-info mb-2 text-[13px]" style={{ color: 'var(--muted)' }}>
-                <time dateTime={level.created_at}>
-                  {new Date(level.created_at).toLocaleDateString()}
-                </time>
-                <span className="author-name">By {author}</span>
-              </div>
               <h1 className="page-title mb-2">
-                How to beat {game.name} Level {level.level_number}?
+                {level.title?.trim() || `${game.name} Level ${level.level_number}`}
               </h1>
-              {level.title && (
-                <p className="level-subtitle mb-2 text-sm">
-                  {level.title}
-                </p>
-              )}
             </header>
+
+          {quickSolution && (
+            <section className="card level-summary mb-6 p-4 sm:p-5" aria-labelledby="quick-solution-heading">
+              <h2 id="quick-solution-heading" className="mb-2 font-bold">
+                Quick Solution (TL;DR)
+              </h2>
+              <div
+                className="prose max-w-none text-sm leading-6"
+                dangerouslySetInnerHTML={{ __html: formatRichContent(quickSolution) }}
+              />
+            </section>
+          )}
 
           <div className="video-frame mb-6">
             <LazyYouTube
@@ -273,171 +305,23 @@ export default async function LevelPage({ params }: Props) {
             />
           </div>
 
-          <section className="card level-summary mb-6 p-4 sm:p-5" aria-labelledby="level-summary-heading">
-            <h2 id="level-summary-heading" className="mb-2 font-bold">
-              TL;DR (Summary)
-            </h2>
-            <p className="text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
-              Summary: Beat {game.name} Level {level.level_number} by following the
-              level-specific walkthrough. {summaryDetail}
-            </p>
-          </section>
-
-          <p className="mb-6 text-sm leading-6" style={{ color: 'var(--ink-soft)' }}>
-            Use a careful approach on this level. Keeping the center columns clear may preserve
-            room for later moves; follow the walkthrough sequence and adapt it to the board.
-          </p>
-
-          {level.screenshots && level.screenshots.length > 0 && (
-            <section className="step-screenshots mb-8">
-              <h2 className="section-title step-screenshots-heading mb-6">
-                What does each step look like?
-              </h2>
-              <div className="step-screenshot-list">
-                {level.screenshots.map((screenshot, index) => {
-                  const overview = screenshot.overview?.trim() || '';
-                  const altText = `${game.name} Level ${level.level_number} Step ${index + 1}`;
-
-                  return (
-                    <article
-                      key={`${screenshot.url}-${index}`}
-                      className="step-screenshot-card"
-                    >
-                      <div className="step-screenshot-media">
-                        <Image
-                          src={screenshot.url}
-                          alt={altText}
-                          title={altText}
-                          width={1200}
-                          height={800}
-                          sizes="(max-width: 768px) 100vw, 800px"
-                          loading="lazy"
-                          className="step-screenshot-image"
-                        />
-                        <span className="step-screenshot-badge">Step {index + 1}</span>
-                      </div>
-                      <div className="step-screenshot-copy">
-                        <h3 className="step-screenshot-title">
-                          What happens in Step {index + 1}?
-                        </h3>
-                        <p className="step-screenshot-overview">
-                          <StepOverview text={overview} />
-                        </p>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <div className="level-actions">
-            <a
-              href={level.youtube_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-youtube"
-            >
-              ▶ {settings?.youtube_button_text || 'Watch on YouTube'}
-            </a>
-            <Link href={`/game/${game.slug}`} className="btn btn-secondary">
-              🎮 All levels
-            </Link>
-            {customButtons.map((button, index) => (
-              <a
-                key={`${button.url}-${index}`}
-                href={button.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
-              >
-                {button.label}
-              </a>
-            ))}
-          </div>
-
-          {settings?.adsense_in_article && (
-            <AdSlot code={settings.adsense_in_article} label="In article" variant="banner" />
-          )}
-
-          {level.description && (
+          {walkthrough && (
             <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">What is the strategy for this level?</h2>
-              <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
-                {level.description}
-              </p>
-            </section>
-          )}
-
-          {level.walkthrough && (
-            <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">How do you solve this level?</h2>
-              {walkthroughItems.length > 0 ? (
-                <ol className="list-decimal space-y-2 pl-6 leading-7">
-                  {walkthroughItems.map((item, index) => (
-                    <li key={`${index}-${item}`}>{item}</li>
-                  ))}
-                </ol>
-              ) : (
-                <div
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: sanitize(level.walkthrough) }}
-                />
-              )}
-            </section>
-          )}
-
-          {level.tips && (
-            <section className="tip-box mb-8">
-              <h3>💡 What is the key tip for this level?</h3>
+              <h2 className="section-title mb-3">Step-by-Step Video Walkthrough</h2>
               <div
-                className="prose max-w-none text-[14.5px]"
-                dangerouslySetInnerHTML={{ __html: sanitize(level.tips) }}
+                className="prose max-w-none leading-7"
+                dangerouslySetInnerHTML={{ __html: formatRichContent(walkthrough) }}
               />
             </section>
           )}
 
-          <section className="section mb-8" aria-labelledby="level-faq-heading">
-            <h2 id="level-faq-heading" className="section-title mb-4">
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-3">
-              {faqItems.map((faq) => (
-                <details key={faq.q} className="card faq-item">
-                  <summary className="cursor-pointer font-semibold">{faq.q}</summary>
-                  <p className="mt-3 leading-7" style={{ color: 'var(--ink-soft)' }}>
-                    {faq.a}
-                  </p>
-                </details>
-              ))}
-            </div>
-          </section>
-
-          <section className="card mb-8 p-5" aria-labelledby="author-heading">
-            <h2 id="author-heading" className="mb-2 font-bold">
-              About the Author
-            </h2>
-            <p className="leading-7" style={{ color: 'var(--ink-soft)' }}>
-              Written by the MS Digital System Team. We are a dedicated group of puzzle enthusiasts
-              who create clear, practical walkthroughs to help players solve tricky levels.
-            </p>
-          </section>
-
-          {nearbyLevels.length > 0 && (
-            <section className="section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-4">Which level should you try next?</h2>
-              <div className="level-grid">
-                {nearbyLevels.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/game/${game.slug}/level-${item.level_number}`}
-                    className={`level-tile ${item.level_number === levelNumber ? 'current' : ''}`}
-                    aria-current={item.level_number === levelNumber ? 'page' : undefined}
-                  >
-                    {item.level_number}
-                  </Link>
-                ))}
-              </div>
+          {tip && (
+            <section className="tip-box mb-8">
+              <h2>Pro Tip / Common Mistake</h2>
+              <div
+                className="prose max-w-none text-[14.5px]"
+                dangerouslySetInnerHTML={{ __html: formatRichContent(tip) }}
+              />
             </section>
           )}
 
@@ -471,7 +355,7 @@ export default async function LevelPage({ params }: Props) {
               href={`/game/${game.slug}`}
               className="btn btn-primary btn-block"
             >
-              🎮 Complete {game.name} guide
+              {game.name} Game Guide
             </Link>
           </div>
           </article>

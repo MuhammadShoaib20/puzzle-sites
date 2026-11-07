@@ -259,29 +259,19 @@ export function generateVideoGameSchema(game: VideoGameSchemaInput) {
 // ==========================================
 
 export function generateHowToSchema(level: HowToSchemaInput) {
-  const steps: Array<{ '@type': string; text: string }> = [];
+  const steps = (level.walkthrough || '')
+    .split(/(?:<\/p>|<\/li>|<br\s*\/?>|\r?\n)/i)
+    .map((item) =>
+      htmlToPlainText(item)
+        .replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '')
+        .replace(/\*\*|__|[*_`]/g, '')
+        .trim()
+    )
+    .filter(Boolean)
+    .slice(0, 10)
+    .map((text) => ({ '@type': 'HowToStep', text }));
 
-  if (level.walkthrough) {
-    const paragraphs = level.walkthrough
-      .split(/(?:<\/p>|<\/li>|<br\s*\/?>|\r?\n)/i)
-      .map(htmlToPlainText)
-      .filter(Boolean)
-      .slice(0, 10);
-
-    paragraphs.forEach((paragraph) => {
-      steps.push({
-        '@type': 'HowToStep',
-        text: paragraph,
-      });
-    });
-  }
-
-  if (steps.length === 0) {
-    steps.push({
-      '@type': 'HowToStep',
-      text: `Watch the video walkthrough to see how to solve ${level.gameName} Level ${level.levelNumber}.`,
-    });
-  }
+  if (steps.length === 0) return null;
 
   return {
     '@context': 'https://schema.org',
