@@ -30,7 +30,7 @@ export default function ClickableWalkthrough({ html, videoId }: Props) {
 
   return (
     <div
-      className="prose max-w-none leading-7"
+      className="prose level-content-body max-w-none text-sm sm:text-base leading-relaxed"
       onClick={handleClick}
       dangerouslySetInnerHTML={{ __html: html }}
     />

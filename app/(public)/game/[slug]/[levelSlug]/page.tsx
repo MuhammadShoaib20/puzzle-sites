@@ -304,12 +304,12 @@ export default async function LevelPage({ params }: Props) {
             </header>
 
           {quickSolution && (
-            <section className="card level-summary mb-6 p-4 sm:p-5" aria-labelledby="quick-solution-heading">
-              <h2 id="quick-solution-heading" className="mb-2 font-bold">
+            <section className="card level-summary level-content-card mb-5 sm:mb-6 p-4 sm:p-6" aria-labelledby="quick-solution-heading">
+              <h2 id="quick-solution-heading" className="level-content-heading mb-2 font-bold">
                 Quick Solution (TL;DR)
               </h2>
               <div
-                className="prose max-w-none text-sm leading-6"
+                className="prose level-content-body max-w-none text-sm sm:text-base leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: formatRichContent(quickSolution) }}
               />
             </section>
@@ -324,8 +324,8 @@ export default async function LevelPage({ params }: Props) {
           </div>
 
           {walkthrough && (
-            <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">
+            <section className="section level-text-section level-content-card mb-5 sm:mb-6 p-4 sm:p-6">
+              <h2 className="section-title level-content-heading mb-3">
                 {game.name} Level {level.level_number} Video Walkthrough
               </h2>
               <ClickableWalkthrough
@@ -336,16 +336,16 @@ export default async function LevelPage({ params }: Props) {
           )}
 
           {tip && (
-            <section className="tip-box mb-8">
-              <h2>Level {level.level_number} Pro Tip / Common Mistake</h2>
+            <section className="tip-box level-content-card mb-5 sm:mb-6 p-4 sm:p-6">
+              <h2 className="level-content-heading">Level {level.level_number} Pro Tip / Common Mistake</h2>
               <div
-                className="prose max-w-none text-[14.5px]"
+                className="prose level-content-body max-w-none text-sm sm:text-base leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: formatRichContent(tip) }}
               />
             </section>
           )}
 
-          <nav className="pager pt-6" style={{ borderTop: '1px solid var(--line)' }} aria-label="Level navigation">
+          <nav className="pager level-page-pager pt-6" style={{ borderTop: '1px solid var(--line)' }} aria-label="Level navigation">
             {prevLevel ? (
               <Link
                 href={`/game/${game.slug}/level-${prevLevel.level_number}`}

@@ -933,17 +933,20 @@ textarea:focus {
 .video-timestamp {
   display: inline-flex;
   align-items: center;
-  margin: 0 0.2rem;
-  padding: 0.08rem 0.5rem;
+  justify-content: center;
+  min-height: 40px;
+  margin: 0 0.375rem 0.15rem 0;
+  padding: 0.25rem 0.625rem;
   border: 1px solid var(--primary-light);
-  border-radius: 999px;
+  border-radius: 0.375rem;
   background: color-mix(in srgb, var(--primary-light) 14%, transparent);
   color: var(--primary-dark);
-  font-size: 0.86em;
-  font-weight: 700;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
   text-decoration: none;
   white-space: nowrap;
+  vertical-align: middle;
 }
 .video-timestamp:hover,
 .video-timestamp:focus-visible {
@@ -8793,6 +8796,70 @@ body,
   color: #B45309;
 }
 
+.site-content .level-page .level-content-card {
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+}
+
+.site-content .level-page .level-content-heading {
+  max-width: 100%;
+  color: #1E1B4B;
+  font-size: clamp(1.125rem, 3.5vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.375;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.site-content .level-page .level-content-body {
+  min-width: 0;
+  max-width: 100%;
+  color: #42425E;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.site-content .level-page .level-content-body > :is(ul, ol) {
+  margin: 0.75rem 0;
+  padding-left: 1.15rem;
+}
+
+.site-content .level-page .level-content-body li {
+  margin-block: 0.75rem;
+  padding-left: 0.1rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.site-content .level-page .level-content-body li::marker {
+  color: #5B5BD6;
+  font-weight: 700;
+}
+
+.site-content .level-page .level-page-pager {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.site-content .level-page .level-page-pager > * {
+  min-width: 0;
+}
+
+.site-content .level-page .level-page-pager .pager-item {
+  overflow-wrap: anywhere;
+}
+
+.site-content .level-page .level-page-pager .pager-item strong {
+  display: block;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- FAQ ---------- */
 .site-content .level-page .faq-item {
   border-radius: 16px;
@@ -8972,7 +9039,44 @@ body,
 
 @media (max-width: 640px) {
   .site-content .level-page .page-title { font-size: 1.5rem; }
-  .site-content .level-page .level-text-section { padding: 16px; }
+  .site-content .level-page .level-content-card {
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+  }
+  .site-content .level-page .level-content-body {
+    font-size: 0.875rem;
+    line-height: 1.65;
+  }
+  .site-content .level-page .level-content-body > :is(ul, ol) { padding-left: 1rem; }
+  .site-content .level-page .level-content-body li { margin-block: 0.75rem; }
+  .site-content .level-page .level-page-pager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .site-content .level-page .level-page-pager > div:empty { display: none; }
+  .site-content .level-page .level-page-pager .pager-item {
+    min-height: 0;
+    padding: 1rem;
+    text-align: left;
+  }
+  .site-content .level-page .level-page-pager .pager-item.next { text-align: left; }
+  .site-content .level-page .video-timestamp {
+    min-height: 40px;
+    padding-inline: 0.625rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .site-content .level-page .level-content-card {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+  }
+  .site-content .level-page .level-content-body {
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+  .site-content .level-page .level-content-body > :is(ul, ol) { padding-left: 1.5rem; }
+  .site-content .level-page .level-content-body li { margin-block: 0.875rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
