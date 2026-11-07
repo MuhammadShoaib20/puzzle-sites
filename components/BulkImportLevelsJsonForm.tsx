@@ -39,21 +39,30 @@ export default function BulkImportLevelsJsonForm() {
             placeholder={`[
   {
     "game_slug": "tricky-hacks",
-    "level_number": 1,
+    "level_number": 1
+  },
+  {
+    "game_slug": "tricky-hacks",
+    "level_number": 2,
     "youtube_url": "https://youtu.be/VIDEO_ID",
     "description": "A concise solution.",
     "walkthrough": "- **[0:04] Step 1:** Make the first move.",
-    "tips": "Avoid blocking the center."
+    "tips": "Avoid blocking the center.",
+    "meta_title": "Tricky Hacks Level 2",
+    "meta_description": "A concise search description.",
+    "published": true
   }
 ]`}
             className="w-full rounded-lg border px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <p className="text-sm text-gray-600">
-          Provide a JSON array with <code>game_slug</code>, <code>level_number</code>, and{' '}
-          <code>youtube_url</code>. Description, walkthrough, and tips are optional. Existing
-          levels are updated without changing their title or screenshots; new levels are published.
-          Maximum 1,000 levels per import.
+          Only <code>game_slug</code> and <code>level_number</code> are required. On existing
+          levels, omitted, blank, null, and placeholder fields are preserved; invalid optional
+          values are skipped with a warning. A valid <code>youtube_url</code> is required to create
+          a new level because the database does not allow it to be empty. New levels default to
+          published. Existing slugs and screenshots are never changed. Maximum 1,000 levels per
+          import.
         </p>
       </div>
 
@@ -65,10 +74,23 @@ export default function BulkImportLevelsJsonForm() {
         </p>
       )}
       {state?.success && (
-        <div className="card border border-green-200 bg-green-50 p-5" role="status">
+        <div className="card border border-green-200 bg-green-50 p-5 space-y-3" role="status">
           <p className="font-bold text-green-800">
-            Successfully updated {state.updated} and created {state.created} levels.
+            Updated: {state.updated} levels | Created: {state.created} levels | Warnings/Skipped
+            fields: {state.warningCount}
           </p>
+          {state.warnings.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">
+              {state.warnings.map((warning, index) => (
+                <li key={`${index}-${warning}`}>{warning}</li>
+              ))}
+            </ul>
+          )}
+          {state.warningCount > state.warnings.length && (
+            <p className="text-sm text-amber-800">
+              {state.warningCount - state.warnings.length} additional warning(s) not shown.
+            </p>
+          )}
         </div>
       )}
     </form>

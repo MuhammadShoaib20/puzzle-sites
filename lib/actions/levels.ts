@@ -406,16 +406,7 @@ export async function bulkImportLevels(
 
 export type BulkJsonImportResult =
   | { success: false; error: string }
-  | { success: true; created: number; updated: number };
-
-type JsonLevelInput = {
-  game_slug: string;
-  level_number: number;
-  youtube_url: string;
-  description: string | null;
-  walkthrough: string | null;
-  tips: string | null;
-};
+  | { success: true; created: number; updated: number; warningCount: number; warnings: string[] };
 
 export async function bulkImportLevelsJson(
   _previousState: BulkJsonImportResult | null,
@@ -443,53 +434,55 @@ export async function bulkImportLevelsJson(
     return { success: false, error: 'Import at most 1,000 levels at a time.' };
   }
 
-  const levels: JsonLevelInput[] = [];
+  const rows: { index: number; gameSlug: string; levelNumber: number; values: Record<string, unknown> }[] = [];
+  const warnings: string[] = [];
+  let warningCount = 0;
+  const addWarning = (message: string) => {
+    warningCount += 1;
+    if (warnings.length < 30) warnings.push(message);
+  };
   const uniqueKeys = new Set<string>();
 
   for (const [index, value] of parsed.entries()) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return { success: false, error: `Level at array index ${index} must be an object.` };
+      addWarning(`Item ${index + 1} was skipped: expected an object.`);
+      continue;
     }
 
     const row = value as Record<string, unknown>;
-    const gameSlug = typeof row.game_slug === 'string' ? row.game_slug.trim() : '';
+    const gameSlug = typeof row.game_slug === 'string' ? row.game_slug.trim().toLowerCase() : '';
     const levelNumber = row.level_number;
-    const youtubeUrl = typeof row.youtube_url === 'string' ? row.youtube_url.trim() : '';
-    const youtubeId = extractYoutubeId(youtubeUrl);
 
     if (!gameSlug) {
-      return { success: false, error: `Level at array index ${index} needs a game_slug.` };
+      addWarning(`Item ${index + 1} was skipped: game_slug is required.`);
+      continue;
     }
     if (!Number.isInteger(levelNumber) || (levelNumber as number) < 1 || (levelNumber as number) > 100000) {
-      return { success: false, error: `Level at array index ${index} has an invalid level_number.` };
-    }
-    if (!youtubeId) {
-      return { success: false, error: `Level at array index ${index} has an invalid YouTube URL.` };
-    }
-
-    for (const field of ['description', 'walkthrough', 'tips'] as const) {
-      if (row[field] !== undefined && row[field] !== null && typeof row[field] !== 'string') {
-        return { success: false, error: `The ${field} field at array index ${index} must be text.` };
-      }
+      addWarning(`Item ${index + 1} was skipped: level_number must be an integer from 1 to 100,000.`);
+      continue;
     }
 
     const key = `${gameSlug.toLowerCase()}:${levelNumber}`;
     if (uniqueKeys.has(key)) {
-      return { success: false, error: `Duplicate game_slug and level_number at array index ${index}.` };
+      addWarning(`Item ${index + 1} was skipped: duplicate ${gameSlug} Level ${levelNumber} in this import.`);
+      continue;
     }
     uniqueKeys.add(key);
 
-    levels.push({
-      game_slug: gameSlug,
-      level_number: levelNumber as number,
-      youtube_url: youtubeUrl,
-      description: typeof row.description === 'string' ? row.description.trim() || null : null,
-      walkthrough: typeof row.walkthrough === 'string' ? row.walkthrough.trim() || null : null,
-      tips: typeof row.tips === 'string' ? row.tips.trim() || null : null,
-    });
+    rows.push({ index, gameSlug, levelNumber: levelNumber as number, values: row });
   }
 
-  const gameSlugs = [...new Set(levels.map((level) => level.game_slug))];
+  if (!rows.length) {
+    return {
+      success: true,
+      created: 0,
+      updated: 0,
+      warningCount,
+      warnings,
+    };
+  }
+
+  const gameSlugs = [...new Set(rows.map((level) => level.gameSlug))];
   const { data: games, error: gamesError } = await supabaseAdmin
     .from('games')
     .select('id, slug')
@@ -500,25 +493,24 @@ export async function bulkImportLevelsJson(
   }
 
   const gamesBySlug = new Map((games || []).map((game) => [game.slug, game]));
-  const missingSlugs = gameSlugs.filter((slug) => !gamesBySlug.has(slug));
-  if (missingSlugs.length) {
-    return {
-      success: false,
-      error: `Unknown game_slug value(s): ${missingSlugs.join(', ')}.`,
-    };
+  const validRows = rows.flatMap((row) => {
+    const game = gamesBySlug.get(row.gameSlug);
+    if (!game) {
+      addWarning(`Item ${row.index + 1} was skipped: unknown game_slug "${row.gameSlug}".`);
+      return [];
+    }
+    return [{ ...row, gameId: game.id, gameSlug: game.slug }];
+  });
+  if (!validRows.length) {
+    return { success: true, created: 0, updated: 0, warningCount, warnings };
   }
 
-  const rows = levels.map((level) => ({
-    ...level,
-    game_id: gamesBySlug.get(level.game_slug)!.id,
-    youtube_id: extractYoutubeId(level.youtube_url),
-  }));
-  const gameIds = [...new Set(rows.map((row) => row.game_id))];
+  const gameIds = [...new Set(validRows.map((row) => row.gameId))];
   const { data: existingLevels, error: existingError } = await supabaseAdmin
     .from('levels')
     .select('id, game_id, level_number')
     .in('game_id', gameIds)
-    .in('level_number', [...new Set(rows.map((row) => row.level_number))]);
+    .in('level_number', [...new Set(validRows.map((row) => row.levelNumber))]);
 
   if (existingError) {
     return { success: false, error: `Could not check existing levels: ${existingError.message}` };
@@ -527,65 +519,122 @@ export async function bulkImportLevelsJson(
   const existingByKey = new Map(
     (existingLevels || []).map((level) => [`${level.game_id}:${level.level_number}`, level])
   );
-  const updates = rows.filter((row) => existingByKey.has(`${row.game_id}:${row.level_number}`));
-  const inserts = rows.filter((row) => !existingByKey.has(`${row.game_id}:${row.level_number}`));
+  const optionalTextFields = [
+    'title',
+    'youtube_url',
+    'description',
+    'walkthrough',
+    'tips',
+    'meta_title',
+    'meta_description',
+  ] as const;
+  const placeholderPattern = /^(?:PASTE|INSERT|YOUR|REPLACE|ENTER)[_\s-].*(?:HERE)?$|^<[^>]+>$/i;
+  const updatedRows: typeof validRows = [];
+  const createdRows: typeof validRows = [];
 
-  for (const row of updates) {
-    const existing = existingByKey.get(`${row.game_id}:${row.level_number}`)!;
-    const { error } = await supabaseAdmin
-      .from('levels')
-      .update({
-        youtube_url: row.youtube_url,
-        youtube_id: row.youtube_id,
-        description: row.description,
-        walkthrough: row.walkthrough,
-        tips: row.tips,
-        published: true,
-      })
-      .eq('id', existing.id);
+  for (const row of validRows) {
+    const key = `${row.gameId}:${row.levelNumber}`;
+    const existing = existingByKey.get(key);
+    const patch: Record<string, string | boolean> = {};
 
-    if (error) {
-      return {
-        success: false,
-        error: `Import stopped while updating ${row.game_slug} Level ${row.level_number}: ${error.message}`,
-      };
+    for (const field of optionalTextFields) {
+      const value = row.values[field];
+      if (value === undefined || value === null || value === '') continue;
+      if (typeof value !== 'string') {
+        addWarning(`Item ${row.index + 1}: ${field} was ignored because it must be text.`);
+        continue;
+      }
+
+      const text = value.trim();
+      if (!text) continue;
+      if (placeholderPattern.test(text)) {
+        addWarning(`Item ${row.index + 1}: placeholder ${field} was ignored.`);
+        continue;
+      }
+
+      if (field === 'youtube_url') {
+        if (!extractYoutubeId(text)) {
+          addWarning(`Item ${row.index + 1}: invalid youtube_url was ignored.`);
+          continue;
+        }
+        patch.youtube_url = text;
+        patch.youtube_id = extractYoutubeId(text);
+      } else {
+        patch[field] = text;
+      }
     }
+
+    if (row.values.published !== undefined && row.values.published !== null && row.values.published !== '') {
+      if (typeof row.values.published === 'boolean') {
+        patch.published = row.values.published;
+      } else {
+        addWarning(`Item ${row.index + 1}: published was ignored because it must be true or false.`);
+      }
+    }
+
+    if (existing) {
+      if (!Object.keys(patch).length) {
+        addWarning(`Item ${row.index + 1}: no valid fields to update; level was unchanged.`);
+        continue;
+      }
+
+      const { error } = await supabaseAdmin.from('levels').update(patch).eq('id', existing.id);
+      if (error) {
+        addWarning(`Item ${row.index + 1}: update failed (${error.message}).`);
+        continue;
+      }
+      updatedRows.push(row);
+      continue;
+    }
+
+    const youtubeUrl = typeof patch.youtube_url === 'string' ? patch.youtube_url : '';
+    const youtubeId = typeof patch.youtube_id === 'string' ? patch.youtube_id : '';
+    if (!youtubeUrl || !youtubeId) {
+      addWarning(`Item ${row.index + 1}: new levels require a valid youtube_url in this database.`);
+      continue;
+    }
+
+    const insert: Record<string, string | number | boolean | null> = {
+      game_id: row.gameId,
+      level_number: row.levelNumber,
+      title: typeof patch.title === 'string' ? patch.title : `Level ${row.levelNumber}`,
+      slug: `level-${row.levelNumber}`,
+      youtube_url: youtubeUrl,
+      youtube_id: youtubeId,
+      published: typeof patch.published === 'boolean' ? patch.published : true,
+    };
+    for (const field of ['description', 'walkthrough', 'tips', 'meta_title', 'meta_description'] as const) {
+      if (typeof patch[field] === 'string') insert[field] = patch[field] as string;
+    }
+
+    const { error } = await supabaseAdmin.from('levels').insert(insert);
+    if (error) {
+      addWarning(`Item ${row.index + 1}: create failed (${error.message}).`);
+      continue;
+    }
+    createdRows.push(row);
   }
 
-  if (inserts.length) {
-    const { error } = await supabaseAdmin.from('levels').insert(
-      inserts.map((row) => ({
-        game_id: row.game_id,
-        level_number: row.level_number,
-        title: `Level ${row.level_number}`,
-        slug: `level-${row.level_number}`,
-        youtube_url: row.youtube_url,
-        youtube_id: row.youtube_id,
-        description: row.description,
-        walkthrough: row.walkthrough,
-        tips: row.tips,
-        published: true,
-      }))
-    );
-
-    if (error) {
-      return { success: false, error: `Could not create new levels: ${error.message}` };
-    }
-  }
-
-  const affectedGames = new Set(rows.map((row) => row.game_slug));
+  const successfulRows = [...updatedRows, ...createdRows];
+  const affectedGames = new Set(successfulRows.map((row) => row.gameSlug));
   for (const gameSlug of affectedGames) {
     const game = gamesBySlug.get(gameSlug)!;
     await updateGameLevelCount(game.id);
     revalidatePath(`/ms-control-9x7k2p/games/${game.id}/levels`);
     revalidatePublicLevelPaths(
       game.slug,
-      rows.filter((row) => row.game_slug === gameSlug).map((row) => row.level_number)
+      successfulRows.filter((row) => row.gameSlug === gameSlug).map((row) => row.levelNumber)
     );
   }
   revalidatePath('/ms-control-9x7k2p/games');
 
-  return { success: true, created: inserts.length, updated: updates.length };
+  return {
+    success: true,
+    created: createdRows.length,
+    updated: updatedRows.length,
+    warningCount,
+    warnings,
+  };
 }
 
 // ==========================================
