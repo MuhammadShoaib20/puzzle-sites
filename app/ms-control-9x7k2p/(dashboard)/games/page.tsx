@@ -24,6 +24,12 @@ export default async function AdminGamesPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/ms-control-9x7k2p/games/bulk-import-json"
+            className="btn btn-secondary btn-sm"
+          >
+            Bulk Import JSON
+          </Link>
+          <Link
             href="/ms-control-9x7k2p/games/bulk-screenshots"
             className="btn btn-secondary btn-sm"
           >

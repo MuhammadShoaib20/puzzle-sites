@@ -49,9 +49,17 @@ export default async function AdminLevelsPage({ params }: Props) {
             </Link>
           </p>
         </div>
-        <Link href={`/ms-control-9x7k2p/games/${id}/levels/new`} className="btn btn-primary btn-sm">
-          + Add single level
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/ms-control-9x7k2p/games/bulk-import-json"
+            className="btn btn-secondary btn-sm"
+          >
+            Bulk Import JSON
+          </Link>
+          <Link href={`/ms-control-9x7k2p/games/${id}/levels/new`} className="btn btn-primary btn-sm">
+            + Add single level
+          </Link>
+        </div>
       </div>
 
       <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
