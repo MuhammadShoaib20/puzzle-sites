@@ -17,6 +17,7 @@ import {
   htmlToPlainText,
 } from '@/lib/schema';
 import AdSlot from '@/components/AdSlot';
+import ClickableWalkthrough from '@/components/ClickableWalkthrough';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
 import PopularLevels from '@/components/PopularLevels';
@@ -143,7 +144,23 @@ function markdownToHtml(markdown: string): string {
 
 function formatRichContent(content: string): string {
   const hasHtml = /<\/?[a-z][^>]*>/i.test(content);
-  return sanitize(hasHtml ? content : markdownToHtml(content));
+  const safeHtml = sanitize(hasHtml ? content : markdownToHtml(content));
+  return safeHtml
+    .split(/(<[^>]+>)/g)
+    .map((part) => {
+      if (part.startsWith('<')) return part;
+      const withBold = part.replace(/\*\*(.+?)\*\*|__(.+?)__/g, '<strong>$1$2</strong>');
+      return withBold.replace(
+        /\[(?:(\d+):)?(\d{1,2}):([0-5]\d)\]/g,
+        (_match, hours: string | undefined, minutes: string, seconds: string) => {
+          const totalSeconds =
+            (Number(hours || 0) * 3600) + Number(minutes) * 60 + Number(seconds);
+          const label = `${hours ? `${hours}:` : ''}${minutes}:${seconds}`;
+          return `<a href="#level-video-player" class="video-timestamp" data-video-time="${totalSeconds}">▶ ${label}</a>`;
+        }
+      );
+    })
+    .join('');
 }
 
 function contentToPlainText(content: string): string {
@@ -300,6 +317,7 @@ export default async function LevelPage({ params }: Props) {
 
           <div className="video-frame mb-6">
             <LazyYouTube
+              playerId="level-video-player"
               videoId={level.youtube_id}
               title={`${game.name} Level ${level.level_number}`}
             />
@@ -307,17 +325,19 @@ export default async function LevelPage({ params }: Props) {
 
           {walkthrough && (
             <section className="section level-text-section" style={{ marginBottom: '2rem' }}>
-              <h2 className="section-title mb-3">Step-by-Step Video Walkthrough</h2>
-              <div
-                className="prose max-w-none leading-7"
-                dangerouslySetInnerHTML={{ __html: formatRichContent(walkthrough) }}
+              <h2 className="section-title mb-3">
+                {game.name} Level {level.level_number} Video Walkthrough
+              </h2>
+              <ClickableWalkthrough
+                html={formatRichContent(walkthrough)}
+                videoId={level.youtube_id}
               />
             </section>
           )}
 
           {tip && (
             <section className="tip-box mb-8">
-              <h2>Pro Tip / Common Mistake</h2>
+              <h2>Level {level.level_number} Pro Tip / Common Mistake</h2>
               <div
                 className="prose max-w-none text-[14.5px]"
                 dangerouslySetInnerHTML={{ __html: formatRichContent(tip) }}
