@@ -345,30 +345,34 @@ export default async function LevelPage({ params }: Props) {
             </section>
           )}
 
-          <nav className="pager level-page-pager pt-6" style={{ borderTop: '1px solid var(--line)' }} aria-label="Level navigation">
-            {prevLevel ? (
-              <Link
-                href={`/game/${game.slug}/level-${prevLevel.level_number}`}
-                className="card card-hover pager-item"
-              >
-                <small>← Previous</small>
-                <strong>Level {prevLevel.level_number}</strong>
-              </Link>
-            ) : (
-              <div />
-            )}
-            {nextLevel ? (
-              <Link
-                href={`/game/${game.slug}/level-${nextLevel.level_number}`}
-                className="card card-hover pager-item next"
-              >
-                <small>Next →</small>
-                <strong>Level {nextLevel.level_number}</strong>
-              </Link>
-            ) : (
-              <div />
-            )}
-          </nav>
+          {(prevLevel || nextLevel) && (
+            <nav
+              className="pager level-page-pager pt-6"
+              style={{ borderTop: '1px solid var(--line)' }}
+              aria-label="Level navigation"
+            >
+              {prevLevel && (
+                <Link
+                  href={`/game/${game.slug}/level-${prevLevel.level_number}`}
+                  title={`Go to ${game.name} Level ${prevLevel.level_number} Walkthrough`}
+                  className="card card-hover pager-item"
+                >
+                  <small>← Previous Level</small>
+                  <strong>Level {prevLevel.level_number}</strong>
+                </Link>
+              )}
+              {nextLevel && (
+                <Link
+                  href={`/game/${game.slug}/level-${nextLevel.level_number}`}
+                  title={`Go to ${game.name} Level ${nextLevel.level_number} Walkthrough`}
+                  className="card card-hover pager-item next"
+                >
+                  <small>Next Level →</small>
+                  <strong>Level {nextLevel.level_number}</strong>
+                </Link>
+              )}
+            </nav>
+          )}
 
           <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
             <Link

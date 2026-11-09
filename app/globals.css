@@ -918,6 +918,12 @@ textarea:focus {
 .pager-item small { color: var(--muted); font-size: 0.78rem; display: block; margin-bottom: 0.15rem; }
 .pager-item strong { font-family: var(--font-display), sans-serif; color: var(--ink); }
 .pager-item.next { text-align: right; }
+.level-page-pager { display: flex; flex-direction: column; }
+.level-page-pager .pager-item { flex: 1; }
+
+@media (min-width: 640px) {
+  .level-page-pager { flex-direction: row; }
+}
 
 /* =========================================================
    MEDIA / CONTENT
