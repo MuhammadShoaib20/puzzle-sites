@@ -39,7 +39,7 @@ function getPageValues(formData: FormData) {
 
 function revalidatePagePaths(...slugs: string[]) {
   revalidatePath('/ms-control-9x7k2p/pages');
-  revalidatePath('/sitemap.xml');
+  revalidatePath('/pages-sitemap.xml');
   revalidatePath('/');
   for (const slug of new Set(slugs)) {
     revalidatePath(`/${slug}`);

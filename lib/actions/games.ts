@@ -181,7 +181,8 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
 
 function revalidateGamePaths(levelNumbers: number[], ...slugs: string[]) {
   revalidatePath('/');
-  revalidatePath('/sitemap.xml');
+  revalidatePath('/games-sitemap.xml');
+  revalidatePath('/levels-sitemap.xml');
   for (const slug of new Set(slugs)) {
     revalidatePath(`/game/${slug}`);
     for (const levelNumber of new Set(levelNumbers)) {

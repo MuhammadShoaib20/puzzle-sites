@@ -40,7 +40,7 @@ function getLevelNumbers(levels: unknown[]): number[] {
 
 function revalidatePublicLevelPaths(gameSlug: string, levelNumbers: number[]) {
   revalidatePath('/');
-  revalidatePath('/sitemap.xml');
+  revalidatePath('/levels-sitemap.xml');
   revalidatePath(`/game/${gameSlug}`);
   for (const levelNumber of new Set(levelNumbers)) {
     revalidatePath(`/game/${gameSlug}/level-${levelNumber}`);

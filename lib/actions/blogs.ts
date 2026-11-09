@@ -318,7 +318,7 @@ export async function bulkImportBlogs(formData: FormData): Promise<BulkImportRes
     revalidatePath('/blog');
     revalidatePath('/admin/blogs');
     revalidatePath('/ms-control-9x7k2p/blogs');
-    revalidatePath('/sitemap.xml');
+    revalidatePath('/blog-sitemap.xml');
     for (const slug of slugs) {
       revalidatePath(`/blog/${slug}`);
     }
@@ -487,7 +487,7 @@ async function generateUniqueSlug(baseSlug: string, excludeId?: string): Promise
 function revalidateBlogPaths(...slugs: string[]) {
   revalidatePath('/');
   revalidatePath('/blog');
-  revalidatePath('/sitemap.xml');
+  revalidatePath('/blog-sitemap.xml');
   for (const slug of new Set(slugs)) {
     revalidatePath(`/blog/${slug}`);
   }

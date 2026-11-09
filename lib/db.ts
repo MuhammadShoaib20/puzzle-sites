@@ -421,16 +421,46 @@ export async function getAllBlogs(): Promise<BlogCardData[]> {
 }
 
 export async function getAllPublishedBlogsForSitemap(): Promise<
-  Pick<Blog, 'slug' | 'created_at'>[]
+  (Pick<Blog, 'slug' | 'created_at'> & Partial<Pick<Blog, 'updated_at'>>)[]
 > {
-  return getAllSitemapRows<Pick<Blog, 'slug' | 'created_at'>>(
-    (from, to) =>
-      supabase
+  type SitemapBlog = Pick<Blog, 'slug' | 'created_at'> &
+    Partial<Pick<Blog, 'updated_at'>>;
+  let selectUpdatedAt = true;
+
+  return getAllSitemapRows<SitemapBlog>(
+    async (from, to) => {
+      if (selectUpdatedAt) {
+        const response = await supabase
+          .from('blogs')
+          .select('slug, created_at, updated_at')
+          .eq('published', true)
+          .order('id', { ascending: true })
+          .range(from, to);
+
+        if (
+          response.error &&
+          (response.error.code === '42703' ||
+            response.error.code === 'PGRST204' ||
+            response.error.message.includes('blogs.updated_at'))
+        ) {
+          console.warn(
+            'blogs.updated_at is unavailable; using created_at for sitemap lastModified.'
+          );
+          selectUpdatedAt = false;
+        } else {
+          return { data: response.data, error: response.error };
+        }
+      }
+
+      const fallbackResponse = await supabase
         .from('blogs')
         .select('slug, created_at')
         .eq('published', true)
         .order('id', { ascending: true })
-        .range(from, to),
+        .range(from, to);
+
+      return { data: fallbackResponse.data, error: fallbackResponse.error };
+    },
     'getAllPublishedBlogsForSitemap'
   );
 }

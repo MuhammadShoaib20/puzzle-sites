@@ -121,7 +121,7 @@ Make sure to add all environment variables in your Vercel project settings.
 4. Apply `supabase/migrations/20261106_bing_credentials.sql` in the Supabase SQL Editor.
 5. Set `BING_CREDENTIALS_ENCRYPTION_KEY` to a base64-encoded 32-byte random key in local and production environments. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Keep the same value wherever the app runs so existing stored credentials can be decrypted.
 
-The admin verifies the site through Bing's `GetUserSites` API and submits `https://your-domain/sitemap.xml` after verification. The API key is stored encrypted with AES-256-GCM and is never returned by status endpoints.
+The admin verifies the site through Bing's `GetUserSites` API and submits `https://your-domain/sitemap.xml` after verification. The sitemap index at `https://puzzlewalkthroughs.com/sitemap.xml` references separate static-page, blog, game-hub, and level sitemaps. All sitemap URLs use the non-WWW canonical domain. The API key is stored encrypted with AES-256-GCM and is never returned by status endpoints.
 
 ### IndexNow
 
