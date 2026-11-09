@@ -468,12 +468,22 @@ export async function getAllPublishedBlogsForSitemap(): Promise<
 export async function getBlogBySlug(slug: string): Promise<BlogDetailData | null> {
   const { data, error } = await supabase
     .from('blogs')
-    .select('id, game_id, title, slug, content, cover_image, meta_title, meta_description, keywords, published_date, created_at, updated_at')
+    .select('id, game_id, title, slug, content, cover_image, meta_title, meta_description, keywords, published_date, created_at')
     .eq('slug', slug)
     .eq('published', true)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error('getBlogBySlug query failed:', {
+      slug,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    return null;
+  }
+  if (!data) return null;
   return data as BlogDetailData;
 }
 
