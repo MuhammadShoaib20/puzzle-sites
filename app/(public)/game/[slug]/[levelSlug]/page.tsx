@@ -20,6 +20,7 @@ import AdSlot from '@/components/AdSlot';
 import ClickableWalkthrough from '@/components/ClickableWalkthrough';
 import ViewTracker from '@/components/ViewTracker';
 import Breadcrumb from '@/components/Breadcrumb';
+import LevelSelector from '@/components/LevelSelector';
 import PopularLevels from '@/components/PopularLevels';
 import JsonLd from '@/components/JsonLd';
 import LazyYouTube from '@/components/LazyYouTube';
@@ -285,13 +286,20 @@ export default async function LevelPage({ params }: Props) {
       {howToSchema && <JsonLd data={howToSchema} />}
 
       <div className="container-page pt-5">
-        <Breadcrumb
-          items={[
-            { label: 'Home', href: '/' },
-            { label: game.name, href: `/game/${game.slug}` },
-            { label: `Level ${level.level_number}` },
-          ]}
-        />
+        <div className="level-breadcrumb-bar">
+          <Breadcrumb
+            items={[
+              { label: 'Home', href: '/' },
+              { label: game.name, href: `/game/${game.slug}` },
+              { label: `Level ${level.level_number}` },
+            ]}
+          />
+          <LevelSelector
+            gameSlug={game.slug}
+            levels={allLevels.map((item) => item.level_number)}
+            currentLevel={level.level_number}
+          />
+        </div>
       </div>
 
       <div className="container-page pt-6 pb-8 layout-2col">
