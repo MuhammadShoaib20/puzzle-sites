@@ -85,6 +85,7 @@ export type LevelPageData = Pick<
   | 'screenshots'
   | 'meta_title'
   | 'meta_description'
+  | 'is_noindex'
   | 'created_at'
   | 'updated_at'
 >;
@@ -193,6 +194,7 @@ export async function getPublishedLevelsForGameForSitemap(
   { game_slug: string; level_number: number; created_at: string; updated_at?: string }[]
 > {
   let selectUpdatedAt = true;
+  let filterNoindex = true;
   type SitemapLevel = {
     game_slug: string;
     level_number: number;
@@ -200,61 +202,64 @@ export async function getPublishedLevelsForGameForSitemap(
     updated_at?: string;
   };
 
+  const isMissingColumnError = (error: { code?: string; message: string }, column: string) =>
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    error.message.includes(`levels.${column}`) ||
+    error.message.includes(column);
+
   return getAllSitemapRows<SitemapLevel>(
     async (from, to) => {
-      let rows: Omit<SitemapLevel, 'game_slug'>[] | null = null;
+      for (;;) {
+        const columns = ['level_number', 'created_at'];
+        if (selectUpdatedAt) columns.push('updated_at');
 
-      if (selectUpdatedAt) {
-        const response = await supabase
+        let query = supabase
           .from('levels')
-          .select('level_number, created_at, updated_at')
+          .select(columns.join(', '))
           .eq('game_id', gameId)
-          .eq('published', true)
+          .eq('published', true);
+
+        if (filterNoindex) {
+          query = query.or('is_noindex.is.null,is_noindex.eq.false');
+        }
+
+        const response = await query
           .order('level_number', { ascending: true })
           .order('id', { ascending: true })
           .range(from, to);
 
-        if (
-          response.error &&
-          (response.error.code === '42703' ||
-            response.error.code === 'PGRST204' ||
-            response.error.message.includes('levels.updated_at'))
-        ) {
+        if (!response.error) {
+          const rows = (response.data || []) as unknown as Omit<SitemapLevel, 'game_slug'>[];
+          return {
+            data: rows.map((level) => ({
+              game_slug: gameSlug,
+              level_number: level.level_number,
+              created_at: level.created_at,
+              updated_at: level.updated_at,
+            })),
+            error: null,
+          };
+        }
+
+        if (filterNoindex && isMissingColumnError(response.error, 'is_noindex')) {
+          console.warn(
+            'levels.is_noindex is unavailable; apply the is_noindex migration. Including all published levels in sitemap.'
+          );
+          filterNoindex = false;
+          continue;
+        }
+
+        if (selectUpdatedAt && isMissingColumnError(response.error, 'updated_at')) {
           console.warn(
             'levels.updated_at is unavailable; apply the levels updated_at migration. Using created_at for sitemap lastModified.'
           );
           selectUpdatedAt = false;
-        } else if (response.error) {
-          return { data: null, error: response.error };
-        } else {
-          rows = response.data;
+          continue;
         }
-      }
 
-      if (!selectUpdatedAt) {
-        const response = await supabase
-          .from('levels')
-          .select('level_number, created_at')
-          .eq('game_id', gameId)
-          .eq('published', true)
-          .order('level_number', { ascending: true })
-          .order('id', { ascending: true })
-          .range(from, to);
-        if (response.error) {
-          return { data: null, error: response.error };
-        }
-        rows = response.data;
+        return { data: null, error: response.error };
       }
-
-      return {
-        data: (rows || []).map((level) => ({
-          game_slug: gameSlug,
-          level_number: level.level_number,
-          created_at: level.created_at,
-          updated_at: level.updated_at,
-        })),
-        error: null,
-      };
     },
     'getPublishedLevelsForGameForSitemap'
   );
@@ -301,7 +306,7 @@ export async function getLevelByNumber(
 ): Promise<LevelPageData | null> {
   const { data, error } = await supabase
     .from('levels')
-    .select('id, game_id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, screenshots, meta_title, meta_description, created_at, updated_at')
+    .select('id, game_id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, screenshots, meta_title, meta_description, is_noindex, created_at, updated_at')
     .eq('game_id', gameId)
     .eq('level_number', levelNumber)
     .eq('published', true)

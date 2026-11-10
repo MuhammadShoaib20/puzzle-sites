@@ -72,6 +72,7 @@ export interface Level {
   meta_description?: string;
   views: number;
   published: boolean;
+  is_noindex?: boolean;
   created_at: string;
   updated_at?: string;
 }

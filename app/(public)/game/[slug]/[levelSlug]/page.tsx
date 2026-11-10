@@ -198,6 +198,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     ...(description ? { description } : {}),
+    robots: level.is_noindex
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
     alternates: {
       canonical: canonicalUrl(`/game/${game.slug}/level-${level.level_number}`),
       languages: {

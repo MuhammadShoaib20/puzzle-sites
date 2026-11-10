@@ -13,6 +13,7 @@ type EditableLevel = Pick<
   | 'meta_title'
   | 'meta_description'
   | 'published'
+  | 'is_noindex'
 >;
 
 type Props = {
@@ -163,6 +164,18 @@ export default function LevelForm({ action, level, submitLabel = 'Save' }: Props
           />
           <span className="font-medium">Published</span>
         </label>
+        <label className="flex items-center gap-3 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            name="is_noindex"
+            defaultChecked={level?.is_noindex ?? false}
+            className="w-4 h-4"
+          />
+          <span className="font-medium">Noindex Level (Hide from Google Search)</span>
+        </label>
+        <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+          When enabled, this level sends a noindex robots tag and is excluded from the sitemap.
+        </p>
       </div>
 
       {/* ================= ACTIONS ================= */}

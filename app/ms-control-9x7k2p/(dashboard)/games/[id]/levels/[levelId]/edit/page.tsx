@@ -21,7 +21,7 @@ export default async function EditLevelPage({ params }: Props) {
 
   const { data: level } = await supabaseAdmin
     .from('levels')
-    .select('level_number, title, youtube_url, description, walkthrough, tips, meta_title, meta_description, published')
+    .select('level_number, title, youtube_url, description, walkthrough, tips, meta_title, meta_description, published, is_noindex')
     .eq('id', levelId)
     .single();
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 import BulkGenerateForm from '@/components/BulkGenerateForm';
+import BulkNoindexForm from '@/components/BulkNoindexForm';
 import BulkEditForm from '@/components/BulkEditForm';
 import BulkImportForm from '@/components/BulkImportForm';
 import DeleteLevelButton from '@/components/DeleteLevelButton';
@@ -23,7 +24,7 @@ export default async function AdminLevelsPage({ params }: Props) {
 
   const { data: levels } = await supabaseAdmin
     .from('levels')
-    .select('id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, published')
+    .select('id, level_number, title, youtube_url, youtube_id, description, walkthrough, tips, published, is_noindex')
     .eq('game_id', id)
     .order('level_number', { ascending: true });
 
@@ -71,7 +72,15 @@ export default async function AdminLevelsPage({ params }: Props) {
       </div>
 
       <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
-        <h2>📥 Bulk import from CSV</h2>
+        <h2>� Bulk noindex levels</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
+          Set the noindex flag for a range of levels. Noindexed levels are hidden from Google Search and excluded from the sitemap.
+        </p>
+        <BulkNoindexForm gameId={id} />
+      </div>
+
+      <div className="card admin-panel admin-panel-tint" style={{ marginBottom: '1.75rem' }}>
+        <h2>�📥 Bulk import from CSV</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--ink-soft)' }}>
           Import levels from a CSV file with walkthrough and tips support.
         </p>
@@ -102,6 +111,7 @@ export default async function AdminLevelsPage({ params }: Props) {
               <div className="flex items-start justify-between">
                 <div className="num">{level.level_number}</div>
                 {!level.published && <span className="pill pill-gray">Draft</span>}
+                {level.is_noindex && <span className="pill pill-gray">Noindex</span>}
               </div>
               <div className="vid">
                 {level.youtube_id ? `🎥 ${level.youtube_id.slice(0, 11)}` : 'No video'}

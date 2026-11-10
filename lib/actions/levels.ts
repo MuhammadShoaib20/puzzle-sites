@@ -173,6 +173,7 @@ export async function createLevel(gameId: string, formData: FormData) {
   const meta_title = (formData.get('meta_title') as string) || null;
   const meta_description = (formData.get('meta_description') as string) || null;
   const published = formData.get('published') === 'on';
+  const is_noindex = formData.get('is_noindex') === 'on';
 
   if (!level_number || !youtube_url) {
     return { error: 'Level number and YouTube URL are required.' };
@@ -198,6 +199,7 @@ export async function createLevel(gameId: string, formData: FormData) {
     meta_title,
     meta_description,
     published,
+    is_noindex,
   });
 
   if (error) {
@@ -228,6 +230,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
   const meta_title = (formData.get('meta_title') as string) || null;
   const meta_description = (formData.get('meta_description') as string) || null;
   const published = formData.get('published') === 'on';
+  const is_noindex = formData.get('is_noindex') === 'on';
 
   const youtube_id = extractYoutubeId(youtube_url);
   if (!youtube_id) {
@@ -257,6 +260,7 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
       meta_title,
       meta_description,
       published,
+      is_noindex,
     })
     .eq('id', levelId);
 
@@ -268,6 +272,58 @@ export async function updateLevel(levelId: string, gameId: string, formData: For
   revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels/${levelId}/edit`);
   revalidatePublicLevelPaths(game.slug, [existingLevel.level_number]);
   redirect(getAdminUrl(`/games/${gameId}/levels/${levelId}/edit`));
+}
+
+// ==========================================
+// BULK SET NOINDEX FOR A LEVEL RANGE
+// ==========================================
+export async function bulkSetLevelNoindex(
+  gameId: string,
+  formData: FormData
+): Promise<{ error: string } | { success: true; updated: number }> {
+  await requireAuth();
+
+  const from = parseInt(formData.get('from') as string, 10);
+  const to = parseInt(formData.get('to') as string, 10);
+  const isNoindex = formData.get('is_noindex') === 'true';
+
+  if (isNaN(from) || isNaN(to) || from < 1 || to < from || to > 100000) {
+    return { error: 'Invalid range. From must be >= 1, To >= From, max 100000.' };
+  }
+  if (to - from > 10000) {
+    return { error: 'Range too large. Update at most 10,000 levels at a time.' };
+  }
+
+  const game = await getGameSlug(gameId);
+  if ('error' in game) return { error: game.error };
+
+  const { data: affected, error: fetchError } = await supabaseAdmin
+    .from('levels')
+    .select('level_number')
+    .eq('game_id', gameId)
+    .gte('level_number', from)
+    .lte('level_number', to);
+
+  if (fetchError) return { error: fetchError.message };
+
+  const levelNumbers = (affected || []).map((level) => level.level_number);
+  if (levelNumbers.length === 0) {
+    return { error: 'No levels found in this range.' };
+  }
+
+  const { error } = await supabaseAdmin
+    .from('levels')
+    .update({ is_noindex: isNoindex })
+    .eq('game_id', gameId)
+    .gte('level_number', from)
+    .lte('level_number', to);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/ms-control-9x7k2p/games/${gameId}/levels`);
+  revalidatePublicLevelPaths(game.slug, levelNumbers);
+
+  return { success: true, updated: levelNumbers.length };
 }
 
 // ==========================================
